@@ -1,8 +1,9 @@
 using Microsoft.Azure.Cosmos;
+using PopulateF1Database.Data.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace PopulateF1Database.Data
+namespace PopulateF1Database.Data.Repositories
 {
     public class CosmosDataRepository : IDataRepository
     {
