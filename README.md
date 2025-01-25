@@ -1,4 +1,4 @@
-﻿#PopulateF1Database
+﻿# PopulateF1Database
 
 ## Overview
 PopulateF1Database is an Azure Functions project designed to interact with a Cosmos DB database and the Jolpica API. The project includes functionality to update the database on a scheduled basis using a timer trigger. The solution is built using .NET 8 and leverages dependency injection, configuration management, and HTTP client services.
@@ -20,10 +20,11 @@ PopulateF1Database is an Azure Functions project designed to interact with a Cos
 ## Getting Started
 
 ### Clone the Repository
-'''
+
+```
 git clone https://github.com/your-repo/PopulateF1Database.git
 cd PopulateF1Database
-'''
+```
 
 ### Configuration
 
@@ -31,7 +32,7 @@ cd PopulateF1Database
 2. Update the `local.settings.json` file with the Cosmos DB connection string
 3. Update the `AppConfig.cs` file with the Cosmos DB database and container names.
 
-'''
+```
 {
   "IsEncrypted": false,
   "Values": {
@@ -48,35 +49,33 @@ cd PopulateF1Database
     "BaseUrl": "https://api.jolpi.ca/ergast/f1/"
   }
 }
-'''
+```
 
 ### Build and Run
 1.	Restore Dependencies: Restore the project dependencies.
  
-'''
+```
 dotnet restore
-'''
+```
 
 2.	Build the Project: Build the project.
-'''
+```
 dotnet build
-'''
+```
 
 3.	Run the Functions: Start the Azure Functions host.
-'''
+```
 func start
-'''
+```
 
 ## Project Structure
 
-'''
+```
 PopulateF1Database
 ├── PopulateF1Database
-|   ├── Functions
-│   |   └── UpdateDatabase.cs
-    └── Program.cs
-├── Functions
-│   └── UpdateDatabase.cs
+|  ├── Functions
+│  |   └── UpdateDatabase.cs
+|  └── Program.cs
 ├── Config
 │   ├── AppConfig.cs
 │   └── local.settings.json
@@ -85,8 +84,6 @@ PopulateF1Database
 │   │   └── IDataRepository.cs
 │   └── Repositories
 │       └── CosmosDataRepository.cs
-├── Functions
-│   └── UpdateDatabase.cs
 ├── Services
 │   ├── Interfaces
 │   │   └── IJolpicaService.cs
@@ -94,7 +91,7 @@ PopulateF1Database
 │       └── JolpicaService.cs
 └── Tests
     └── UpdateDatabaseTests.cs
-'''
+```
 
 ## Key Components
 - Config: Contains configuration classes and settings.
