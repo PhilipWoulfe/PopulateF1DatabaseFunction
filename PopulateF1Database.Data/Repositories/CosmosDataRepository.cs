@@ -1,7 +1,7 @@
 using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Options;
+using PopulateF1Database.Config;
 using PopulateF1Database.Data.Interfaces;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace PopulateF1Database.Data.Repositories
 {
@@ -9,10 +9,10 @@ namespace PopulateF1Database.Data.Repositories
     {
         private readonly Container _container;
 
-        public CosmosDataRepository(string cosmosDBConnectionString, string cosmosDBDatabaseId, string cosmosDBContainerId)
+        public CosmosDataRepository(IOptions<AppConfig> config)
         {
-            var cosmosClient = new CosmosClient(cosmosDBConnectionString);
-            _container = cosmosClient.GetContainer(cosmosDBDatabaseId, cosmosDBContainerId);
+            var cosmosClient = new CosmosClient(config.Value.CosmosDBConnectionString);
+            _container = cosmosClient.GetContainer(config.Value.CosmosDBDatabaseId, config.Value.CosmosDBContainerId);
         }
 
         public async Task<List<dynamic>> GetItemsAsync()

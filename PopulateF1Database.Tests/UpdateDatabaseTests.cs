@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PopulateF1Database.Config;
-using PopulateF1Database.Data;
+using PopulateF1Database.Data.Interfaces;
 using PopulateF1Database.Functions;
 using Xunit;
 

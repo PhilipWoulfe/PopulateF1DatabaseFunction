@@ -3,7 +3,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PopulateF1Database.Config;
-using PopulateF1Database.Data;
+using PopulateF1Database.Data.Interfaces;
 
 namespace PopulateF1Database.Functions
 {

@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Data", "PopulateF1Database.Data\PopulateF1Database.Data.csproj", "{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Services", "PopulateF1Database.Services\PopulateF1Database.Services.csproj", "{CCF12602-51D8-48BD-BDD5-E74161F469EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Config", "PopulateF1Database.Config\PopulateF1Database.Config.csproj", "{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
