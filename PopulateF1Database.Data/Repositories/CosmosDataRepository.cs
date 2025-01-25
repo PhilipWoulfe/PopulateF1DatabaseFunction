@@ -9,10 +9,10 @@ namespace PopulateF1Database.Data.Repositories
     {
         private readonly Container _container;
 
-        public CosmosDataRepository(IOptions<AppConfig> config)
+        public CosmosDataRepository(IOptions<CosmoDbConfig> config)
         {
-            var cosmosClient = new CosmosClient(config.Value.CosmosDBConnectionString);
-            _container = cosmosClient.GetContainer(config.Value.CosmosDBDatabaseId, config.Value.CosmosDBContainerId);
+            var cosmosClient = new CosmosClient(config.Value.CosmosDbConnectionString);
+            _container = cosmosClient.GetContainer(config.Value.CosmosDbDatabaseId, config.Value.CosmosDbContainerId);
         }
 
         public async Task<List<dynamic>> GetItemsAsync()

@@ -2,14 +2,22 @@
 {
     public class AppConfig
     {
-        public string AzureWebJobsStorage { get; set; }
-        public string UpdateDatabaseCronSchedule { get; set; }
-        public string CosmosDBConnectionString { get; set; }
-        public JolpicaApiConfig JolpicaApi { get; set; }
-        public string CosmosDBDatabaseId { get; set; }
-        public string CosmosDBContainerId { get; set; }
-        public string Environment { get; set; } 
-        public string CompetitionYear { get; set; } 
+        public required string AzureWebJobsStorage { get; set; }
+        public required string UpdateDatabaseCronSchedule { get; set; }
+        
+        public required JolpicaApiConfig JolpicaApi { get; set; }
+
+        public required CosmoDbConfig CosmoDb { get; set; }
+
+        public required string Environment { get; set; } 
+        public required string CompetitionYear { get; set; } 
+    }
+
+    public class CosmoDbConfig
+    {
+        public required string CosmosDbConnectionString { get; set; }
+        public required string CosmosDbDatabaseId { get; set; }
+        public required string CosmosDbContainerId { get; set; }
     }
 
     public class JolpicaApiConfig

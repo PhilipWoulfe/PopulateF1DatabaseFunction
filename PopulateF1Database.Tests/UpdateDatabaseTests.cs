@@ -24,13 +24,18 @@ namespace PopulateF1Database.Tests
             {
                 AzureWebJobsStorage = "UseDevelopmentStorage=true",
                 UpdateDatabaseCronSchedule = "0 */5 * * * *",
-                CosmosDBConnectionString = "your-cosmos-db-connection-string",
-                CosmosDBDatabaseId = "your-database-id",
-                CosmosDBContainerId = "your-container-id",
+                CosmoDb = new CosmoDbConfig
+                {
+                    CosmosDbConnectionString = "your-cosmos-db-connection-string",
+                    CosmosDbDatabaseId = "your-database-id",
+                    CosmosDbContainerId = "your-container-id"
+                },
                 JolpicaApi = new JolpicaApiConfig
                 {
                     BaseUrl = "https://api.jolpi.ca/ergast/f1/"
-                }
+                },
+                CompetitionYear = "2021",
+                Environment = "Development"
             });
 
             var dataRepositoryMock = new Mock<IDataRepository>();
@@ -71,13 +76,18 @@ namespace PopulateF1Database.Tests
             {
                 AzureWebJobsStorage = "UseDevelopmentStorage=true",
                 UpdateDatabaseCronSchedule = "0 */5 * * * *",
-                CosmosDBConnectionString = "your-cosmos-db-connection-string",
-                CosmosDBDatabaseId = "your-database-id",
-                CosmosDBContainerId = "your-container-id",
+                CosmoDb = new CosmoDbConfig
+                {
+                    CosmosDbConnectionString = "your-cosmos-db-connection-string",
+                    CosmosDbDatabaseId = "your-database-id",
+                    CosmosDbContainerId = "your-container-id"
+                },
                 JolpicaApi = new JolpicaApiConfig
                 {
                     BaseUrl = "https://api.jolpi.ca/ergast/f1/"
-                }
+                },
+                CompetitionYear = "2021",
+                Environment = "Development"
             });
 
             var dataRepositoryMock = new Mock<IDataRepository>();

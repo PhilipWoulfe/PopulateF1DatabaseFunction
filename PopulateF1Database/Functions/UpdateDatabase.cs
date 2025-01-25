@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -32,7 +31,7 @@ namespace PopulateF1Database.Functions
 
             // Use the configuration values as needed
             _logger.LogInformation("Jolpica API Base URL: {baseUrl}", _config.JolpicaApi.BaseUrl);
-            _logger.LogInformation("Cosmos DB Connection String: {connectionString}", _config.CosmosDBConnectionString);
+            _logger.LogInformation("Cosmos DB Connection String: {connectionString}", _config.CosmoDb.CosmosDbConnectionString);
 
             var items = await _dataRepository.GetItemsAsync();
             // Log the retrieved items

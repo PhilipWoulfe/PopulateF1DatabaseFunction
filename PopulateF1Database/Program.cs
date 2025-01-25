@@ -2,7 +2,6 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using PopulateF1Database.Config;
 using PopulateF1Database.Data.Interfaces;
 using PopulateF1Database.Data.Repositories;
@@ -29,6 +28,7 @@ var host = new HostBuilder()
         }
         services.Configure<AppConfig>(context.Configuration.GetSection("AppConfig"));
         services.Configure<JolpicaApiConfig>(context.Configuration.GetSection("JolpicaApi"));
+        services.Configure<CosmoDbConfig>(context.Configuration.GetSection("CosmoDb"));
 
         // Register JolpicaService as an HTTP client
         services.AddHttpClient<IJolpicaService, JolpicaService>();
