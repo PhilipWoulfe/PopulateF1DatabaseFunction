@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113 d17.12
+VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database", "PopulateF1Database\PopulateF1Database.csproj", "{728DC357-783A-452F-9327-EAD77AFE83B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Tests", "PopulateF1Database.Tests\PopulateF1Database.Tests.csproj", "{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{728DC357-783A-452F-9327-EAD77AFE83B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{728DC357-783A-452F-9327-EAD77AFE83B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{728DC357-783A-452F-9327-EAD77AFE83B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
