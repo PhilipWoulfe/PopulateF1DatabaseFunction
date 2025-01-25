@@ -8,6 +8,8 @@
         public JolpicaApiConfig JolpicaApi { get; set; }
         public string CosmosDBDatabaseId { get; set; }
         public string CosmosDBContainerId { get; set; }
+        public string Environment { get; set; } 
+        public string CompetitionYear { get; set; } 
     }
 
     public class JolpicaApiConfig
