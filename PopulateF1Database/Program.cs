@@ -2,7 +2,9 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using PopulateF1Database.Config;
+using PopulateF1Database.Data;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
@@ -16,6 +18,11 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
         services.Configure<AppConfig>(context.Configuration);
+        services.AddSingleton<IDataRepository>(provider =>
+        {
+            var config = provider.GetRequiredService<IOptions<AppConfig>>().Value;
+            return new CosmosDataRepository(config.CosmosDBConnectionString, config.CosmosDBDatabaseId, config.CosmosDBContainerId);
+        });
 
         // Set environment variable for TimerTrigger
         var config = context.Configuration.GetSection("Values").Get<AppConfig>();

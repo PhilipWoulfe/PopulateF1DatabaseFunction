@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PopulateF1Database.Config;
+using PopulateF1Database.Data;
 using PopulateF1Database.Functions;
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace PopulateF1Database.Tests
     public class UpdateDatabaseTests
     {
         [Fact]
-        public void Run_LogsExecutionTime()
+        public async Task Run_LogsExecutionTime()
         {
             // Arrange
             var loggerFactoryMock = new Mock<ILoggerFactory>();
@@ -24,12 +25,18 @@ namespace PopulateF1Database.Tests
                 AzureWebJobsStorage = "UseDevelopmentStorage=true",
                 UpdateDatabaseCronSchedule = "0 */5 * * * *",
                 CosmosDBConnectionString = "your-cosmos-db-connection-string",
+                CosmosDBDatabaseId = "your-database-id",
+                CosmosDBContainerId = "your-container-id",
                 JolpicaApi = new JolpicaApiConfig
                 {
                     BaseUrl = "https://api.jolpi.ca/ergast/f1/"
                 }
             });
-            var function = new UpdateDatabase(loggerFactoryMock.Object, config);
+
+            var dataRepositoryMock = new Mock<IDataRepository>();
+            dataRepositoryMock.Setup(repo => repo.GetItemsAsync()).ReturnsAsync(new List<dynamic>());
+
+            var function = new UpdateDatabase(loggerFactoryMock.Object, config, dataRepositoryMock.Object);
 
             var scheduleStatus = new ScheduleStatus
             {
@@ -39,7 +46,7 @@ namespace PopulateF1Database.Tests
             var timerInfoMock = new Mock<TimerInfo>(MockBehavior.Strict, new ScheduleStatus(), scheduleStatus, false);
 
             // Act
-            function.Run(timerInfoMock.Object);
+            await function.Run(timerInfoMock.Object);
 
             // Assert
             loggerMock.Verify(
@@ -53,7 +60,7 @@ namespace PopulateF1Database.Tests
         }
 
         [Fact]
-        public void Run_LogsNextSchedule()
+        public async Task Run_LogsNextSchedule()
         {
             // Arrange
             var loggerFactoryMock = new Mock<ILoggerFactory>();
@@ -65,12 +72,18 @@ namespace PopulateF1Database.Tests
                 AzureWebJobsStorage = "UseDevelopmentStorage=true",
                 UpdateDatabaseCronSchedule = "0 */5 * * * *",
                 CosmosDBConnectionString = "your-cosmos-db-connection-string",
+                CosmosDBDatabaseId = "your-database-id",
+                CosmosDBContainerId = "your-container-id",
                 JolpicaApi = new JolpicaApiConfig
                 {
                     BaseUrl = "https://api.jolpi.ca/ergast/f1/"
                 }
             });
-            var function = new UpdateDatabase(loggerFactoryMock.Object, config);
+
+            var dataRepositoryMock = new Mock<IDataRepository>();
+            dataRepositoryMock.Setup(repo => repo.GetItemsAsync()).ReturnsAsync(new List<dynamic>());
+
+            var function = new UpdateDatabase(loggerFactoryMock.Object, config, dataRepositoryMock.Object);
 
             var scheduleStatus = new ScheduleStatus
             {
@@ -80,7 +93,7 @@ namespace PopulateF1Database.Tests
             var timerInfoMock = new Mock<TimerInfo>(MockBehavior.Strict, new ScheduleStatus(), scheduleStatus, false);
 
             // Act
-            function.Run(timerInfoMock.Object);
+            await function.Run(timerInfoMock.Object);
 
             // Assert
             loggerMock.Verify(

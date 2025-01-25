@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database", "Popul
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Tests", "PopulateF1Database.Tests\PopulateF1Database.Tests.csproj", "{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Data", "PopulateF1Database.Data\PopulateF1Database.Data.csproj", "{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5DB0526F-6BFE-478F-AFFF-F359AD136AF5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

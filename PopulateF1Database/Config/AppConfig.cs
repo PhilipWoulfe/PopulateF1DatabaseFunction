@@ -2,10 +2,12 @@
 {
     public class AppConfig
     {
-        public required string AzureWebJobsStorage { get; set; }
-        public required string CosmosDBConnectionString { get; set; }
-        public required string UpdateDatabaseCronSchedule { get; set; }
-        public required JolpicaApiConfig JolpicaApi { get; set; }
+        public string AzureWebJobsStorage { get; set; }
+        public string UpdateDatabaseCronSchedule { get; set; }
+        public string CosmosDBConnectionString { get; set; }
+        public JolpicaApiConfig JolpicaApi { get; set; }
+        public string CosmosDBDatabaseId { get; set; }
+        public string CosmosDBContainerId { get; set; }
     }
 
     public class JolpicaApiConfig
