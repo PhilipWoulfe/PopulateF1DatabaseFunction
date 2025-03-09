@@ -6,6 +6,7 @@ using Moq;
 using PopulateF1Database.Config;
 using PopulateF1Database.Data.Interfaces;
 using PopulateF1Database.Functions;
+using PopulateF1Database.Services.Interfaces;
 using Xunit;
 
 namespace PopulateF1Database.Tests
@@ -28,7 +29,15 @@ namespace PopulateF1Database.Tests
                 {
                     CosmosDbConnectionString = "your-cosmos-db-connection-string",
                     CosmosDbDatabaseId = "your-database-id",
-                    CosmosDbContainerId = "your-container-id"
+                    Containers = new ContainersConfig
+                    {
+                        DriversContainer = "your-drivers-container-id",
+                        PreSeasonQuestionsContainer = "your-preseason-questions-container-id",
+                        RacesContainer = "your-races-container-id",
+                        ResultsContainer = "your-results-container-id",
+                        SprintsContainer = "your-sprints-container-id",
+                        UsersContainer = "your-users-container-id"
+                    }
                 },
                 JolpicaApi = new JolpicaApiConfig
                 {
@@ -41,7 +50,9 @@ namespace PopulateF1Database.Tests
             var dataRepositoryMock = new Mock<IDataRepository>();
             dataRepositoryMock.Setup(repo => repo.GetItemsAsync()).ReturnsAsync(new List<dynamic>());
 
-            var function = new UpdateDatabase(loggerFactoryMock.Object, config, dataRepositoryMock.Object);
+            var jolpicaServiceMock = new Mock<IJolpicaService>();
+
+            var function = new UpdateDatabase(loggerFactoryMock.Object, config, dataRepositoryMock.Object, jolpicaServiceMock.Object);
 
             var scheduleStatus = new ScheduleStatus
             {
@@ -80,7 +91,15 @@ namespace PopulateF1Database.Tests
                 {
                     CosmosDbConnectionString = "your-cosmos-db-connection-string",
                     CosmosDbDatabaseId = "your-database-id",
-                    CosmosDbContainerId = "your-container-id"
+                    Containers = new ContainersConfig
+                    {
+                        DriversContainer = "your-drivers-container-id",
+                        PreSeasonQuestionsContainer = "your-preseason-questions-container-id",
+                        RacesContainer = "your-races-container-id",
+                        ResultsContainer = "your-results-container-id",
+                        SprintsContainer = "your-sprints-container-id",
+                        UsersContainer = "your-users-container-id"
+                    }
                 },
                 JolpicaApi = new JolpicaApiConfig
                 {
@@ -93,7 +112,9 @@ namespace PopulateF1Database.Tests
             var dataRepositoryMock = new Mock<IDataRepository>();
             dataRepositoryMock.Setup(repo => repo.GetItemsAsync()).ReturnsAsync(new List<dynamic>());
 
-            var function = new UpdateDatabase(loggerFactoryMock.Object, config, dataRepositoryMock.Object);
+            var jolpicaServiceMock = new Mock<IJolpicaService>();
+
+            var function = new UpdateDatabase(loggerFactoryMock.Object, config, dataRepositoryMock.Object, jolpicaServiceMock.Object);
 
             var scheduleStatus = new ScheduleStatus
             {

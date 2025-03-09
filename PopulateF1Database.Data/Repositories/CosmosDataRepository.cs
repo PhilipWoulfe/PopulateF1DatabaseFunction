@@ -12,7 +12,7 @@ namespace PopulateF1Database.Data.Repositories
         public CosmosDataRepository(IOptions<CosmoDbConfig> config)
         {
             var cosmosClient = new CosmosClient(config.Value.CosmosDbConnectionString);
-            _container = cosmosClient.GetContainer(config.Value.CosmosDbDatabaseId, config.Value.CosmosDbContainerId);
+            //_container = cosmosClient.GetContainer(config.Value.CosmosDbDatabaseId, config.Value.CosmosDbContainerId);
         }
 
         public async Task<List<dynamic>> GetItemsAsync()

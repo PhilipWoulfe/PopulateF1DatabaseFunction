@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch .NET Functions",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build (functions)",
+            "program": "dotnet",
+            "args": [
+                "${workspaceFolder}/PopulateF1Database/bin/Debug/net8.0/PopulateF1Database.dll"
+            ],
+            "cwd": "${workspaceFolder}/PopulateF1Database/bin/Debug/net8.0",
+            "console": "internalConsole"
+        },
+        {
+            "name": "Attach to .NET Functions",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:azureFunctions.pickProcess}"
+        }
+    ]
+}

@@ -1,3 +1,4 @@
+using JolpicaApi.Client;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,14 +22,25 @@ var host = new HostBuilder()
         services.ConfigureFunctionsApplicationInsights();
 
         // Bind AppConfig and JolpicaApiConfig
-        var appConfig = context.Configuration.GetSection("AppConfig").Get<AppConfig>();
+        var appConfig = context.Configuration.GetSection("Values").Get<AppConfig>();
         if (appConfig == null)
         {
             throw new InvalidOperationException("Configuration for AppConfig could not be loaded.");
         }
-        services.Configure<AppConfig>(context.Configuration.GetSection("AppConfig"));
+        services.Configure<AppConfig>(context.Configuration.GetSection("Values"));
         services.Configure<JolpicaApiConfig>(context.Configuration.GetSection("JolpicaApi"));
         services.Configure<CosmoDbConfig>(context.Configuration.GetSection("CosmoDb"));
+
+        // Register JolpicaClient
+        services.AddHttpClient<IJolpicaClient, JolpicaClient>(client =>
+        {
+            var jolpicaApiConfig = context.Configuration.GetSection("JolpicaApi").Get<JolpicaApiConfig>();
+            if (jolpicaApiConfig == null || string.IsNullOrEmpty(jolpicaApiConfig.BaseUrl))
+            {
+                throw new InvalidOperationException("Configuration for JolpicaApi could not be loaded or BaseUrl is missing.");
+            }
+            client.BaseAddress = new Uri(jolpicaApiConfig.BaseUrl);
+        });
 
         // Register JolpicaService as an HTTP client
         services.AddHttpClient<IJolpicaService, JolpicaService>();

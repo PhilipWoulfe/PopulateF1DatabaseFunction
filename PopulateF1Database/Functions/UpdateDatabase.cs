@@ -3,21 +3,20 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PopulateF1Database.Config;
 using PopulateF1Database.Data.Interfaces;
+using PopulateF1Database.Services.Interfaces;
 
 namespace PopulateF1Database.Functions
 {
-    public class UpdateDatabase
+    public class UpdateDatabase(
+        ILoggerFactory loggerFactory, 
+        IOptions<AppConfig> config, 
+        IDataRepository dataRepository, 
+        IJolpicaService jolpicaService)
     {
-        private readonly ILogger _logger;
-        private readonly AppConfig _config;
-        private readonly IDataRepository _dataRepository;
-
-        public UpdateDatabase(ILoggerFactory loggerFactory, IOptions<AppConfig> config, IDataRepository dataRepository)
-        {
-            _logger = loggerFactory.CreateLogger<UpdateDatabase>();
-            _config = config.Value;
-            _dataRepository = dataRepository;
-        }
+        private readonly ILogger _logger = loggerFactory.CreateLogger<UpdateDatabase>();
+        private readonly AppConfig _config = config.Value;
+        private readonly IDataRepository _dataRepository = dataRepository;
+        private readonly IJolpicaService _jolpicaService = jolpicaService;
 
         [Function("UpdateDatabase")]
         public async Task Run([TimerTrigger("%UpdateDatabaseCronSchedule%")] TimerInfo myTimer)
@@ -33,9 +32,12 @@ namespace PopulateF1Database.Functions
             _logger.LogInformation("Jolpica API Base URL: {baseUrl}", _config.JolpicaApi.BaseUrl);
             _logger.LogInformation("Cosmos DB Connection String: {connectionString}", _config.CosmoDb.CosmosDbConnectionString);
 
-            var items = await _dataRepository.GetItemsAsync();
-            // Log the retrieved items
-            _logger.LogInformation($"Retrieved {items.Count} items from Cosmos DB.");
+            // Fetch data from Jolpica API
+            var apiData = await _jolpicaService.GetDataAsync();
+
+            //var items = await _dataRepository.GetItemsAsync();
+            //// Log the retrieved items
+            //_logger.LogInformation($"Retrieved {items.Count} items from Cosmos DB.");
         }
     }
 }
