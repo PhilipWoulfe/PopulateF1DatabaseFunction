@@ -4,10 +4,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PopulateF1Database.Config;
-using PopulateF1Database.Data.Interfaces;
-using PopulateF1Database.Functions;
+using PopulateF1Database.DataAccess.Interfaces;
 using PopulateF1Database.Services.Interfaces;
 using Xunit;
+using PopulateF1Database.Functions;
 
 namespace PopulateF1Database.Tests
 {
@@ -38,10 +38,6 @@ namespace PopulateF1Database.Tests
                         SprintsContainer = "your-sprints-container-id",
                         UsersContainer = "your-users-container-id"
                     }
-                },
-                JolpicaApi = new JolpicaApiConfig
-                {
-                    BaseUrl = "https://api.jolpi.ca/ergast/f1/"
                 },
                 CompetitionYear = "2021",
                 Environment = "Development"
@@ -101,10 +97,10 @@ namespace PopulateF1Database.Tests
                         UsersContainer = "your-users-container-id"
                     }
                 },
-                JolpicaApi = new JolpicaApiConfig
-                {
-                    BaseUrl = "https://api.jolpi.ca/ergast/f1/"
-                },
+                //JolpicaApi = new JolpicaApiConfig
+                //{
+                //    BaseUrl = "https://api.jolpi.ca/ergast/f1/"
+                //},
                 CompetitionYear = "2021",
                 Environment = "Development"
             });

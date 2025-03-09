@@ -1,9 +1,9 @@
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 using PopulateF1Database.Config;
-using PopulateF1Database.Data.Interfaces;
+using PopulateF1Database.DataAccess.Interfaces;
 
-namespace PopulateF1Database.Data.Repositories
+namespace PopulateF1Database.DataAccess.Repositories
 {
     public class CosmosDataRepository : IDataRepository
     {

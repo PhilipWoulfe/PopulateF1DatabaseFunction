@@ -1,4 +1,4 @@
-﻿namespace PopulateF1Database.Data.Interfaces
+﻿namespace PopulateF1Database.DataAccess.Interfaces
 {
     public interface IDataRepository
     {

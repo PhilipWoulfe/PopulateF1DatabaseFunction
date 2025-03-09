@@ -9,24 +9,26 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove=".gitignore" />
+    <None Remove="Dockerfile" />
+    <None Remove="readme.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="JolpicaApiClient" Version="1.1.12" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.47.2" />
+    <!-- Application Insights isn't enabled by default. See https://aka.ms/AAt8mw4. -->
+    <!-- <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" /> -->
+    <!-- <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" /> -->
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PopulateF1Database.Config\PopulateF1Database.Config.csproj" />
-    <ProjectReference Include="..\PopulateF1Database.Data\PopulateF1Database.Data.csproj" />
-    <ProjectReference Include="..\PopulateF1Database.Services\PopulateF1Database.Services.csproj" />
+	<ProjectReference Include="..\PopulateF1Database.DataAccess\PopulateF1Database.DataAccess.csproj" />
+	<ProjectReference Include="..\PopulateF1Database.Services\PopulateF1Database.Services.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
@@ -39,5 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="..\.dockerignore" />
   </ItemGroup>
 </Project>
