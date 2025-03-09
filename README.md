@@ -1,14 +1,16 @@
 ﻿# PopulateF1Database
 
 ## Overview
+
 PopulateF1Database is an Azure Functions project designed to interact with a Cosmos DB database and the Jolpica API. The project includes functionality to update the database on a scheduled basis using a timer trigger. The solution is built using .NET 8 and leverages dependency injection, configuration management, and HTTP client services.
 
 ## Features
-- Azure Functions: Timer-triggered function to update the database.
-- Cosmos DB Integration: Interacts with Cosmos DB to retrieve and store data.
-- Jolpica API Integration: Fetches data from the Jolpica API.
-- Configuration Management: Uses local.settings.json and AppConfig for configuration.
-- Dependency Injection: Utilizes dependency injection for services and repositories.
+
+- **Azure Functions**: Timer-triggered function to update the database.
+- **Cosmos DB Integration**: Interacts with Cosmos DB to retrieve and store data.
+- **Jolpica API Integration**: Fetches data from the Jolpica API.
+- **Configuration Management**: Uses `local.settings.json` and `AppConfig` for configuration.
+- **Dependency Injection**: Utilizes dependency injection for services and repositories.
 
 ## Prerequisites
 
@@ -30,23 +32,26 @@ cd PopulateF1Database
 
 1. Create a Cosmos DB account and retrieve the connection string.
 2. Update the `local.settings.json` file with the Cosmos DB connection string
-3. Update the `AppConfig.cs` file with the Cosmos DB database and container names.
 
 ```
 {
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "UpdateDatabaseCronSchedule": "0 */5 * * * *",
-    "CosmosDBConnectionString": "your-cosmos-db-connection-string",
-    "CosmosDBDatabaseId": "your-database-id",
-    "CosmosDBContainerId": "your-container-id",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "Functions:Worker:HostEndpoint": "http://127.0.0.1:5001",
+    "UpdateDatabaseCronSchedule": "0 */1 * * * *",
     "Environment": "Dev",
-    "CompetitionYear": "2023"
-  },
-  "JolpicaApi": {
-    "BaseUrl": "https://api.jolpi.ca/ergast/f1/"
+    "CompetitionYear": "2025",
+    "CosmosDbConnectionString": "your-cosmos-db-connection-string",
+    "CosmosDbDatabaseId": "your-database-id",
+    "CosmosDbDriversContainer": "Drivers",
+    "CosmosDbPreSeasonQuestionsContainer": "PreSeasonQuestions",
+    "CosmosDbRacesContainer": "Races",
+    "CosmosDbResultsContainer": "Results",
+    "CosmosDbSprintsContainer": "Sprints",
+    "CosmosDbUsersContainer": "Users",
+    "JolpicaBaseUrl": "https://api.jolpi.ca/ergast/f1/"
   }
 }
 ```
@@ -79,7 +84,7 @@ PopulateF1Database
 ├── Config
 │   ├── AppConfig.cs
 │   └── local.settings.json
-├── Data
+├── DataAccess
 │   ├── Interfaces
 │   │   └── IDataRepository.cs
 │   └── Repositories
