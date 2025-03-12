@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "PopulateF1Database": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7228"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "containerRunArguments": "--init",
+      "httpPort": 30820,
+      "useSSL": false
+    }
+  }
+}

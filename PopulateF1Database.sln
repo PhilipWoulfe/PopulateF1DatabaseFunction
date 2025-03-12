@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database", "PopulateF1Database\PopulateF1Database.csproj", "{728DC357-783A-452F-9327-EAD77AFE83B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Tests", "PopulateF1Database.Tests\PopulateF1Database.Tests.csproj", "{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Services", "PopulateF1Database.Services\PopulateF1Database.Services.csproj", "{CCF12602-51D8-48BD-BDD5-E74161F469EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Config", "PopulateF1Database.Config\PopulateF1Database.Config.csproj", "{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{03934288-9EBB-47A1-9004-C6091D8D5D0C}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.gitignore = .gitignore
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.DataAccess", "PopulateF1Database.DataAccess\PopulateF1Database.DataAccess.csproj", "{BC36F05E-FC5C-A241-6B11-C697C024F0E4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Models", "PopulateF1Database.Models\PopulateF1Database.Models.csproj", "{C9FA6C68-0610-4912-A50F-3C2F2537B858}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{728DC357-783A-452F-9327-EAD77AFE83B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{728DC357-783A-452F-9327-EAD77AFE83B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{728DC357-783A-452F-9327-EAD77AFE83B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{728DC357-783A-452F-9327-EAD77AFE83B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C9F3739-D16D-4D8E-9A1A-A94D88F3CB4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCF12602-51D8-48BD-BDD5-E74161F469EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48E75E91-DFCF-4FF7-9C8D-41B7CC60A31B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC36F05E-FC5C-A241-6B11-C697C024F0E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC36F05E-FC5C-A241-6B11-C697C024F0E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC36F05E-FC5C-A241-6B11-C697C024F0E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC36F05E-FC5C-A241-6B11-C697C024F0E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9FA6C68-0610-4912-A50F-3C2F2537B858}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9FA6C68-0610-4912-A50F-3C2F2537B858}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9FA6C68-0610-4912-A50F-3C2F2537B858}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9FA6C68-0610-4912-A50F-3C2F2537B858}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E005E35C-BF20-4239-B500-DC71B08DDB2A}
+	EndGlobalSection
+EndGlobal
