@@ -7,11 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
     <PackageReference Include="JolpicaApiClient" Version="1.1.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PopulateF1Database.DataAccess\PopulateF1Database.DataAccess.csproj" />
+    <ProjectReference Include="..\PopulateF1Database.Models\PopulateF1Database.Models.csproj" />
   </ItemGroup>
 
 </Project>

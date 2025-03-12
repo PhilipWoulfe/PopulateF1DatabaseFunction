@@ -1,37 +1,68 @@
 ﻿using JolpicaApi.Client;
-using JolpicaApi.Ids;
-using JolpicaApi.Requests;
 using JolpicaApi.Requests.Standard;
 using JolpicaApi.Responses.RaceInfo;
-using PopulateF1Database.DataAccess.Interfaces;
+using PopulateF1Database.Config;
 using PopulateF1Database.Services.Interfaces;
-using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
+using AutoMapper;
+using JolpicaApi.Responses;
 
 namespace PopulateF1Database.Services.Services
 {
-    public class JolpicaService(IJolpicaClient jolpicaClient) : IJolpicaService
+    public class JolpicaService(IJolpicaClient jolpicaClient,
+            AppConfig appConfig,
+            ILogger<JolpicaService> logger,
+            IMapper mapper) : IJolpicaService
     {
         private readonly IJolpicaClient _jolpicaClient = jolpicaClient;
+        private readonly AppConfig _appConfig = appConfig;
+        private readonly ILogger<JolpicaService> _logger = logger;
+        private readonly IMapper _mapper = mapper;
 
-        public async Task<RaceResultsResponse> GetDataAsync()
+        public async Task<DriverResponse> GetDrivers()
         {
-            // All request properties are optional (except 'Season' if 'Round' is set)
-            var request = new RaceResultsRequest
+            var request = new DriverInfoRequest
             {
-                Season = "2017",     // or Seasons.Current for current season
-                Round = "11",        // or Rounds.Last or Rounds.Next for last or next round
-                DriverId = "vettel", // or Drivers.SebastianVettel
-                Limit = 30,      // Limit the number of results returned
-                Offset = 0      // Result offset (used for paging)
+                Season = _appConfig.CompetitionYear
             };
 
-            // RaceResultsRequest returns a RaceResultsResponse
-            // Other requests returns other response types
-            RaceResultsResponse response = await _jolpicaClient.GetResponseAsync(request);
+            var apiResponse = await ExecuteApiRequest(async () => await _jolpicaClient.GetResponseAsync(request));
+            return _mapper.Map<DriverResponse>(apiResponse);
+        }
 
-            return response;
+        public async Task<RaceResultsResponse> GetResults(string round)
+        {
+            var request = new RaceResultsRequest
+            {
+                Season = _appConfig.CompetitionYear,
+                Round = round
+            };
+
+            return await ExecuteApiRequest(async () => await _jolpicaClient.GetResponseAsync(request));
+        }
+
+        public async Task<RaceListResponse> GetRounds()
+        {
+            var request = new RaceListRequest
+            {
+                Season = _appConfig.CompetitionYear
+            };
+
+            return await ExecuteApiRequest(async () => await _jolpicaClient.GetResponseAsync(request));
+        }
+
+        private async Task<T> ExecuteApiRequest<T>(Func<Task<T>> apiRequest)
+        {
+            try
+            {
+                return await apiRequest();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while executing the API request.");
+                throw;
+            }
         }
     }
 }

@@ -1,116 +1,96 @@
-//using System;
-//using Microsoft.Azure.Functions.Worker;
-//using Microsoft.Extensions.Logging;
-//using JolpicaApi.Client;
-//using JolpicaApi.Ids;
-//using JolpicaApi.Requests;
-//using JolpicaApi.Requests.Standard;
-//using JolpicaApi.Responses.RaceInfo;
-//using Microsoft.Extensions.Options;
-//using PopulateF1Database.Config;
-
-//namespace PopulateF1Database.Functions
-//{
-//    public class UpdateDatabase
-//    {
-//        private readonly ILogger _logger;
-//        private readonly IJolpicaClient _jolpicaClient;
-
-//        public UpdateDatabase(ILoggerFactory loggerFactory, IJolpicaClient jolpicaClient)
-//        {
-//            _logger = loggerFactory.CreateLogger<UpdateDatabase>();
-//            _jolpicaClient = jolpicaClient;
-//        }
-
-//        [Function("Function1")]
-//        public async Task Run([TimerTrigger("0 */1 * * * *")] TimerInfo myTimer)
-//        {
-//            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
-
-//            if (myTimer.ScheduleStatus is not null)
-//            {
-//                _logger.LogInformation($"Next timer schedule at: {myTimer.ScheduleStatus.Next}");
-//            }
-
-//            // The client should be stored and reused during the lifetime of your application
-//            //var client = new JolpicaClient();
-//            //client.ApiBase = "https://api.jolpi.ca/ergast/f1/";
-
-//            // All request properties are optional (except 'Season' if 'Round' is set)
-//            var request = new RaceResultsRequest
-//            {
-//                Season = "2017",     // or Seasons.Current for current season
-//                Round = "11",        // or Rounds.Last or Rounds.Next for last or next round
-//                DriverId = "vettel", // or Drivers.SebastianVettel
-
-//                Limit = 30,      // Limit the number of results returned
-//                Offset = 0      // Result offset (used for paging)
-//            };
-
-//            // RaceResultsRequest returns a RaceResultsResponse
-//            // Other requests returns other response types
-//            RaceResultsResponse response = await _jolpicaClient.GetResponseAsync(request);
-//        }
-//    }
-//}
-using JolpicaApi.Client;
-using JolpicaApi.Requests.Standard;
-using JolpicaApi.Responses.RaceInfo;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using PopulateF1Database.Config;
-//using PopulateF1Database.DataAccess.Interfaces;
-//using PopulateF1Database.Services.Interfaces;
+using PopulateF1Database.DataAccess.Interfaces;
+using PopulateF1Database.Services.Drivers.CommandHandlers;
+using PopulateF1Database.Services.Drivers.CommandHandlers.Commands;
+using PopulateF1Database.Services.Interfaces;
+using PopulateF1Database.Services.Results.CommandHandlers;
+using PopulateF1Database.Services.Results.CommandHandlers.Commands;
+using PopulateF1Database.Services.Rounds.CommandHandlers;
+using PopulateF1Database.Services.Rounds.CommandHandlers.Commands;
 
 namespace PopulateF1Database.Functions
 {
     public class UpdateDatabase(
-        ILoggerFactory loggerFactory,
-        IJolpicaClient jolpicaClient
-        //IOptions<AppConfig> config)
-    //IDataRepository dataRepository,
-    //IJolpicaService jolpicaService
-    )
+        ILogger<UpdateDatabase> logger,
+        IWriteDriversCommandHandler driverCommandHandler,
+        IWriteRoundsCommandHandler raceCommandHandler,
+        IWriteResultsCommandHandler resultsCommandHandler,
+        IJolpicaService jolpicaService)
     {
-        private readonly ILogger _logger = loggerFactory.CreateLogger<UpdateDatabase>();
-        private readonly IJolpicaClient _jolpicaClient = jolpicaClient;
-        //private readonly AppConfig _config = config.Value;
-        //private readonly IDataRepository _dataRepository = dataRepository;
-        //private readonly IJolpicaService _jolpicaService = jolpicaService;
 
         [Function("UpdateDatabase")]
         public async Task Run([TimerTrigger("%UpdateDatabaseCronSchedule%")] TimerInfo myTimer)
         {
-            _logger.LogInformation("C# Timer trigger function executed at: {time}", DateTime.Now);
+            logger.LogInformation("C# Timer trigger function executed at: {time}", DateTime.Now);
 
             if (myTimer.ScheduleStatus is not null)
             {
-                _logger.LogInformation("Next timer schedule at: {nextSchedule}", myTimer.ScheduleStatus.Next);
+                logger.LogInformation("Next timer schedule at: {nextSchedule}", myTimer.ScheduleStatus.Next);
             }
 
-            // Use the configuration values as needed
-            //_logger.LogInformation("Cosmos DB Connection String: {connectionString}", _config.CosmoDb.CosmosDbConnectionString);
-
-            // Fetch data from Jolpica API
-            // All request properties are optional (except 'Season' if 'Round' is set)
-            var request = new RaceResultsRequest
+            try
             {
-                Season = "2017",     // or Seasons.Current for current season
-                Round = "11",        // or Rounds.Last or Rounds.Next for last or next round
-                DriverId = "vettel", // or Drivers.SebastianVettel
+                // Fetch and write data concurrently
+                
+                var tasks = new List<Task>
+                {
+                    FetchAndWriteDriversAsync(),
+                    FetchAndWriteRacesAndResultsAsync()
+                };
 
-                Limit = 30,      // Limit the number of results returned
-                Offset = 0      // Result offset (used for paging)
-            };
+                await Task.WhenAll(tasks);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while updating the database.");
+                throw;
+            }
+        }
 
-            // RaceResultsRequest returns a RaceResultsResponse
-            // Other requests returns other response types
-            RaceResultsResponse response = await _jolpicaClient.GetResponseAsync(request);
+        private async Task FetchAndWriteDriversAsync()
+        {
+            try
+            {
+                var driverResponse = await jolpicaService.GetDrivers();
+                //var v = await driverRepository.ReadPreSeasonQuestionsAsync();
+                await driverCommandHandler.Handle(new WriteDriversCommand { DriverResponse = driverResponse });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while fetching and writing drivers.");
+                throw;
+            }
+        }
 
-            //var items = await _dataRepository.GetItemsAsync();
-            //// Log the retrieved items
-            //_logger.LogInformation($"Retrieved {items.Count} items from Cosmos DB.");
+        private async Task FetchAndWriteRacesAndResultsAsync()
+        {
+            try
+            {
+                var raceListResponse = await jolpicaService.GetRounds();
+                await raceCommandHandler.Handle(new WriteRoundsCommand { RaceListResponse = raceListResponse });
+
+                var resultTasks = raceListResponse.Races.Select(async race =>
+                {
+                    try
+                    {
+                        var raceResultsResponse = await jolpicaService.GetResults(race.Round.ToString());
+                        await resultsCommandHandler.Handle(new WriteResultsCommand { RaceResultsResponse = raceResultsResponse });
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "An error occurred while fetching and writing results for race: {Round}", race.Round);
+                        throw;
+                    }
+                });
+
+                await Task.WhenAll(resultTasks);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while fetching and writing races and results.");
+                throw;
+            }
         }
     }
 }

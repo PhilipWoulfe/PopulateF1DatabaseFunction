@@ -14,6 +14,8 @@
         public required string CosmosDbConnectionString { get; set; }
         public required string CosmosDbDatabaseId { get; set; }
         public required ContainersConfig Containers { get; set; }
+        public required int RetryCount { get; set; }
+        public required int RetryTime { get; set; }
     }
 
     public class ContainersConfig
