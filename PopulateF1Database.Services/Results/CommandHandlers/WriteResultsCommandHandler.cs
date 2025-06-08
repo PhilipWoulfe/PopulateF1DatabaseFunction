@@ -10,7 +10,8 @@ namespace PopulateF1Database.Services.Results.CommandHandlers
     {
         public async Task Handle(WriteResultsCommand command)
         {
-            var resultsResponse = mapper.Map<RaceResultsResponse>(command.RaceResultsResponse);
+            var resultsResponse = mapper.Map<RaceResultsResponse>(command.RaceResults);
+
             await dataRepository.WriteResultsAsync(resultsResponse);
         }
     }

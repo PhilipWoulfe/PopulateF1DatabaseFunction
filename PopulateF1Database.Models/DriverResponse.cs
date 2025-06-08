@@ -1,4 +1,4 @@
-﻿using JolpicaApi.Serialization;
+﻿using Newtonsoft.Json;
 using JolpicaDriversResponse = JolpicaApi.Responses.DriverResponse;
 
 namespace PopulateF1Database.Models
@@ -8,7 +8,7 @@ namespace PopulateF1Database.Models
         /// <summary>
         /// Gets the list of drivers.
         /// </summary>
-        [JsonPathProperty("DriverTable.Drivers")]
+        [JsonProperty("DriverTable.Drivers")]
         public new IList<Driver> Drivers { get; private set; }
     }
 }

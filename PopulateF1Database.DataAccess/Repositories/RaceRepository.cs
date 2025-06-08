@@ -1,8 +1,6 @@
-﻿using PopulateF1Database.DataAccess.Interfaces;
+﻿using JolpicaApi.Responses.RaceInfo;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
-using PopulateF1Database.Models;
+using PopulateF1Database.DataAccess.Interfaces;
 
 namespace PopulateF1Database.DataAccess.Repositories
 {

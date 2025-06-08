@@ -1,18 +1,17 @@
 using JolpicaApi.Client;
-using Microsoft.Azure.Cosmos.Fluent;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Fluent;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PopulateF1Database.Config;
 using PopulateF1Database.DataAccess.Interfaces;
 using PopulateF1Database.DataAccess.Repositories;
+using PopulateF1Database.Services.Drivers.CommandHandlers;
 using PopulateF1Database.Services.Drivers.Mappers;
 using PopulateF1Database.Services.Interfaces;
-using PopulateF1Database.Services.Services;
-using PopulateF1Database.Services.Drivers.CommandHandlers;
 using PopulateF1Database.Services.Results.CommandHandlers;
-using PopulateF1Database.Services.Rounds.CommandHandlers;
+using PopulateF1Database.Services.Services;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -41,12 +40,12 @@ services
             };
         });
 
-services.AddSingleton( s =>
+services.AddSingleton(s =>
 {
     string connectionString = appConfig.CosmoDb.CosmosDbConnectionString;
     if (string.IsNullOrWhiteSpace(connectionString))
-    { 
-        throw new InvalidOperationException("The Cosmos Database connection was not found in appsettings"); 
+    {
+        throw new InvalidOperationException("The Cosmos Database connection was not found in appsettings");
     }
 
     CosmosSerializationOptions serializerOptions = new()
@@ -68,7 +67,7 @@ services.AddSingleton<IResultsRepository, ResultsRepository>();
 
 // Register command handlers
 services.AddTransient<IWriteDriversCommandHandler, WriteDriversCommandHandler>();
-services.AddTransient<IWriteRoundsCommandHandler, WriteRoundsCommandHandler>();
+//services.AddTransient<IWriteRoundsCommandHandler, WriteRoundsCommandHandler>();
 services.AddTransient<IWriteResultsCommandHandler, WriteResultsCommandHandler>();
 
 // Register AutoMapper
@@ -87,6 +86,7 @@ AppConfig GetAppConfigvalues()
         UpdateDatabaseCronSchedule = GetEnvironmentVariableOrThrow("UpdateDatabaseCronSchedule"),
         Environment = GetEnvironmentVariableOrThrow("Environment"),
         CompetitionYear = GetEnvironmentVariableOrThrow("CompetitionYear"),
+        JolpicaRateLimitDelayMs = int.Parse(GetEnvironmentVariableOrThrow("JolpicaRateLimitDelayMs")),
         CosmoDb = GetCosmoDbConfiguration()
     };
 }

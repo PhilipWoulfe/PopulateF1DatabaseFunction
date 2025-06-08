@@ -1,12 +1,11 @@
-﻿using JolpicaApi.Client;
+﻿using AutoMapper;
+using JolpicaApi.Client;
 using JolpicaApi.Requests.Standard;
+using JolpicaApi.Responses;
 using JolpicaApi.Responses.RaceInfo;
+using Microsoft.Extensions.Logging;
 using PopulateF1Database.Config;
 using PopulateF1Database.Services.Interfaces;
-using Microsoft.Extensions.Logging;
-
-using AutoMapper;
-using JolpicaApi.Responses;
 
 namespace PopulateF1Database.Services.Services
 {

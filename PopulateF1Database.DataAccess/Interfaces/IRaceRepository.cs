@@ -1,6 +1,4 @@
-﻿//using JolpicaApi.Responses.RaceInfo;
-
-using PopulateF1Database.Models;
+﻿using JolpicaApi.Responses.RaceInfo;
 
 namespace PopulateF1Database.DataAccess.Interfaces
 {

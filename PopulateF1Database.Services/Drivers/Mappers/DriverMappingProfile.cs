@@ -10,7 +10,7 @@ namespace PopulateF1Database.Services.Drivers.Mappers
         public DriverMappingProfile()
         {
             CreateMap<JolpicaDriver, Driver>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid().ToString()));                                
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid().ToString()));
 
             CreateMap<JolpicaDriverResponse, DriverResponse>();
         }

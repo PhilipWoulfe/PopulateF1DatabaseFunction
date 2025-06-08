@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using PopulateF1Database.DataAccess.Interfaces;
-using PopulateF1Database.DataAccess.Repositories;
 using PopulateF1Database.Services.Interfaces;
 
 namespace PopulateF1Database.Tests.Mocks

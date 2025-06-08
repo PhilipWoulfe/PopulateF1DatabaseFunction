@@ -3,13 +3,8 @@ using Polly;
 using Polly.Retry;
 using PopulateF1Database.Config;
 using PopulateF1Database.DataAccess.Interfaces;
-//using JolpicaApi.Responses.Models;
-//using JolpicaApi.Responses.Models.RaceInfo;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using PopulateF1Database.Models;
-using Newtonsoft.Json;
+
 
 namespace PopulateF1Database.DataAccess.Repositories
 {
@@ -26,7 +21,6 @@ namespace PopulateF1Database.DataAccess.Repositories
             _containers = new Dictionary<Type, Container>
             {
                 { typeof(Driver), _cosmosClient.GetContainer(config.CosmosDbDatabaseId, config.Containers.DriversContainer) },
-                { typeof(Race), _cosmosClient.GetContainer(config.CosmosDbDatabaseId, config.Containers.RacesContainer) },
                 { typeof(RaceWithResults), _cosmosClient.GetContainer(config.CosmosDbDatabaseId, config.Containers.ResultsContainer) }
             };
 
@@ -43,7 +37,6 @@ namespace PopulateF1Database.DataAccess.Repositories
 
         public async Task UpsertItemAsync<T>(T item) where T : class
         {
-            SetIdIfNotExists(item);
             await UpsertAsync(item);
         }
 
@@ -52,7 +45,6 @@ namespace PopulateF1Database.DataAccess.Repositories
             var tasks = new List<Task>();
             foreach (var item in items)
             {
-                SetIdIfNotExists(item);
                 tasks.Add(UpsertAsync(item));
             }
             try
@@ -66,97 +58,28 @@ namespace PopulateF1Database.DataAccess.Repositories
             }
         }
 
-        //public FeedIterator<T> GetItemQueryIterator<T>(QueryDefinition queryDefinition, string containerId) where T : class
-        //{
-        //    var container = _cosmosClient.GetContainer(_config.CosmosDbDatabaseId, containerId);
-        //    return container.GetItemQueryIterator<T>(queryDefinition);
-        //}
-
         private async Task UpsertAsync<T>(T item) where T : class
         {
             if (_containers.TryGetValue(typeof(T), out var container))
             {
-                await _retryPolicy.ExecuteAsync(async () =>
+                try
                 {
-                    await container.UpsertItemAsync(item);
-                });
+                    await _retryPolicy.ExecuteAsync(async () =>
+                    {
+                        await container.UpsertItemAsync(item);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error upserting item of type {typeof(T).Name}: {ex.Message}");
+                    throw;
+                }
             }
             else
             {
-                throw new InvalidOperationException($"No container configured for type {typeof(T).Name}");
+                Console.WriteLine($"No container configured for type {typeof(T).Name}");
+                throw new InvalidOperationException($"No container configured for type {typeof(T)}, {_containers[_containers.Keys.LastOrDefault()]}");
             }
         }
-
-        private void SetIdIfNotExists<T>(T item) where T : class
-        {
-            var propertyInfo = typeof(T).GetProperty("Id");
-            if (propertyInfo != null && propertyInfo.GetValue(item) == null)
-            {
-                propertyInfo.SetValue(item, Guid.NewGuid().ToString());
-            }
-        }
-
-        private string GetPartitionKey<T>(T item) where T : class
-        {
-            // Implement logic to extract the partition key from the item
-            // For example, if the partition key is based on a property called "Id":
-            var propertyInfo = typeof(T).GetProperty("Id");
-            if (propertyInfo != null)
-            {
-                return propertyInfo.GetValue(item)?.ToString();
-            }
-            throw new InvalidOperationException("Partition key property not found.");
-        }
-
-        //public async Task WritePreSeasonQuestionsAsync()
-        //{
-        //    var container = _cosmosClient.GetContainer(_config.CosmosDbDatabaseId, "PreSeasonQuestions");
-
-        //    var sqlQueryText = "SELECT * FROM c";
-        //    QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-            
-        //    FeedIterator<PreSeasonQuestion> queryResultSetIterator = container.GetItemQueryIterator<PreSeasonQuestion>(queryDefinition);
-
-        //    List<PreSeasonQuestion> questions = new List<PreSeasonQuestion>();
-
-        //    while (queryResultSetIterator.HasMoreResults)
-        //    {
-        //        FeedResponse<PreSeasonQuestion> currentResultSet = await queryResultSetIterator.ReadNextAsync();
-        //        questions.AddRange(currentResultSet);
-        //    }
-
-        //    questions[0].Id = Guid.NewGuid().ToString();
-        //    questions[0].QuestionId = 77;
-        //    await container.CreateItemAsync(questions[0]);
-        //}
     }
-    //public class PreSeasonQuestion
-    //{
-    //    [JsonProperty(PropertyName = "questionId")]
-    //    public int QuestionId { get; set; }
-
-    //    [JsonProperty(PropertyName = "questionText")]
-    //    public string QuestionText { get; set; }
-
-    //    [JsonProperty(PropertyName = "questionAnswer")]
-    //    public string QuestionAnswer { get; set; }
-
-    //    [JsonProperty(PropertyName = "id")]
-    //    public string Id { get; set; }
-
-    //    [JsonProperty(PropertyName = "_rid")]
-    //    public string _rid { get; set; }
-
-    //    [JsonProperty(PropertyName = "_self")]
-    //    public string _self { get; set; }
-
-    //    [JsonProperty(PropertyName = "_etag")]
-    //    public string _etag { get; set; }
-
-    //    [JsonProperty(PropertyName = "_attachments")]
-    //    public string _attachments { get; set; }
-
-    //    [JsonProperty(PropertyName = "_ts")]
-    //    public int _ts { get; set; }
-    //}
 }

@@ -1,13 +1,14 @@
-﻿using JolpicaApi.Serialization;
+﻿using Newtonsoft.Json;
+
 
 namespace PopulateF1Database.Models
 {
-    public class RaceResultsResponse : JolpicaApi.Responses.RaceInfo.RaceResultsResponse
+    public class RaceResultsResponse
     {
-        /// <summary>
-        /// Gets the list of drivers.
-        /// </summary>
-        [JsonPathProperty("DriverTable.Drivers")]
-        public new IList<RaceWithResults> Races { get; private set; }
+        /// <summary>  
+        /// Gets the list of drivers.  
+        /// </summary>  
+        [JsonProperty("DriverTable.Drivers")] // Replace JsonPathProperty with JsonProperty from Newtonsoft.Json  
+        public IList<RaceWithResults> Races { get; set; }
     }
 }

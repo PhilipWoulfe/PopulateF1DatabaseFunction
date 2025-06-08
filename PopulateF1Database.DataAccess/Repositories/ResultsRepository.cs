@@ -1,5 +1,5 @@
-﻿using PopulateF1Database.DataAccess.Interfaces;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using PopulateF1Database.DataAccess.Interfaces;
 using PopulateF1Database.Models;
 
 namespace PopulateF1Database.DataAccess.Repositories

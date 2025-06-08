@@ -1,12 +1,14 @@
-﻿using JolpicaDriver = JolpicaApi.Responses.Models.Driver;
+﻿using Newtonsoft.Json;
 using PopulateF1Database.Models.Interfaces;
-using Newtonsoft.Json;
+using JolpicaDriver = JolpicaApi.Responses.Models.Driver;
 
 namespace PopulateF1Database.Models
 {
-    public class Driver : JolpicaDriver, IIdentifiable 
+    public class Driver : JolpicaDriver, IIdentifiable
     {
         [JsonProperty(PropertyName = "id")]
-        public required string Id { get; set; }
+        public string Id => DriverId;
+
+        public DateTime LastModified => DateTime.UtcNow;
     }
 }
