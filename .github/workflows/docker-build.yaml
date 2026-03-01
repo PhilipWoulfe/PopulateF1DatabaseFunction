@@ -32,7 +32,25 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Run Unit Tests
-        run: dotnet test F1Competition.sln --configuration Release --verbosity normal
+        run: |
+          dotnet test F1Competition.sln \
+          --configuration Release \
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage
+
+      - name: Code Coverage Summary Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage/**/coverage.cobertura.xml
+          badge: true
+          fail_below_min: true # This is your "Lenient Gate"
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '50 80' # 60% is Red/Fail, 80% is Green
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
