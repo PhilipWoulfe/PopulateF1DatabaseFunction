@@ -8,6 +8,7 @@ on:
       - 'fix/**'
       - 'refactor/**'
       - 'chore/**'
+      - 'dependabot/**'
   workflow_dispatch: # The "Emergency Button" to run it manually
 
 env:
