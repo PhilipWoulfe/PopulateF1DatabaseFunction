@@ -2,7 +2,13 @@ name: Build and Push F1 API
 
 on:
   push:
-    branches: [ "main", "feat/*" ] # Builds on main and any feature branches
+    branches: 
+      - main
+      - 'feat/**'
+      - 'fix/**'
+      - 'refactor/**'
+      - 'chore/**'
+  workflow_dispatch: # The "Emergency Button" to run it manually
 
 env:
   REGISTRY: ghcr.io
