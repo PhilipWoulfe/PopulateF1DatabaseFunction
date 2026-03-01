@@ -1,31 +1,42 @@
-﻿# PopulateF1Database
+﻿# F1 Competition Platform
+
+[![Build and Push F1 API](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/docker-build.yaml/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/docker-build.yaml)
+![CodeQL](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/codeql.yml/badge.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/PhilipWoulfe/F1Competition)
+![Code Coverage](https://img.shields.io/badge/Code%20Coverage-50%25-yellow?style=flat)
 
 ## Overview
 
-PopulateF1Database is an Azure Functions project designed to interact with a Cosmos DB database and the Jolpica API. The project includes functionality to update the database on a scheduled basis using a timer trigger. The solution is built using .NET 8 and leverages dependency injection, configuration management, and HTTP client services.
+The **F1 Competition Platform** is a solution designed to aggregate Formula 1 data and serve it via a modern API. It consists of two main components:
+
+1.  **PopulateF1Database (Azure Functions)**: A background worker that interacts with the Jolpica API to fetch race data and populate a Cosmos DB database on a scheduled basis.
+2.  **F1.Api (ASP.NET Core)**: A RESTful API that serves the aggregated data to clients.
+
+The solution is built using **.NET 8** and follows **Clean Architecture** principles, leveraging dependency injection, configuration management, and containerization.
 
 ## Features
 
-- **Azure Functions**: Timer-triggered function to update the database.
-- **Cosmos DB Integration**: Interacts with Cosmos DB to retrieve and store data.
-- **Jolpica API Integration**: Fetches data from the Jolpica API.
-- **Configuration Management**: Uses `local.settings.json` and `AppConfig` for configuration.
-- **Dependency Injection**: Utilizes dependency injection for services and repositories.
+- **Azure Functions**: Timer-triggered function (`UpdateDatabase`) to keep data synchronized.
+- **ASP.NET Core API**: A containerized Web API for data access.
+- **Cosmos DB Integration**: High-performance NoSQL storage for drivers, races, and results.
+- **Jolpica API Integration**: Reliable fetching of external F1 data.
+- **Docker Support**: The API is fully containerized for easy deployment.
+- **CI/CD**: Automated build and test pipelines using GitHub Actions.
 
 ## Prerequisites
 
 - .NET 8 SDK
 - Azure Functions Core Tools
-- Azure Cosmos DB account
-- Jolpica API access
+- Docker Desktop (optional, for running the API)
+- Azure Cosmos DB account (or Cosmos DB Emulator)
 
 ## Getting Started
 
 ### Clone the Repository
 
-```
-git clone https://github.com/your-repo/PopulateF1Database.git
-cd PopulateF1Database
+```bash
+git clone https://github.com/PhilipWoulfe/F1Competition.git
+cd F1Competition
 ```
 
 ### Configuration
@@ -52,7 +63,7 @@ cd PopulateF1Database
     "CosmosDbResultsContainer": "Results",
     "CosmosDbSprintsContainer": "Sprints",
     "CosmosDbUsersContainer": "Users",
-    "JolpicaBaseUrl": "https://api.jolpi.ca/ergast/f1/"
+    "JolpicaBaseUrl": "https://api.jolpi.ca/ergast/f1/",
     "CosmosDbRetryCount": 1,
     "CosmosDbRetryTime": 30,    
     "JolpicaRateLimitDelayMs": 500
@@ -79,27 +90,22 @@ func start
 
 ## Project Structure
 
-```
-PopulateF1Database
-├── PopulateF1Database
-|  ├── Functions
-│  |   └── UpdateDatabase.cs
-|  └── Program.cs
-├── Config
-│   ├── AppConfig.cs
-│   └── local.settings.json
-├── DataAccess
-│   ├── Interfaces
-│   │   └── IDataRepository.cs
-│   └── Repositories
-│       └── CosmosDataRepository.cs
-├── Services
-│   ├── Interfaces
-│   │   └── IJolpicaService.cs
-│   └── Services
-│       └── JolpicaService.cs
-└── Tests
-    └── UpdateDatabaseTests.cs
+The solution follows a modular structure:
+
+```text
+src
+├── F1.Api                          # ASP.NET Core Web API (Entry Point)
+├── F1.Core                         # Domain entities and core interfaces
+├── F1.Infrastructure               # Infrastructure (Database, External Services)
+├── F1.Services                     # Business Logic Layer
+├── PopulateF1Database              # Azure Function App (Timer Trigger)
+├── PopulateF1Database.Config       # Configuration models
+├── PopulateF1Database.DataAccess   # Data access implementation
+├── PopulateF1Database.Models       # Data models
+├── PopulateF1Database.Services     # Ingestion services
+└── PopulateF1Database.Tests        # Unit tests for the Function App
+tests
+└── F1.Tests.Unit                   # Unit tests for the API/Core
 ```
 
 ## Key Components
@@ -114,4 +120,3 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## License
 This project is licensed under the Unlicence License. See the LICENSE file for details.
-
