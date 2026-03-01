@@ -39,6 +39,7 @@ cd PopulateF1Database
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "FUNCTIONS_INPROC_NET8_ENABLED": 1,
     "Functions:Worker:HostEndpoint": "http://127.0.0.1:5001",
     "UpdateDatabaseCronSchedule": "0 */1 * * * *",
     "Environment": "Dev",
@@ -52,6 +53,9 @@ cd PopulateF1Database
     "CosmosDbSprintsContainer": "Sprints",
     "CosmosDbUsersContainer": "Users",
     "JolpicaBaseUrl": "https://api.jolpi.ca/ergast/f1/"
+    "CosmosDbRetryCount": 1,
+    "CosmosDbRetryTime": 30,    
+    "JolpicaRateLimitDelayMs": 500
   }
 }
 ```
@@ -110,3 +114,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## License
 This project is licensed under the Unlicence License. See the LICENSE file for details.
+
