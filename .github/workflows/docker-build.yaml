@@ -31,7 +31,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Run Unit Tests
-        run: dotnet test --configuration Release --verbosity normal
+        run: dotnet test F1Competition.sln --configuration Release --verbosity normal
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
