@@ -1,47 +1,50 @@
-//using JolpicaApi.Responses.RaceInfo;
-//using Microsoft.Azure.Functions.Worker;
-//using Microsoft.Extensions.Logging;
-//using Moq;
-//using PopulateF1Database.DataAccess.Interfaces;
-//using PopulateF1Database.Functions;
-//using PopulateF1Database.Services.Interfaces;
-//using PopulateF1Database.Tests.Mocks;
-//using JolpicaApi.Responses.Models.RaceInfo;
-//using PopulateF1Database.Models;
-//using Race = JolpicaApi.Responses.Models.RaceInfo.Race;
-//using PopulateF1Database.Services.Results.CommandHandlers;
-//using PopulateF1Database.Services.Drivers.CommandHandlers;
-//using PopulateF1Database.Services.Rounds.CommandHandlers;
-//using PopulateF1Database.Services.Drivers.CommandHandlers.Commands;
-//using PopulateF1Database.Services.Rounds.CommandHandlers.Commands;
-//using PopulateF1Database.Services.Results.CommandHandlers.Commands;
+// using JolpicaApi.Responses.RaceInfo;
+// using Microsoft.Azure.Functions.Worker;
+// using Microsoft.Extensions.Logging;
+// using Moq;
+// using PopulateF1Database.DataAccess.Interfaces;
+// using PopulateF1Database.Functions;
+// using PopulateF1Database.Services.Interfaces;
+// using PopulateF1Database.Tests.Mocks;
+// using JolpicaApi.Responses.Models.RaceInfo;
+// using PopulateF1Database.Models;
+// using Race = JolpicaApi.Responses.Models.RaceInfo.Race;
+// using PopulateF1Database.Services.Results.CommandHandlers;
+// using PopulateF1Database.Services.Drivers.CommandHandlers;
+// // using PopulateF1Database.Services.Rounds.CommandHandlers;
+// using PopulateF1Database.Services.Drivers.CommandHandlers.Commands;
+// // using PopulateF1Database.Services.Rounds.CommandHandlers.Commands;
+// using PopulateF1Database.Services.Results.CommandHandlers.Commands;
 
-//namespace PopulateF1Database.Tests.Functions
-//{
+// namespace PopulateF1Database.Tests.Functions
+// {
 //    public class UpdateDatabaseTests
 //    {
 //        private readonly Mock<ILogger<UpdateDatabase>> loggerMock;
 //        private readonly Mock<WriteDriversCommandHandler> driverCommandHandlerMock;
-//        private readonly Mock<WriteRoundsCommandHandler> raceCommandHandlerMock;
+//     //    private readonly Mock<WriteRoundsCommandHandler> raceCommandHandlerMock;
 //        private readonly Mock<WriteResultsCommandHandler> resultsCommandHandlerMock;
 //        private readonly Mock<IJolpicaService> jolpicaServiceMock;
 //        private readonly UpdateDatabase function;
 //        private readonly Mock<TimerInfo> timerInfoMock;
+//        private readonly Mock<Config.AppConfig> appConfigMock;
 
 //        public UpdateDatabaseTests()
 //        {
 //            loggerMock = MockDependencies.CreateLoggerMock<UpdateDatabase>();
 //            driverCommandHandlerMock = new Mock<WriteDriversCommandHandler>();
-//            raceCommandHandlerMock = new Mock<WriteRoundsCommandHandler>();
+//         //    raceCommandHandlerMock = new Mock<WriteRoundsCommandHandler>();
 //            resultsCommandHandlerMock = new Mock<WriteResultsCommandHandler>();
 //            jolpicaServiceMock = MockDependencies.CreateJolpicaServiceMock();
+//            appConfigMock = MockDependencies.CreateAppConfigMock();
 
 //            function = new UpdateDatabase(
 //                loggerMock.Object,
 //                driverCommandHandlerMock.Object,
-//                raceCommandHandlerMock.Object,
+//             //    raceCommandHandlerMock.Object,
 //                resultsCommandHandlerMock.Object,
-//                jolpicaServiceMock.Object);
+//                jolpicaServiceMock.Object,
+//                appConfigMock.Object);
 
 //            var scheduleStatus = new ScheduleStatus
 //            {
@@ -98,7 +101,7 @@
 
 //            // Assert
 //            driverCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteDriversCommand>()), Times.Once);
-//            raceCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteRoundsCommand>()), Times.Once);
+//         //    raceCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteRoundsCommand>()), Times.Once);
 //            resultsCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteResultsCommand>()), Times.AtLeastOnce);
 //        }
 
@@ -143,7 +146,7 @@
 
 //            // Assert
 //            driverCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteDriversCommand>()), Times.Once);
-//            raceCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteRoundsCommand>()), Times.Once);
+//         //    raceCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteRoundsCommand>()), Times.Once);
 //            resultsCommandHandlerMock.Verify(r => r.Handle(It.IsAny<WriteResultsCommand>()), Times.Once);
 //            loggerMock.Verify(
 //                x => x.Log(
@@ -155,4 +158,4 @@
 //                Times.Once);
 //        }
 //    }
-//}
+// }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using PopulateF1Database.Config;
 using PopulateF1Database.DataAccess.Interfaces;
 using PopulateF1Database.Services.Interfaces;
 
@@ -31,5 +32,11 @@ namespace PopulateF1Database.Tests.Mocks
         {
             return new Mock<IJolpicaService>();
         }
+
+        internal static Mock<AppConfig>? CreateAppConfigMock()
+        {
+            return new Mock<AppConfig>();
+        }
+
     }
 }
