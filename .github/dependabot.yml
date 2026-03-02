@@ -1,14 +1,15 @@
 version: 2
 updates:
-  # Check for NuGet package updates (your .NET projects)
+  # Maintain NuGet dependencies
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
 
-  # Check for GitHub Action updates
+  # Maintain GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10

@@ -1,49 +1,81 @@
-﻿# F1 Competition Platform
+﻿# F1 Competition Platform 🏎️
 
 [![Build and Push F1 API](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/docker-build.yaml/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/docker-build.yaml)
-[![CodeQL](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/github-code-scanning/codeql)
-[![Dependabot Updates](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/dependabot/dependabot-updates)
+[![CodeQL](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/codeql.yml/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/codeql.yml)
+![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot&logoColor=white)
 ![GitHub last commit](https://img.shields.io/github/last-commit/PhilipWoulfe/F1Competition)
 ![Code Coverage](https://img.shields.io/badge/Code%20Coverage-50%25-yellow?style=flat)
 
+![Deployment](https://img.shields.io/badge/Deployment-Staged-blue)
+
+![Proxmox](https://img.shields.io/badge/Host-Proxmox_LXC-orange)
+
 ## Overview
 
-The **F1 Competition Platform** is a solution designed to aggregate Formula 1 data and serve it via a modern API. It consists of two main components:
+The **F1 Competition Platform** is a modular solution designed to aggregate Formula 1 data and serve it via a modern RESTful API. Built with **.NET 8** and following **Clean Architecture** principles, it automates data ingestion from external providers and serves it through a containerized infrastructure.
+
+It consists of two main components:
 
 1.  **PopulateF1Database (Azure Functions)**: A background worker that interacts with the Jolpica API to fetch race data and populate a Cosmos DB database on a scheduled basis.
 2.  **F1.Api (ASP.NET Core)**: A RESTful API that serves the aggregated data to clients.
 
 The solution is built using **.NET 8** and follows **Clean Architecture** principles, leveraging dependency injection, configuration management, and containerization.
 
-## Features
+---
+
+## 🏗️ Infrastructure & CI/CD
+
+The platform is hosted on a local **Proxmox Virtualization Environment** using Debian 12 LXC containers.
+
+### **The Pipeline**
+1. **Continuous Integration**: GitHub Actions builds the .NET solution, executes unit tests, and enforces a code coverage gate (80% target).
+2. **Registry**: Successful builds on `main` are packaged into Docker images and pushed to **GitHub Container Registry (GHCR)**.
+3. **Automated Staging (`f1-test`)**: The test environment runs **Watchtower**, which automatically pulls and restarts the container whenever a new `:latest` image is detected.
+4. **Production Gate (`f1-prod`)**: Deployment to production requires **Manual Approval** via GitHub Environments, ensuring a stable "human-in-the-loop" verification before live updates.
+
+| Environment | Host IP (Internal) | Port | Deployment Logic |
+| :--- | :--- | :--- | :--- |
+| **Test** | `192.168.0.50` | `5000` | Automated (Watchtower) |
+| **Production** | `192.168.0.51` | `5000` | Manual (Gatekeeper) |
+
+---
+
+## 🚀 Features
 
 - **Azure Functions**: Timer-triggered function (`UpdateDatabase`) to keep data synchronized.
 - **ASP.NET Core API**: A containerized Web API for data access.
-- **Cosmos DB Integration**: High-performance NoSQL storage for drivers, races, and results.
-- **Jolpica API Integration**: Reliable fetching of external F1 data.
-- **Docker Support**: The API is fully containerized for easy deployment.
-- **CI/CD**: Automated build and test pipelines using GitHub Actions.
+- **Persistence**: High-performance NoSQL storage via **Cosmos DB**.
+- **Containerized**: Full Docker support for reproducible environments across Proxmox LXCs.
 
-## Prerequisites
+---
 
-- .NET 8 SDK
-- Azure Functions Core Tools
-- Docker Desktop (optional, for running the API)
-- Azure Cosmos DB account (or Cosmos DB Emulator)
+## 🛠️ Project Structure
 
-## Getting Started
+```text
+.
+├── .github/workflows/    # CI/CD Pipelines (Build, Test, Deploy)
+├── src/
+│   ├── F1.Api            # ASP.NET Core Web API (Entry Point)
+│   ├── F1.Core           # Domain Entities & Interfaces
+│   ├── F1.Infrastructure # Database & External Integrations
+│   ├── F1.Services       # Business Logic
+│   └── PopulateF1...     # Azure Function Ingestion Apps
+├── tests/
+│   └── F1.Tests.Unit     # XUnit Test Suite
+├── docker-compose.yml    # Infrastructure Blueprint
+└── Dockerfile            # Multi-stage Docker Build
+```
 
-### Clone the Repository
-
+## 🚦 Getting Started
+1. **Clone**
 ```bash
 git clone https://github.com/PhilipWoulfe/F1Competition.git
 cd F1Competition
 ```
 
-### Configuration
-
-1. Create a Cosmos DB account and retrieve the connection string.
-2. Update the `local.settings.json` file with the Cosmos DB connection string
+2. **Configuration**
+Create a Cosmos DB account and retrieve the connection string.
+Update the `local.settings.json` file with the Cosmos DB connection string
 
 ```
 {
@@ -72,52 +104,20 @@ cd F1Competition
 }
 ```
 
-### Build and Run
-1.	Restore Dependencies: Restore the project dependencies.
- 
+3. **Run with Docker Compose**
+The simplest way to run the API locally or on a server is via Docker Compose:
+```
+# Start the API and the Watchtower agent
+docker compose up -d
+```
+4. **Manual Development**
+If running locally without Docker:
 ```
 dotnet restore
-```
-
-2.	Build the Project: Build the project.
-```
 dotnet build
+dotnet run --project src/F1.Api/F1.Api.csproj
 ```
 
-3.	Run the Functions: Start the Azure Functions host.
-```
-func start
-```
+## 📄 License
 
-## Project Structure
-
-The solution follows a modular structure:
-
-```text
-src
-├── F1.Api                          # ASP.NET Core Web API (Entry Point)
-├── F1.Core                         # Domain entities and core interfaces
-├── F1.Infrastructure               # Infrastructure (Database, External Services)
-├── F1.Services                     # Business Logic Layer
-├── PopulateF1Database              # Azure Function App (Timer Trigger)
-├── PopulateF1Database.Config       # Configuration models
-├── PopulateF1Database.DataAccess   # Data access implementation
-├── PopulateF1Database.Models       # Data models
-├── PopulateF1Database.Services     # Ingestion services
-└── PopulateF1Database.Tests        # Unit tests for the Function App
-tests
-└── F1.Tests.Unit                   # Unit tests for the API/Core
-```
-
-## Key Components
-- Config: Contains configuration classes and settings.
-- Data: Contains data access interfaces and repository implementations.
-- Functions: Contains Azure Functions.
-- Services: Contains service interfaces and implementations for external API interactions.
-- Tests: Contains unit tests for the project.
-
-## Contributing
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
-
-## License
-This project is licensed under the Unlicence License. See the LICENSE file for details.
+This project is licensed under the Unlicense. See the LICENSE file for details.
