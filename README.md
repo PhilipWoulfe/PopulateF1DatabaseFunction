@@ -1,8 +1,7 @@
 ﻿# F1 Competition Platform
 
 [![Build and Push F1 API](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/docker-build.yaml/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/docker-build.yaml)
-[![CodeQL](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/github-code-scanning/codeql)
-[![Dependabot Updates](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/dependabot/dependabot-updates)
+![CodeQL](https://github.com/PhilipWoulfe/F1Competition/actions/workflows/codeql.yml/badge.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/PhilipWoulfe/F1Competition)
 ![Code Coverage](https://img.shields.io/badge/Code%20Coverage-50%25-yellow?style=flat)
 
@@ -121,4 +120,3 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## License
 This project is licensed under the Unlicence License. See the LICENSE file for details.
-This project is licensed under The Unlicense. See the LICENSE file for details.
