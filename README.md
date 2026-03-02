@@ -68,8 +68,10 @@ The platform is hosted on a local **Proxmox Virtualization Environment** using D
 
 ## 🚦 Getting Started
 1. **Clone**
-git clone [https://github.com/PhilipWoulfe/F1Competition.git](https://github.com/PhilipWoulfe/F1Competition.git)
+```bash
+git clone https://github.com/PhilipWoulfe/F1Competition.git
 cd F1Competition
+```
 
 2. **Configuration**
 Create a Cosmos DB account and retrieve the connection string.
