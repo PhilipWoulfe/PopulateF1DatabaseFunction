@@ -18,6 +18,6 @@ public class RaceServiceTests
 
         // Assert
         Assert.NotEmpty(results);
-        Assert.Contains(results, r => r.DriverId == "norris");
+        Assert.Contains(results, r => r.DriverId == "norbert");
     }
 }
