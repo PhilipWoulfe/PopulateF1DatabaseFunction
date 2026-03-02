@@ -13,6 +13,11 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+permissions:
+  contents: read      # Allows the action to checkout your code
+  packages: write     # REQUIRED: Allows the action to push to GHCR
+  pull-requests: read # Optional: Helps with PR metadata if needed
+
 jobs:
   # --- JOB 1: THE FACTORY (Build, Test, and Push) ---
   build-and-push:
