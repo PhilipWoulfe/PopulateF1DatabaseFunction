@@ -3,19 +3,18 @@ name: Build and Push F1 API
 on:
   push:
     branches: 
-      - main
-      - 'feat/**'
-      - 'fix/**'
-      - 'refactor/**'
-      - 'chore/**'
-      - 'dependabot/**'
-  workflow_dispatch: # The "Emergency Button" to run it manually
+      - main  # Only push to registry for the "Truth" branch
+  pull_request:
+    branches: 
+      - main  # Run tests for ANY PR targeting main
+  workflow_dispatch: # Keep your emergency manual button
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # --- JOB 1: THE FACTORY (Build, Test, and Push) ---
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
@@ -44,13 +43,11 @@ jobs:
         with:
           filename: coverage/**/coverage.cobertura.xml
           badge: true
-          fail_below_min: true # This is your "Lenient Gate"
+          fail_below_min: true 
           format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
           indicators: true
           output: both
-          thresholds: '50 80' # 60% is Red/Fail, 80% is Green
+          thresholds: '50 80'
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -59,12 +56,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          # Generate tags based on branch name and commit SHA
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=test,enable=${{ github.ref != 'refs/heads/main' }}
@@ -76,6 +72,20 @@ jobs:
         with:
           context: .
           file: src/F1.Api/Dockerfile
-          push: true
+          # ONLY push if it's a direct push to main (merge) or manual run
+          # Do NOT push for PR checks
+          push: ${{ github.event_name != 'pull_request' }} 
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  # --- JOB 2: THE GATEKEEPER (Production Approval) ---
+  deploy-prod:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' # Only show the gate for the main branch
+    runs-on: ubuntu-latest
+    environment: production # This activates the manual review you set up earlier
+    steps:
+      - name: Approve for Production
+        run: |
+          echo "Build ${{ github.sha }} has been approved for Production."
+          echo "You can now pull this version on your f1-prod server."
