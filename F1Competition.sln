@@ -23,8 +23,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database", "src\P
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Services", "src\PopulateF1Database.Services\PopulateF1Database.Services.csproj", "{512973AF-5DBE-481A-9819-1C52B041429F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopulateF1Database.Tests", "src\PopulateF1Database.Tests\PopulateF1Database.Tests.csproj", "{D2434B2B-919F-4463-A6C5-519180A5090C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F238F935-2CD0-4D1E-8DCB-C42A0E241EFA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "F1.Tests.Unit", "tests\F1.Tests.Unit\F1.Tests.Unit.csproj", "{B67E519C-B1CF-4312-B998-1CE40EDF6BDE}"
