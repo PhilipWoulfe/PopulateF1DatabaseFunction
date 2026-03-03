@@ -2,33 +2,27 @@ name: Build and Push F1 API
 
 on:
   push:
-    branches: 
-      - main  # Only push to registry for the "Truth" branch
+    branches: [ main ]
   pull_request:
-    branches: 
-      - main  # Run tests for ANY PR targeting main
-  workflow_dispatch: # Keep your emergency manual button
+    branches: [ main ]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
-permissions:
-  contents: read      # Allows the action to checkout your code
-  packages: write     # REQUIRED: Allows the action to push to GHCR
-  pull-requests: read # Optional: Helps with PR metadata if needed
-
 jobs:
-  # --- JOB 1: THE FACTORY (Build, Test, and Push) ---
+  # --- JOB 1: THE FACTORY (Build, Test, and Push to :latest) ---
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - name: Set image name to lower case
+        run: echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -39,7 +33,6 @@ jobs:
         run: |
           dotnet test F1Competition.sln \
           --configuration Release \
-          --verbosity normal \
           --collect:"XPlat Code Coverage" \
           --results-directory ./coverage
 
@@ -50,47 +43,47 @@ jobs:
           badge: true
           fail_below_min: true 
           format: markdown
-          indicators: true
           output: both
           thresholds: '50 80'
 
-      - name: Log in to the Container registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=test,enable=${{ github.ref != 'refs/heads/main' }}
-            type=ref,event=branch
-            type=sha,format=short
-
-      - name: Build and push Docker image
+      # Push the build to :latest immediately for the TEST LXC
+      - name: Build and push (Test/Latest)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: src/F1.Api/Dockerfile
-          # ONLY push if it's a direct push to main (merge) or manual run
-          # Do NOT push for PR checks
           push: ${{ github.event_name != 'pull_request' }} 
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
 
-  # --- JOB 2: THE GATEKEEPER (Production Approval) ---
+  # --- JOB 2: THE GATEKEEPER (Promote to :prod) ---
   deploy-prod:
     needs: build-and-push
-    if: github.ref == 'refs/heads/main' # Only show the gate for the main branch
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    environment: production # This activates the manual review you set up earlier
+    environment: production # Requires your manual approval click
+    permissions:
+      packages: write
     steps:
-      - name: Approve for Production
+      - name: Set image name to lower case
+        run: echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Promotes the exact image we just tested/built to the :prod tag
+      - name: Tag and Push Production Image
         run: |
-          echo "Build ${{ github.sha }} has been approved for Production."
-          echo "You can now pull this version on your f1-prod server."
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
