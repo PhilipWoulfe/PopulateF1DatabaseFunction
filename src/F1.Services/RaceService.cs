@@ -9,7 +9,7 @@ public class RaceService : IRaceService
     {
         return new List<RaceResult>
         {
-            new RaceResult { DriverId = "norbert", Position = 1, Points = 25 },
+            new RaceResult { DriverId = "norbert2", Position = 1, Points = 25 },
             new RaceResult { DriverId = "pastrami", Position = 2, Points = 18 }
         };
     }
