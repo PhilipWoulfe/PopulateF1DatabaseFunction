@@ -4,8 +4,10 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat Code Coverage">
         <Configuration>
-          <Format>cobertura</Format>
-          <Exclude>[PopulateF1Database*]*</Exclude>
+          <Format>cobertura</Format>          
+          <ExcludeAssembliesWithoutSources>None</ExcludeAssembliesWithoutSources>
+          <Exclude>[PopulateF1Database*]*,[*.Tests]*</Exclude>
+          <SkipAutoProps>true</SkipAutoProps>
         </Configuration>
       </DataCollector>
     </DataCollectors>
