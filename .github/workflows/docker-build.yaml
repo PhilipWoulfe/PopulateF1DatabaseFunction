@@ -33,13 +33,13 @@ jobs:
         run: |
           dotnet test F1Competition.sln \
           --configuration Release \
-          --collect:"XPlat Code Coverage" \
-          --results-directory ./coverage
+          --settings coverlet.runsettings \
+          --results-directory ./coverage \
 
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          filename: coverage/**/coverage.cobertura.xml
+          filename: "**/coverage.cobertura.xml"
           badge: true
           fail_below_min: true 
           format: markdown
@@ -61,6 +61,15 @@ jobs:
           file: src/F1.Api/Dockerfile
           push: ${{ github.event_name != 'pull_request' }} 
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
+
+      # Build and push the Web App (New)
+      - name: Build and push (Web/Latest)
+        uses: docker/build-push-action@v6
+        with:
+          context: src/F1.Web
+          file: src/F1.Web/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:latest
 
   # --- JOB 2: THE GATEKEEPER (Promote to :prod) ---
   deploy-prod:
@@ -87,3 +96,9 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
+
+      - name: Tag and Push Production Image (Web)
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:prod
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:prod

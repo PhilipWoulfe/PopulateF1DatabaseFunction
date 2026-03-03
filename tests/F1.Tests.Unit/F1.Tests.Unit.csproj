@@ -20,11 +20,14 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="bunit" Version="1.36.0" />
+    <PackageReference Include="Moq" Version="4.20.72" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\F1.Core\F1.Core.csproj" />
     <ProjectReference Include="..\..\src\F1.Services\F1.Services.csproj" />
+    <ProjectReference Include="..\..\src\F1.Web\F1.Web.csproj" />
   </ItemGroup>
 
 </Project>
