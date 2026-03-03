@@ -19,10 +19,13 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v6
+      - name: Set image name to lower case
+        run: echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
@@ -52,12 +55,12 @@ jobs:
 
       # Push the build to :latest immediately for the TEST LXC
       - name: Build and push (Test/Latest)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: src/F1.Api/Dockerfile
           push: ${{ github.event_name != 'pull_request' }} 
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
 
   # --- JOB 2: THE GATEKEEPER (Promote to :prod) ---
   deploy-prod:
@@ -68,6 +71,9 @@ jobs:
     permissions:
       packages: write
     steps:
+      - name: Set image name to lower case
+        run: echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -78,6 +84,6 @@ jobs:
       # Promotes the exact image we just tested/built to the :prod tag
       - name: Tag and Push Production Image
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:prod
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:prod
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
