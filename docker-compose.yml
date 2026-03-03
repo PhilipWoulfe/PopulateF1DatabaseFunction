@@ -22,8 +22,16 @@ services:
       - "${HOST_PORT_WEB:-5001}:80"
     restart: unless-stopped
 
+tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN} # Store that token in your .env file
+
 # watchtower shouldn't be deployed to PROD as it will pull the latest build and deploy it
-  watchtower:
+watchtower:
     profiles: ["debug"]  # It won't start unless you specifically ask for it
     image: nickfedor/watchtower:latest 
     container_name: watchtower
@@ -37,3 +45,4 @@ services:
       - WATCHTOWER_CLEANUP=true
       - DOCKER_CONFIG=/
     restart: unless-stopped
+
