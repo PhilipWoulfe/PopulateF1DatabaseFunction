@@ -22,27 +22,27 @@ services:
       - "${HOST_PORT_WEB:-5001}:80"
     restart: unless-stopped
 
-tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared-tunnel
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN} # Store that token in your .env file
+  tunnel:
+      image: cloudflare/cloudflared:latest
+      container_name: cloudflared-tunnel
+      restart: unless-stopped
+      command: tunnel --no-autoupdate run
+      environment:
+        - TUNNEL_TOKEN=${TUNNEL_TOKEN} # Store that token in your .env file
 
-# watchtower shouldn't be deployed to PROD as it will pull the latest build and deploy it
-watchtower:
-    profiles: ["debug"]  # It won't start unless you specifically ask for it
-    image: nickfedor/watchtower:latest 
-    container_name: watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /root/.docker/config.json:/config.json
-    environment:
-      # Tell watchtower explicitly to use the newer API version
-      - DOCKER_API_VERSION=1.44
-      - WATCHTOWER_POLL_INTERVAL=30
-      - WATCHTOWER_CLEANUP=true
-      - DOCKER_CONFIG=/
-    restart: unless-stopped
+  # watchtower shouldn't be deployed to PROD as it will pull the latest build and deploy it
+  watchtower:
+      profiles: ["debug"]  # It won't start unless you specifically ask for it
+      image: nickfedor/watchtower:latest 
+      container_name: watchtower
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /root/.docker/config.json:/config.json
+      environment:
+        # Tell watchtower explicitly to use the newer API version
+        - DOCKER_API_VERSION=1.44
+        - WATCHTOWER_POLL_INTERVAL=30
+        - WATCHTOWER_CLEANUP=true
+        - DOCKER_CONFIG=/
+      restart: unless-stopped
 
