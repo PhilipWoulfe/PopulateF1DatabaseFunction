@@ -6,13 +6,18 @@ services:
       - "${HOST_PORT:-5000}:8080"
     restart: unless-stopped
 
-  # The Butler: Automatically pulls new images from GitHub
+# watchtower shouldn't be deployed to PROD as it will pull the latest build and deploy it
   watchtower:
-    image: containrrr/watchtower
+    # --- SWAP THIS LINE ---
+    image: nickfedor/watchtower:latest 
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # This line allows Watchtower to use your existing 'docker login' credentials
       - /root/.docker/config.json:/config.json
-    command: --interval 30 --cleanup # Checks every 30 seconds and deletes old images
+    environment:
+      # Tell watchtower explicitly to use the newer API version
+      - DOCKER_API_VERSION=1.44
+      - WATCHTOWER_POLL_INTERVAL=30
+      - WATCHTOWER_CLEANUP=true
+      - DOCKER_CONFIG=/
     restart: unless-stopped
