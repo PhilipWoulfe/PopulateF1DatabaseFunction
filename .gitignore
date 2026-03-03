@@ -292,3 +292,4 @@ CLEANING.md
 HANDOVER.MD
 ToWatch.md
 .env
+.env.local

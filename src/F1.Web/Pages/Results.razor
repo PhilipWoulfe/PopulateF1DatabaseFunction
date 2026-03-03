@@ -1,0 +1,44 @@
+@page "/results"
+@using F1.Web.Models
+@inject IHttpClientFactory ClientFactory
+
+<PageTitle>Driver Standings</PageTitle>
+
+<h1>Driver Standings</h1>
+
+@if (results == null)
+{
+    <p><em>Loading race results...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Driver</th>
+                <th>Points</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var result in results)
+            {
+                <tr>
+                    <td>@result.Position</td>
+                    <td>@result.DriverId</td>
+                    <td>@result.Points</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<RaceResult>? results;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ClientFactory.CreateClient("F1Api");
+        results = await client.GetFromJsonAsync<List<RaceResult>>("races/results");
+    }
+}

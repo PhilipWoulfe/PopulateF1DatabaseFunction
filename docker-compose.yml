@@ -1,14 +1,30 @@
 services:
   f1-api:
-    image: ghcr.io/philipwoulfe/f1competition:${TAG:-latest} # Or :feat-branch-name
-    container_name: ${CONTINER_NAME:-f1-test}
+    environment:
+      - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost:5000,http://localhost:5001,http://localhost:5200}
+    image: ghcr.io/philipwoulfe/f1competition:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: ./src/F1.Api/Dockerfile
+    container_name: ${CONTAINER_NAME:-f1-test}
     ports:
       - "${HOST_PORT:-5000}:8080"
     restart: unless-stopped
 
+  f1-web:
+    build:
+      context: ./src/F1.Web
+      dockerfile: Dockerfile
+    container_name: f1-web
+    environment:
+      - BLAZOR_ENVIRONMENT=Development
+    ports:
+      - "${HOST_PORT_WEB:-5001}:80"
+    restart: unless-stopped
+
 # watchtower shouldn't be deployed to PROD as it will pull the latest build and deploy it
   watchtower:
-    # --- SWAP THIS LINE ---
+    profiles: ["debug"]  # It won't start unless you specifically ask for it
     image: nickfedor/watchtower:latest 
     container_name: watchtower
     volumes:
