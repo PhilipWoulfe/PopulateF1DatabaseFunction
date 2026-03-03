@@ -23,6 +23,7 @@ services:
     restart: unless-stopped
 
   tunnel:
+      profiles: ["cloud"] # It won't start unless you specifically ask for it
       image: cloudflare/cloudflared:latest
       container_name: cloudflared-tunnel
       restart: unless-stopped
@@ -32,7 +33,7 @@ services:
 
   # watchtower shouldn't be deployed to PROD as it will pull the latest build and deploy it
   watchtower:
-      profiles: ["debug"]  # It won't start unless you specifically ask for it
+      profiles: ["cloud"]  # It won't start unless you specifically ask for it
       image: nickfedor/watchtower:latest 
       container_name: watchtower
       volumes:
