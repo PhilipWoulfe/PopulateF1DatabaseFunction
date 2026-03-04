@@ -38,6 +38,14 @@ The platform is hosted on a local **Proxmox Virtualization Environment** using D
 | **Test** | `192.168.0.50` | `5000` | Automated (Watchtower) |
 | **Production** | `192.168.0.51` | `5000` | Manual (Gatekeeper) |
 
+### **Public Access (Cloudflare Tunnel)**
+The solution uses **Cloudflare Tunnels** to securely expose the services without opening ports on the router.
+- **Profile**: `cloud` (Enabled via `COMPOSE_PROFILES=cloud` or `--profile cloud`)
+- **Token**: Managed via `TUNNEL_TOKEN` in `.env`.
+- **Domains**:
+  - Test: `https://f1-test.philipwoulfe.com`
+  - API: `https://f1-api-test.philipwoulfe.com`
+
 ---
 
 ## 🚀 Features
@@ -132,6 +140,19 @@ chmod +x build.sh
 Once running, the services will be available at:
 - **API**: `http://localhost:5000`
 - **Web App**: `http://localhost:5001`
+
+## ⚠️ Troubleshooting
+### .env Changes Not Applying
+Symptom: You updated .env (e.g., API_BASE_URL) but the app still uses the old value.
+Cause: Docker Compose only reads .env when creating containers. Watchtower updates the image but reuses the existing container configuration. 
+Fix: Manually recreate the container to apply changes: 
+bash +docker-compose up -d
+
+
+### Why did BLAZOR_ENVIRONMENT work but API_BASE_URL fail?
+Docker "snapshots" environment variables at creation time. 
+- BLAZOR_ENVIRONMENT was likely present when the container was first created. 
+- API_BASE_URL was likely added/changed later. Since the container wasn't recreated, it kept the old (empty) value. 
 
 ## 📄 License
 
