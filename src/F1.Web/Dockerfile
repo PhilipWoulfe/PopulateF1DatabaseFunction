@@ -8,7 +8,7 @@ RUN dotnet publish "F1.Web.csproj" -c Release -o /app/publish /p:UseAppHost=fals
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
 COPY --from=build /app/publish/wwwroot .
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx.conf.template /etc/nginx/templates/nginx.conf.template
 
 # Explicitly copy appsettings.json if it's not in wwwroot by default (though publish usually handles this)
 # COPY --from=build /app/publish/wwwroot/appsettings.json .
