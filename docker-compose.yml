@@ -17,7 +17,8 @@ services:
       dockerfile: Dockerfile
     container_name: f1-web
     environment:
-      - BLAZOR_ENVIRONMENT=Development
+      - BLAZOR_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:5000/}
     ports:
       - "${HOST_PORT_WEB:-5001}:80"
     restart: unless-stopped
@@ -46,4 +47,3 @@ services:
         - WATCHTOWER_CLEANUP=true
         - DOCKER_CONFIG=/
       restart: unless-stopped
-
