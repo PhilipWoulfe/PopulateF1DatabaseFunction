@@ -66,16 +66,30 @@ The platform is hosted on a local **Proxmox Virtualization Environment** using D
 └── Dockerfile            # Multi-stage Docker Build
 ```
 
-## 🚦 Getting Started
-1. **Clone**
-```bash
-git clone https://github.com/PhilipWoulfe/F1Competition.git
-cd F1Competition
-```
+## 🚦 Local Development Guide
 
-2. **Configuration**
-Create a Cosmos DB account and retrieve the connection string.
-Update the `local.settings.json` file with the Cosmos DB connection string
+### 1. Prerequisites
+- **.NET 8 SDK**
+- **Docker & Docker Compose**
+- **entr** (for live test-watching on Linux/WSL):
+  ```bash
+  sudo apt-get update && sudo apt-get install entr
+  ```
+
+### 2. Configuration
+The solution uses two primary methods for configuration: a `.env` file for Docker Compose and `local.settings.json` for the Azure Functions.
+
+#### A. Docker Environment (`.env`)
+Create a `.env` file in the root of the project. This file controls ports, URLs, and environment settings for the local Docker containers.
+
+```bash
+# Copy the example file to create your local configuration
+cp .env.example .env
+```
+The default values in `.env.example` are configured for a standard local setup.
+
+#### B. Azure Function (`local.settings.json`)
+This file configures the data ingestion service. You will need to update `src/PopulateF1Database/local.settings.json` with your **Cosmos DB connection string** and other specific settings.
 
 ```
 {
@@ -104,19 +118,20 @@ Update the `local.settings.json` file with the Cosmos DB connection string
 }
 ```
 
-3. **Run with Docker Compose**
-The simplest way to run the API locally or on a server is via Docker Compose:
+### 3. Running the Application
+The recommended way to run the application locally is using the provided build script. This workflow **runs tests first** and will abort the build if they fail, ensuring a stable environment.
+
+```bash
+# Make the script executable (only needs to be done once)
+chmod +x build.sh
+
+# Run tests, then build and start containers
+./build.sh
 ```
-# Start the API and the Watchtower agent
-docker compose up -d
-```
-4. **Manual Development**
-If running locally without Docker:
-```
-dotnet restore
-dotnet build
-dotnet run --project src/F1.Api/F1.Api.csproj
-```
+
+Once running, the services will be available at:
+- **API**: `http://localhost:5000`
+- **Web App**: `http://localhost:5001`
 
 ## 📄 License
 
