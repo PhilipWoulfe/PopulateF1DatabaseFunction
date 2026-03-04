@@ -69,7 +69,8 @@ The solution uses **Cloudflare Tunnels** to securely expose the services without
 │   ├── F1.Services       # Business Logic
 │   └── PopulateF1...     # Azure Function Ingestion Apps
 ├── tests/
-│   └── F1.Tests.Unit     # XUnit Test Suite
+│   └── F1.Api.Tests      # XUnit Test Suite
+│   └── F1.Web.Tests      # XUnit Test Suite
 ├── docker-compose.yml    # Infrastructure Blueprint
 └── Dockerfile            # Multi-stage Docker Build
 ```
