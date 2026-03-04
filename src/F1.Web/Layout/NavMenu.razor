@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject NavigationManager Navigation
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">F1.Web</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -31,7 +33,9 @@
             </Authorized>
             <NotAuthorized>
                 <div class="nav-item px-3">
-                    <span class="nav-link">Please log in to see more.</span>
+                    <button class="btn btn-link nav-link" @onclick='() => Navigation.NavigateTo("results", true)'>
+                        <span class="bi bi-box-arrow-in-right-nav-menu" aria-hidden="true"></span> Login
+                    </button>
                 </div>
             </NotAuthorized>
         </AuthorizeView>

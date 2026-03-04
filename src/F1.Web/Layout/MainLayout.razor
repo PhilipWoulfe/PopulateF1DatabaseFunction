@@ -1,4 +1,8 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject IUserSession UserSession
+@inject IWebAssemblyHostEnvironment HostEnvironment
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -6,6 +10,18 @@
 
     <main>
         <div class="top-row px-4">
+            @if (HostEnvironment.IsDevelopment())
+            {
+                <button class="btn btn-link" @onclick="ToggleUser">Toggle User</button>
+            }
+            <AuthorizeView>
+                <Authorized>
+                    <a href="https://f1-team.cloudflareaccess.com/cdn-cgi/access/logout">Logout</a>
+                </Authorized>
+                <NotAuthorized>
+                    <button class="btn btn-link" @onclick='() => Navigation.NavigateTo("results", true)'>Login</button>
+                </NotAuthorized>
+            </AuthorizeView>
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 
@@ -14,3 +30,10 @@
         </article>
     </main>
 </div>
+
+@code {
+    private async Task ToggleUser()
+    {
+        await UserSession.InitializeAsync();
+    }
+}
