@@ -6,11 +6,19 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
+
+// 2. Print it to the browser console
+// You'll see this in the Chrome/Firefox F12 Console tab
+Console.WriteLine($"DEBUG: ApiBaseUrl from config is: '{apiBaseUrl}'");
+
+// 3. (Optional) Check the environment name too
+Console.WriteLine($"DEBUG: Current Environment is: {builder.HostEnvironment.Environment}");
+
+// Use the value (with the safety check we discussed earlier)
 builder.Services.AddHttpClient("F1Api", client => 
 {
-    var baseUrl = builder.Configuration["F1Api:BaseUrl"] 
-        ?? "http://localhost:5000"; // Fallback for local dev
-    client.BaseAddress = new Uri(baseUrl);
+    client.BaseAddress = new Uri(apiBaseUrl ?? builder.HostEnvironment.BaseAddress);
 });
 
 // 2. Add this line so @inject HttpClient works in your .razor files
