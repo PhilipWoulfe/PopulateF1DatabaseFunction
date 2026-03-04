@@ -23,7 +23,7 @@ else
         <tbody>
             @foreach (var result in results)
             {
-                <tr>
+                <tr style="background-color: @result.PositionColor">
                     <td>@result.Position</td>
                     <td>@result.DriverId</td>
                     <td>@result.Points</td>

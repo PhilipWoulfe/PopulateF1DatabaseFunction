@@ -1,8 +1,6 @@
 using F1.Services;
-using F1.Core.Models;
-using Xunit;
 
-namespace F1.Tests.Unit;
+namespace F1.Api.Tests;
 
 public class RaceServiceTests
 {

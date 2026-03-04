@@ -1,16 +1,15 @@
+using F1.Api.Middleware;
 using F1.Core.Interfaces;
 using F1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Register the Service (The "Wiring")
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorOrigin",
         policy =>
         {
-            // Change "AllowedOrigins" to match your .env.local variable name
             var origins = builder.Configuration["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
             policy.WithOrigins(origins)
                    .AllowAnyMethod()
@@ -18,15 +17,30 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.Use((context, next) =>
+    {
+        context.Request.Headers["Cf-Access-Authenticated-User-Email"] = "dev@example.com";
+        return next();
+    });
+}
 
 app.UseCors("AllowBlazorOrigin");
 
-// 2. Map the Endpoint
+app.UseMiddleware<CloudflareAccessMiddleware>();
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGet("/races/results", (IRaceService raceService) => 
 {
     var results = raceService.GetMockResults();
     return Results.Ok(results);
-});
+}).RequireAuthorization();
 
 app.Run();

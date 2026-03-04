@@ -293,3 +293,13 @@ HANDOVER.MD
 ToWatch.md
 .env
 .env.local
+
+# Code Coverage Results
+**/TestResults/
+**/coverage.cobertura.xml
+**/coverage.json
+**/coverage.info
+**/lcov.info
+
+# ReportGenerator Output
+**/coveragereport/
