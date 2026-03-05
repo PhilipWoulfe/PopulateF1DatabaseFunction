@@ -2,6 +2,8 @@
 @inject NavigationManager Navigation
 @inject IUserSession UserSession
 @inject IWebAssemblyHostEnvironment HostEnvironment
+@inject HttpClient Http
+@using System.Net.Http.Json
 
 <div class="page">
     <div class="sidebar">
@@ -9,6 +11,19 @@
     </div>
 
     <main>
+        @if (HostEnvironment.IsDevelopment())
+        {
+            <div class="alert alert-warning text-center m-0 fw-bold rounded-0 py-1" role="alert">
+                🚧 DEVELOPMENT MODE 🚧
+            </div>
+        }
+        else if (HostEnvironment.IsStaging() || HostEnvironment.Environment == "Test")
+        {
+            <div class="alert alert-danger text-center m-0 fw-bold rounded-0 py-1" role="alert">
+                🧪 QA ENVIRONMENT - Build: @_appVersion
+            </div>
+        }
+
         <div class="top-row px-4">
             @if (HostEnvironment.IsDevelopment())
             {
@@ -33,10 +48,34 @@
         <article class="content px-4">
             @Body
         </article>
+
+        @if (HostEnvironment.IsProduction())
+        {
+            <div class="text-muted text-end pe-4 pb-2" style="font-size: 0.7rem; opacity: 0.6;">
+                v. @_appVersion
+            </div>
+        }
     </main>
 </div>
 
 @code {
+    private string _appVersion = "Loading...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Attempt to read the version baked into the image
+            var v = await Http.GetFromJsonAsync<VersionModel>("version.json");
+            // Display first 7 chars of hash (git short hash style)
+            _appVersion = v?.Version?.Substring(0, Math.Min(7, v.Version.Length)) ?? "Unknown";
+        }
+        catch
+        {
+            _appVersion = "Local";
+        }
+    }
+
     private async Task ToggleUser()
     {
         // This likely modifies the headers/state in your dev environment
@@ -45,4 +84,6 @@
         // Force the layout to re-evaluate the AuthorizeView
         StateHasChanged(); 
     }
+
+    private class VersionModel { public string Version { get; set; } }
 }

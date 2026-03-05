@@ -5,6 +5,10 @@ RUN dotnet restore "F1.Web.csproj"
 COPY . .
 RUN dotnet publish "F1.Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
+# Capture the build argument and write it to a static file
+ARG COMMIT_HASH
+RUN echo "{ \"version\": \"$COMMIT_HASH\" }" > /app/publish/wwwroot/version.json
+
 FROM nginx:1.25.3-alpine
 WORKDIR /usr/share/nginx/html
 COPY --from=build /app/publish/wwwroot .

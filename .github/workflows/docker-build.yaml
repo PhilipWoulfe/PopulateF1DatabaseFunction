@@ -70,6 +70,8 @@ jobs:
           file: src/F1.Web/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:latest
+          build-args: |
+            COMMIT_HASH=${{ github.sha }}
 
   # --- JOB 2: THE GATEKEEPER (Promote to :prod) ---
   deploy-prod:
