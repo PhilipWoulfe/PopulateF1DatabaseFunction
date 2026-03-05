@@ -133,10 +133,49 @@ The recommended way to run the application locally is using the provided build s
 ```bash
 # Make the script executable (only needs to be done once)
 chmod +x build.sh
-
-# Run tests, then build and start containers
-./build.sh
 ```
+
+Development & Running the App
+
+This project supports two primary ways to run the application on a Linux VM via Docker. Both modes utilize the F1Competition.sln but handle code execution differently.
+1. Normal Mode (Testing/Standard Run)
+
+Use this mode to run the app as a "release candidate." This uses the multi-stage Dockerfile and runs the compiled binaries. It is the closest representation of the production environment.
+
+How to run:
+./build.sh
+
+    Behavior: Compiles the app once during the build phase.
+
+    Environment: Defaults to Development (via docker-compose.yml) to enable Cloudflare header mocking.
+
+    Use Case: Verifying overall system stability, UI/UX testing, and preparing for deployment.
+
+2. Debug Mode (Active Development)
+
+Use this mode when you need to set breakpoints, inspect variables, or use "Hot Reload." This mode mounts your source code directly into the container and runs dotnet watch.
+
+How to run:
+./build.sh --debug
+
+    Behavior: Uses dotnet watch run to restart the app whenever you save a file on the VM.
+
+    Debugger: Requires vsdbg (installed automatically via Dockerfile.debug).
+
+    Use Case: Fixing bugs, developing new features, and step-through debugging.
+
+Then ctrl+shft+d (or f5) and .Net COre Docker Attach
+
+Troubleshooting Tips
+
+    Container Crashing? Check the logs immediately: docker logs -f f1-local.
+
+    Environment Mismatch? If the logs say Hosting environment: Production, the identity mock is disabled. Ensure ASPNETCORE_ENVIRONMENT=Development is set in your docker-compose.yml.
+
+    Process Picker Empty? Ensure the C# Dev Kit and Docker extensions are installed on the Remote SSH host, not just your local machine.
+
+    Stale DLLs? If the app is acting like old code, the build.sh script handles the clean automatically, but you can run it manually:
+    find . -type d −name"bin"−o−name"obj" -exec rm -rf {} +
 
 Once running, the services will be available at:
 - **API**: `http://localhost:5000`

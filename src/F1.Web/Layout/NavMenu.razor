@@ -16,13 +16,19 @@
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
+
+        @* This view automatically hides/shows based on whether 
+           the Header-based Auth State Provider identifies a user.
+        *@
         <AuthorizeView>
             <Authorized>
+                @* Results button - Only visible if header is present/valid *@
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="results">
                         <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Driver Standings
                     </NavLink>
                 </div>
+
                 <AuthorizeView Roles="Admin" Context="adminContext">
                     <div class="nav-item px-3">
                         <NavLink class="nav-link" href="admin">
@@ -31,7 +37,9 @@
                     </div>
                 </AuthorizeView>
             </Authorized>
+
             <NotAuthorized>
+                @* Login button - Visible if no header is detected *@
                 <div class="nav-item px-3">
                     <button class="btn btn-link nav-link" @onclick='() => Navigation.NavigateTo("results", true)'>
                         <span class="bi bi-box-arrow-in-right-nav-menu" aria-hidden="true"></span> Login
@@ -44,7 +52,6 @@
 
 @code {
     private bool collapseNavMenu = true;
-
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
     private void ToggleNavMenu()
