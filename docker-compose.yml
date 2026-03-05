@@ -2,7 +2,7 @@ services:
   f1-api:
     environment:
       - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost:5000,http://localhost:5001,http://localhost:5200}
-      - ASPNETCORE_ENVIRONMENT=${BLAZOR_ENVIRONMENT}
+      - ASPNETCORE_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}
     image: ghcr.io/philipwoulfe/f1competition:${TAG:-latest}
     build:
       context: .
@@ -19,7 +19,7 @@ services:
     container_name: f1-web
     environment:
       - BLAZOR_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}
-      - API_BASE_URL=${API_BASE_URL:-http://localhost:5000/}
+      - API_BASE_URL=/api/
     ports:
       - "${HOST_PORT_WEB:-5001}:80"
     restart: unless-stopped

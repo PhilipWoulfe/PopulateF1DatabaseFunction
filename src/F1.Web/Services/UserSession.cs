@@ -1,12 +1,14 @@
 using F1.Web.Models;
 using System.ComponentModel;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace F1.Web.Services
 {
     public class UserSession : IUserSession
     {
         private readonly HttpClient _httpClient;
+        private const string MeEndpoint = "users/me";
         private User? _user;
 
         public User? User
@@ -19,19 +21,24 @@ namespace F1.Web.Services
             }
         }
 
-        public UserSession(IHttpClientFactory httpClientFactory)
+        public UserSession(HttpClient httpClient)
         {
-            _httpClient = httpClientFactory.CreateClient("F1Api");
+            _httpClient = httpClient;
         }
 
         public async Task InitializeAsync()
         {
             try
             {
-                User = await _httpClient.GetFromJsonAsync<User>("api/me");
+                User = await _httpClient.GetFromJsonAsync<User>(MeEndpoint);
             }
             catch (HttpRequestException)
             {
+                User = null;
+            }
+            catch (JsonException)
+            {
+                // Handles cases where the API returns HTML (e.g. 404 page) instead of JSON
                 User = null;
             }
         }

@@ -1,7 +1,7 @@
-using Bunit;
 using F1.Web.Models;
 using F1.Web.Services;
 using Moq;
+using System.ComponentModel;
 using System.Security.Claims;
 
 namespace F1.Web.Tests.Services
@@ -32,6 +32,21 @@ namespace F1.Web.Tests.Services
         }
 
         [Fact]
+        public async Task GetAuthenticationStateAsync_ShouldReturnAnonymous_WhenUserIsNotNullButEmailIsNull()
+        {
+            // Arrange
+            var user = new User { Email = null, IsAdmin = false };
+            _userSessionMock.Setup(x => x.User).Returns(user);
+
+            // Act
+            var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+
+            // Assert
+            Assert.NotNull(authState);
+            Assert.False(authState.User.Identity?.IsAuthenticated ?? false);
+        }
+
+        [Fact]
         public async Task GetAuthenticationStateAsync_ShouldReturnAuthenticatedUser_WhenUserIsNotNull()
         {
             // Arrange
@@ -48,8 +63,6 @@ namespace F1.Web.Tests.Services
             Assert.False(authState.User.IsInRole("Admin"));
         }
 
-
-
         [Fact]
         public async Task GetAuthenticationStateAsync_ShouldReturnAdminUser_WhenUserIsAdmin()
         {
@@ -65,6 +78,23 @@ namespace F1.Web.Tests.Services
             Assert.True(authState.User.Identity?.IsAuthenticated);
             Assert.Equal("admin@example.com", authState.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value);
             Assert.True(authState.User.IsInRole("Admin"));
+        }
+
+        [Fact]
+        public void ShouldNotifyAuthenticationStateChanged_WhenUserSessionChanges()
+        {
+            // Arrange
+            var eventRaised = false;
+            _authenticationStateProvider.AuthenticationStateChanged += (task) =>
+            {
+                eventRaised = true;
+            };
+
+            // Act
+            _userSessionMock.Raise(m => m.PropertyChanged += null, new PropertyChangedEventArgs(nameof(UserSession.User)));
+
+            // Assert
+            Assert.True(eventRaised);
         }
     }
 }

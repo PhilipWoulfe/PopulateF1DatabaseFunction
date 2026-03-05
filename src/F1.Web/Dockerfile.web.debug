@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+WORKDIR /app
+
+# The WebAssembly debugger needs these for the proxy
+EXPOSE 8080
+
+# We don't publish here; we run from source for Hot Reload
+COPY ["F1.Web.csproj", "."]
+RUN dotnet restore "F1.Web.csproj"
+
+COPY . .
+
+# In Debug, we use dotnet watch to serve the files
+# This allows the VS Code debugger to attach to the browser session
+CMD ["dotnet", "watch", "run", "--configuration", "Debug", "--urls", "http://0.0.0.0:8080"]

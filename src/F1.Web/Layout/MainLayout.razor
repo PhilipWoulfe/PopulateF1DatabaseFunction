@@ -65,14 +65,25 @@
     {
         try
         {
-            // Attempt to read the version baked into the image
-            var v = await Http.GetFromJsonAsync<VersionModel>("version.json");
-            // Display first 7 chars of hash (git short hash style)
-            _appVersion = v?.Version?.Substring(0, Math.Min(7, v.Version.Length)) ?? "Unknown";
+            // Construct an absolute URL based on the current browser address.
+            // If you are at http://localhost:5001, this makes the API http://localhost:5001/api/
+            var absoluteApiUrl = Navigation.ToAbsoluteUri("api/");
+            
+            Http.BaseAddress = absoluteApiUrl;
+
+            Console.WriteLine($"🌐 API Base Address: {Http.BaseAddress}");
+
+            await UserSession.InitializeAsync();
+
+            // Version logic
+            using var localClient = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
+            var versionModel = await localClient.GetFromJsonAsync<VersionModel>("version.json");
+            _appVersion = versionModel?.Version?.Substring(0, Math.Min(7, versionModel.Version.Length)) ?? "N/A";
         }
-        catch
+        catch (Exception ex)
         {
-            _appVersion = "Local";
+            Console.WriteLine($"❌ Startup Error: {ex.Message}");
+            _appVersion = "Error";
         }
     }
 
