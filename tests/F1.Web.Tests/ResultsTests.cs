@@ -1,5 +1,3 @@
-
-using Bunit;
 using F1.Web.Pages;
 using F1.Web.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +11,6 @@ namespace F1.Web.Tests.Pages;
 public class ResultsTests : TestContext
 {
     private readonly Mock<HttpMessageHandler> _handlerMock;
-    private readonly Mock<IHttpClientFactory> _factoryMock;
     private readonly HttpClient _httpClient;
 
     public ResultsTests()
@@ -23,9 +20,7 @@ public class ResultsTests : TestContext
         {
             BaseAddress = new Uri("http://localhost")
         };
-        _factoryMock = new Mock<IHttpClientFactory>();
-        _factoryMock.Setup(x => x.CreateClient("F1Api")).Returns(_httpClient);
-        Services.AddSingleton(_factoryMock.Object);
+        Services.AddSingleton(_httpClient);
     }
 
     [Fact]

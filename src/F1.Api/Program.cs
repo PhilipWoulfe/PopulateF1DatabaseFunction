@@ -6,6 +6,7 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers(); // Add this line to register controller services
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddCors(options =>
@@ -83,6 +84,8 @@ app.UseMiddleware<CloudflareAccessMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers(); // This line is crucial for mapping your controllers
 
 app.MapGet("/races/results", (IRaceService raceService) => 
 {

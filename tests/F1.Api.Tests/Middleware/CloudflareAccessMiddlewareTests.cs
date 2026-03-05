@@ -1,9 +1,6 @@
 using F1.Api.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace F1.Api.Tests.Middleware
 {

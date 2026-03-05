@@ -4,12 +4,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -19,12 +13,13 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // Register a transient handler for mocking Cloudflare headers in development.
 builder.Services.AddTransient<DevMockAuthHandler>();
 
-builder.Services.AddHttpClient("F1Api", (sp, client) =>
+const string ClientName = "F1Api";
+
+// Define the API configuration logic once to be used by multiple registrations
+void ConfigureApi(IServiceProvider sp, HttpClient client)
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var nav = sp.GetRequiredService<NavigationManager>();
-
-    // Access the nested value
     var apiBaseUrl = config["F1Api:BaseUrl"];
 
     if (!string.IsNullOrWhiteSpace(apiBaseUrl) && Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var absoluteUri))
@@ -33,20 +28,24 @@ builder.Services.AddHttpClient("F1Api", (sp, client) =>
     }
     else
     {
-        // Absolute fallback if appsettings is missing or broken
         client.BaseAddress = new Uri(nav.BaseUri.EndsWith("/") ? nav.BaseUri + "api/" : nav.BaseUri + "/api/");
     }
 
-    Console.WriteLine($"🚀 F1Api Final Address: {client.BaseAddress}");
-})
-.AddHttpMessageHandler<DevMockAuthHandler>();
+    Console.WriteLine($"🚀 API Address: {client.BaseAddress}");
+}
 
-// Register the main HttpClient for dependency injection. It will create clients using the "F1Api" configuration.
-builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("F1Api"));
+// 1. Register the named client configuration
+builder.Services.AddHttpClient(ClientName, ConfigureApi)
+    .AddHttpMessageHandler<DevMockAuthHandler>();
 
+// 2. Register the default HttpClient for Razor components (e.g. @inject HttpClient)
+// This also allows UserSession to simply ask for 'HttpClient' in its constructor
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient(ClientName));
 
-// --- Inferred Services from your Layout/Nav components ---
+// 3. Register UserSession as SCOPED
 builder.Services.AddScoped<IUserSession, UserSession>();
+
+// --- Auth Services ---
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 

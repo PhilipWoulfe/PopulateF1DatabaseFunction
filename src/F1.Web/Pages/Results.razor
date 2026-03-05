@@ -1,6 +1,6 @@
 @page "/results"
 @using F1.Web.Models
-@inject IHttpClientFactory ClientFactory
+@inject HttpClient Http
 
 <PageTitle>Driver Standings</PageTitle>
 
@@ -45,8 +45,7 @@ else
     {
         try
         {
-            var client = ClientFactory.CreateClient("F1Api");
-            results = await client.GetFromJsonAsync<List<RaceResult>>("races/results");
+            results = await Http.GetFromJsonAsync<List<RaceResult>>("races/results");
         }
         catch (HttpRequestException ex)
         {

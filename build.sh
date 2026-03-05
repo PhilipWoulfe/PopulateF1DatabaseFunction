@@ -18,8 +18,8 @@ fi
 
 echo "🧹 Cleaning stale artifacts and bin/obj folders..."
 # Clean local folders to prevent volume-mount pollution in Docker
-dotnet clean
-# find . -type d \( -name "bin" -o -name "obj" \) -exec rm -rf {} +
+# dotnet clean
+find . -type d \( -name "bin" -o -name "obj" \) -exec rm -rf {} +
 rm -rf tests/**/TestResults
 
 # 3. Conditional Test Block

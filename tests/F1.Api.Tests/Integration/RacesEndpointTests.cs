@@ -1,10 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
-using System.Threading.Tasks;
-using Xunit;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
 
 namespace F1.Api.Tests.Integration
 {

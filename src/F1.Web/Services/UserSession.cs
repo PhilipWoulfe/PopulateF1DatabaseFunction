@@ -8,6 +8,7 @@ namespace F1.Web.Services
     public class UserSession : IUserSession
     {
         private readonly HttpClient _httpClient;
+        private const string MeEndpoint = "users/me";
         private User? _user;
 
         public User? User
@@ -20,16 +21,16 @@ namespace F1.Web.Services
             }
         }
 
-        public UserSession(IHttpClientFactory httpClientFactory)
+        public UserSession(HttpClient httpClient)
         {
-            _httpClient = httpClientFactory.CreateClient("F1Api");
+            _httpClient = httpClient;
         }
 
         public async Task InitializeAsync()
         {
             try
             {
-                User = await _httpClient.GetFromJsonAsync<User>("me");
+                User = await _httpClient.GetFromJsonAsync<User>(MeEndpoint);
             }
             catch (HttpRequestException)
             {
