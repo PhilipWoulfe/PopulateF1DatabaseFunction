@@ -1,9 +1,12 @@
 using F1.Api.Middleware;
 using F1.Core.Interfaces;
 using F1.Services;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddCors(options =>
 {
@@ -22,8 +25,24 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
+{
+    app.UseSwagger(c =>
+    {
+        c.PreSerializeFilters.Add((swagger, httpReq) =>
+        {
+            // If accessed via Nginx (which adds X-Forwarded-For), tell Swagger we are at /api
+            if (httpReq.Headers.ContainsKey("X-Forwarded-For"))
+            {
+                swagger.Servers = new List<OpenApiServer> { new() { Url = "/api" } };
+            }
+        });
+    });
+    app.UseSwaggerUI();
+}
+
 var simulateCloudflare = builder.Configuration.GetValue<bool>("DevSettings:SimulateCloudflare");
-if (simulateCloudflare)
+if (app.Environment.IsDevelopment() && simulateCloudflare)
 {
     app.Use((context, next) =>
     {

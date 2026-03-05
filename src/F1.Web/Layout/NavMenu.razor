@@ -37,15 +37,6 @@
                     </div>
                 </AuthorizeView>
             </Authorized>
-
-            <NotAuthorized>
-                @* Login button - Visible if no header is detected *@
-                <div class="nav-item px-3">
-                    <button class="btn btn-link nav-link" @onclick='() => Navigation.NavigateTo("results", true)'>
-                        <span class="bi bi-box-arrow-in-right-nav-menu" aria-hidden="true"></span> Login
-                    </button>
-                </div>
-            </NotAuthorized>
         </AuthorizeView>
     </nav>
 </div>

@@ -67,8 +67,9 @@
         {
             // Attempt to read the version baked into the image
             var v = await Http.GetFromJsonAsync<VersionModel>("version.json");
-            // Display first 7 chars of hash (git short hash style)
-            _appVersion = v?.Version?.Substring(0, Math.Min(7, v.Version.Length)) ?? "Unknown";
+            // Create a temporary client to fetch from the Origin (Web App), not the API
+            @* using var localClient = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
+            var v = await localClient.GetFromJsonAsync<VersionModel>("version.json"); *@
         }
         catch
         {
