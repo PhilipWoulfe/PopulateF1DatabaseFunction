@@ -28,7 +28,7 @@ namespace F1.Web.Services
         {
             try
             {
-                User = await _httpClient.GetFromJsonAsync<User>("api/me");
+                User = await _httpClient.GetFromJsonAsync<User>("me");
             }
             catch (HttpRequestException)
             {

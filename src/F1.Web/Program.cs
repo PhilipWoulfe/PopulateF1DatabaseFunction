@@ -1,44 +1,39 @@
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using F1.Web;
 using F1.Web.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using System;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
-
-// 2. Print it to the browser console
-// You'll see this in the Chrome/Firefox F12 Console tab
-Console.WriteLine($"DEBUG: ApiBaseUrl from config is: '{apiBaseUrl}'");
-
-// 3. (Optional) Check the environment name too
-Console.WriteLine($"DEBUG: Current Environment is: {builder.HostEnvironment.Environment}");
-
+// --- This is the fix for the API client ---
+// Register a transient handler for mocking Cloudflare headers in development.
 builder.Services.AddTransient<DevMockAuthHandler>();
 
-// Use the value (with the safety check we discussed earlier)
-builder.Services.AddHttpClient("F1Api", client => 
+// Register a named HttpClient for your API.
+builder.Services.AddHttpClient("F1Api", (sp, client) =>
 {
-    client.BaseAddress = new Uri(apiBaseUrl ?? builder.HostEnvironment.BaseAddress);
+    // Use the NavigationManager to get the app's base URI (e.g., http://localhost:5001/).
+    // This ensures we have an absolute path, preventing the "file:///" error.
+    var navigationManager = sp.GetRequiredService<NavigationManager>();
+    client.BaseAddress = new Uri(new Uri(navigationManager.BaseUri), "api/");
 })
-.AddHttpMessageHandler<DevMockAuthHandler>();
+.AddHttpMessageHandler<DevMockAuthHandler>(); // This attaches your mock header handler.
 
-// 2. Add this line so @inject HttpClient works in your .razor files
+// Register the main HttpClient for dependency injection. It will create clients using the "F1Api" configuration.
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("F1Api"));
 
+
+// --- Inferred Services from your Layout/Nav components ---
+builder.Services.AddScoped<IUserSession, UserSession>();
 builder.Services.AddAuthorizationCore();
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddSingleton<IUserSession, UserSession>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
-
-var host = builder.Build();
-
-var userSession = host.Services.GetRequiredService<IUserSession>();
-await userSession.InitializeAsync();
-
-await host.RunAsync();
-
+await builder.Build().RunAsync();

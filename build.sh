@@ -23,8 +23,8 @@ echo "🏎️  Running All F1 Unit Tests ($MODE Mode)..."
 # 3. Run Tests
 if dotnet test F1Competition.sln --nologo --verbosity minimal \
     /p:CollectCoverage=true \
-    /p:CoverletOutputFormat=cobertura
-    #/p:Threshold=20; # Optional: Fails the build if coverage is < 80%
+    /p:CoverletOutputFormat=cobertura \
+    /p:Threshold=40; # Optional: Fails the build if coverage is < value
 then
     echo "✅ All tests passed! Starting Docker Build ($MODE Mode)..."
     
