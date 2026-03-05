@@ -1,0 +1,17 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+WORKDIR /app
+
+# Install .NET debugger and process picker tool
+RUN apt-get update && apt-get install -y unzip procps \
+    && curl -sSL https://aka.ms/getvsdbgsh | /bin/sh /dev/stdin -v latest -l /vsdbg
+
+# Copy project files and restore
+COPY F1Competition.sln .
+COPY src/ src/
+COPY tests/ tests/
+RUN dotnet restore F1Competition.sln
+
+# We don't need to run a full build here because 'dotnet watch' 
+# in compose will build it from the mounted volume.
+# REMOVED: ENTRYPOINT ["tail", "-f", "/dev/null"]

@@ -5,7 +5,7 @@ RUN dotnet restore "F1.Web.csproj"
 COPY . .
 RUN dotnet publish "F1.Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM nginx:alpine
+FROM nginx:1.25.3-alpine
 WORKDIR /usr/share/nginx/html
 COPY --from=build /app/publish/wwwroot .
 COPY nginx.conf /etc/nginx/templates/default.conf.template

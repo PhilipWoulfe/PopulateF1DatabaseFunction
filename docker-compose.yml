@@ -2,6 +2,7 @@ services:
   f1-api:
     environment:
       - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost:5000,http://localhost:5001,http://localhost:5200}
+      - ASPNETCORE_ENVIRONMENT=${BLAZOR_ENVIRONMENT}
     image: ghcr.io/philipwoulfe/f1competition:${TAG:-latest}
     build:
       context: .

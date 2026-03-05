@@ -12,17 +12,22 @@
         <div class="top-row px-4">
             @if (HostEnvironment.IsDevelopment())
             {
-                <button class="btn btn-link" @onclick="ToggleUser">Toggle User</button>
+                @* This helps you test the UI without needing to actually login via CF *@
+                <button class="btn btn-outline-warning btn-sm me-2" @onclick="ToggleUser">
+                    Test Mode: Toggle Auth
+                </button>
             }
+            
             <AuthorizeView>
                 <Authorized>
-                    <a href="https://f1-team.cloudflareaccess.com/cdn-cgi/access/logout">Logout</a>
+                    <span class="me-3">Hi, @context.User.Identity?.Name</span>
+                    <a href="https://f1-team.cloudflareaccess.com/cdn-cgi/access/logout" class="btn btn-sm btn-outline-danger">Logout</a>
                 </Authorized>
                 <NotAuthorized>
-                    <button class="btn btn-link" @onclick='() => Navigation.NavigateTo("results", true)'>Login</button>
+                    @* Forces a full page load to 'results' so Cloudflare can intercept the request *@
+                    <button class="btn btn-primary btn-sm" @onclick='() => Navigation.NavigateTo("results", true)'>Login</button>
                 </NotAuthorized>
             </AuthorizeView>
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 
         <article class="content px-4">
@@ -34,6 +39,10 @@
 @code {
     private async Task ToggleUser()
     {
+        // This likely modifies the headers/state in your dev environment
         await UserSession.InitializeAsync();
+        
+        // Force the layout to re-evaluate the AuthorizeView
+        StateHasChanged(); 
     }
 }

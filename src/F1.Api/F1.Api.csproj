@@ -13,6 +13,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\F1.Services\F1.Services.csproj" />
+    <ProjectReference Include="..\F1.Core\F1.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="F1.Api.Tests" />
   </ItemGroup>
 
 </Project>
