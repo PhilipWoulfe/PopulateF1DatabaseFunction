@@ -22,26 +22,26 @@ services:
     ]
     tty: true
 
-  f1-web:
-    build:
-      context: .
-      dockerfile: src/F1.Web/Dockerfile.web.debug
-    container_name: f1-web
-    ports:
-      - "5001:8080"      # UI Traffic
-    volumes:
-      - .:/app
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true
-      - DOTNET_USE_POLLING_FILE_WATCHER=true
-      # IMPORTANT: If browsing from another PC, use the VM IP instead of localhost
-      - API_BASE_URL=http://localhost:5000/
-    working_dir: /app/src/F1.Web
-    command: [
-      "dotnet", "watch", "run", 
-      "--non-interactive",
-      "--configuration", "Debug", 
-      "--urls", "http://0.0.0.0:8080"
-    ]
-    tty: true
+  # f1-web:
+  #   build:
+  #     context: .
+  #     dockerfile: src/F1.Web/Dockerfile.web.debug
+  #   container_name: f1-web
+  #   ports:
+  #     - "5001:8080"      # UI Traffic
+  #   volumes:
+  #     - .:/app
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true
+  #     - DOTNET_USE_POLLING_FILE_WATCHER=true
+  #     # IMPORTANT: If browsing from another PC, use the VM IP instead of localhost
+  #     - API_BASE_URL=http://localhost:5000/
+  #   working_dir: /app/src/F1.Web
+  #   command: [
+  #     "dotnet", "watch", "run", 
+  #     "--non-interactive",
+  #     "--configuration", "Debug", 
+  #     "--urls", "http://0.0.0.0:8080"
+  #   ]
+  #   tty: true

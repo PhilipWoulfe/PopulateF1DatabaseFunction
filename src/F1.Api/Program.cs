@@ -1,6 +1,8 @@
 using F1.Api.Middleware;
 using F1.Core.Interfaces;
+using F1.Infrastructure.Repositories;
 using F1.Services;
+using Microsoft.Azure.Cosmos;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +11,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers(); // Add this line to register controller services
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IRaceService, RaceService>();
+
+builder.Services.AddSingleton((provider) =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var connectionString = configuration["CosmosDb:ConnectionString"];
+    return new CosmosClient(connectionString);
+});
+builder.Services.AddScoped<IDriverRepository, CosmosDriverRepository>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorOrigin",

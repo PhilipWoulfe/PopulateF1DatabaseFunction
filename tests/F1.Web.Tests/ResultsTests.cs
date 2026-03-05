@@ -137,4 +137,39 @@ public class ResultsTests : TestContext
         cut.WaitForState(() => cut.FindAll("p").Count > 0);
         Assert.Contains("API is down", cut.Markup);
     }
+
+    [Fact]
+    public void Results_ShouldCallOnInitializedAsync_WhenComponentIsRendered()
+    {
+        // Arrange
+        var mockResults = new List<RaceResult>
+        {
+            new() { DriverId = "verstappen", Position = 1, Points = 25 },
+            new() { DriverId = "norris", Position = 2, Points = 18 }
+        };
+
+        var response = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonSerializer.Serialize(mockResults))
+        };
+
+        _handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+
+        // Act
+        var cut = RenderComponent<Results>();
+
+        // Assert
+        _handlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>());
+    }
 }

@@ -1,0 +1,69 @@
+@page "/drivers"
+@using F1.Web.Models
+@using System.Net.Http.Json
+@inject HttpClient Http
+
+<h1>F1 2025 Drivers</h1>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+else if (drivers == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Full Name</th>
+                <th>Driver ID</th>
+                <th>Permanent Number</th>
+                <th>Code</th>
+                <th>Nationality</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var driver in drivers)
+            {
+                <tr>
+                    <td>@driver.FullName</td>
+                    <td>@driver.DriverId</td>
+                    <td>@driver.PermanentNumber</td>
+                    <td>@driver.Code</td>
+                    <td>@driver.Nationality</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private Driver[] drivers;
+    private string errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            drivers = await Http.GetFromJsonAsync<Driver[]>("drivers");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error fetching drivers: {ex.Message}";
+            Console.WriteLine(errorMessage);
+        }
+    }
+
+    public class Driver
+    {
+        public string Id { get; set; }
+        public string FullName { get; set; }
+        public string DriverId { get; set; }
+        public int? PermanentNumber { get; set; }
+        public string Code { get; set; }
+        public string Nationality { get; set; }
+    }
+}
