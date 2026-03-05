@@ -11,6 +11,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers(); // Add this line to register controller services
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IRaceService, RaceService>();
+builder.Services.AddScoped<ISelectionService, SelectionService>();
+builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
 builder.Services.AddSingleton((provider) =>
 {
@@ -19,6 +21,7 @@ builder.Services.AddSingleton((provider) =>
     return new CosmosClient(connectionString);
 });
 builder.Services.AddScoped<IDriverRepository, CosmosDriverRepository>();
+builder.Services.AddScoped<ISelectionRepository, CosmosSelectionRepository>();
 
 builder.Services.AddCors(options =>
 {
