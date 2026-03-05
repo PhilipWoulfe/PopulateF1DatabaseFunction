@@ -6,7 +6,11 @@
 
 <h1>Driver Standings</h1>
 
-@if (results == null)
+@if (!string.IsNullOrEmpty(error))
+{
+    <p><em>@error</em></p>
+}
+else if (results == null)
 {
     <p><em>Loading race results...</em></p>
 }
@@ -35,10 +39,18 @@ else
 
 @code {
     private List<RaceResult>? results;
+    private string? error;
 
     protected override async Task OnInitializedAsync()
     {
-        var client = ClientFactory.CreateClient("F1Api");
-        results = await client.GetFromJsonAsync<List<RaceResult>>("races/results");
+        try
+        {
+            var client = ClientFactory.CreateClient("F1Api");
+            results = await client.GetFromJsonAsync<List<RaceResult>>("races/results");
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.Message;
+        }
     }
 }

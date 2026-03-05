@@ -65,23 +65,25 @@
     {
         try
         {
-            // Initialize the user session on startup by fetching user details from the API.
+            // Construct an absolute URL based on the current browser address.
+            // If you are at http://localhost:5001, this makes the API http://localhost:5001/api/
+            var absoluteApiUrl = Navigation.ToAbsoluteUri("api/");
+            
+            Http.BaseAddress = absoluteApiUrl;
+
+            Console.WriteLine($"🌐 API Base Address: {Http.BaseAddress}");
+
             await UserSession.InitializeAsync();
 
-            // Create a temporary client to fetch from the Origin (Web App), not the API.
-            // This avoids using the API client (with its auth handlers) for a simple static file.
+            // Version logic
             using var localClient = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
             var versionModel = await localClient.GetFromJsonAsync<VersionModel>("version.json");
-
-            if (versionModel?.Version is not null)
-            {
-                // Use the first 7 characters for a short hash display
-                _appVersion = versionModel.Version.Substring(0, Math.Min(7, versionModel.Version.Length));
-            }
+            _appVersion = versionModel?.Version?.Substring(0, Math.Min(7, versionModel.Version.Length)) ?? "N/A";
         }
-        catch
+        catch (Exception ex)
         {
-            _appVersion = "Local";
+            Console.WriteLine($"❌ Startup Error: {ex.Message}");
+            _appVersion = "Error";
         }
     }
 

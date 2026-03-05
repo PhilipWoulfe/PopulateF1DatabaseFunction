@@ -303,3 +303,4 @@ ToWatch.md
 
 # ReportGenerator Output
 **/coveragereport/
+**/coverage.xml

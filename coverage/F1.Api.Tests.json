@@ -1,0 +1,487 @@
+{
+  "F1.Api.dll": {
+    "/home/pillphil/dev/F1Competition/src/F1.Api/Program.cs": {
+      "Program": {
+        "System.Void Program::<Main>$(System.String[])": {
+          "Lines": {
+            "6": 2,
+            "8": 2,
+            "9": 2,
+            "10": 2,
+            "11": 2,
+            "12": 2,
+            "13": 2,
+            "14": 2,
+            "15": 2,
+            "16": 2,
+            "17": 2,
+            "18": 2,
+            "19": 2,
+            "20": 4,
+            "21": 4,
+            "23": 2,
+            "24": 2,
+            "26": 2,
+            "28": 2,
+            "29": 2,
+            "30": 2,
+            "31": 2,
+            "32": 2,
+            "33": 0,
+            "34": 2,
+            "35": 0,
+            "36": 0,
+            "37": 0,
+            "38": 0,
+            "39": 2,
+            "40": 4,
+            "41": 2,
+            "42": 2,
+            "44": 2,
+            "45": 2,
+            "46": 1,
+            "47": 1,
+            "48": 1,
+            "49": 1,
+            "50": 1,
+            "51": 1,
+            "52": 2,
+            "53": 1,
+            "55": 2,
+            "57": 2,
+            "58": 2,
+            "59": 2,
+            "60": 2,
+            "61": 2,
+            "62": 1,
+            "63": 1,
+            "64": 1,
+            "65": 2,
+            "66": 1,
+            "67": 1,
+            "68": 1,
+            "69": 2,
+            "70": 2,
+            "71": 4,
+            "73": 2,
+            "75": 2,
+            "76": 2,
+            "78": 2,
+            "79": 1,
+            "80": 1,
+            "81": 1,
+            "82": 3,
+            "84": 2
+          },
+          "Branches": [
+            {
+              "Line": 28,
+              "Offset": 166,
+              "EndOffset": 168,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 28,
+              "Offset": 166,
+              "EndOffset": 191,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            },
+            {
+              "Line": 28,
+              "Offset": 194,
+              "EndOffset": 196,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 2
+            },
+            {
+              "Line": 28,
+              "Offset": 194,
+              "EndOffset": 254,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 2
+            },
+            {
+              "Line": 45,
+              "Offset": 296,
+              "EndOffset": 298,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 1
+            },
+            {
+              "Line": 45,
+              "Offset": 296,
+              "EndOffset": 324,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 2
+            },
+            {
+              "Line": 35,
+              "Offset": 19,
+              "EndOffset": 21,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 35,
+              "Offset": 19,
+              "EndOffset": 59,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 0
+            },
+            {
+              "Line": 13,
+              "Offset": 14,
+              "EndOffset": 16,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 2
+            },
+            {
+              "Line": 13,
+              "Offset": 14,
+              "EndOffset": 38,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            },
+            {
+              "Line": 16,
+              "Offset": 23,
+              "EndOffset": 25,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 16,
+              "Offset": 23,
+              "EndOffset": 29,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            },
+            {
+              "Line": 16,
+              "Offset": 38,
+              "EndOffset": 40,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 0
+            },
+            {
+              "Line": 16,
+              "Offset": 38,
+              "EndOffset": 46,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 2
+            },
+            {
+              "Line": 49,
+              "Offset": 23,
+              "EndOffset": 25,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 49,
+              "Offset": 23,
+              "EndOffset": 31,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 1
+            }
+          ]
+        }
+      },
+      "Program/<>c__DisplayClass0_0/<<<Main>$>b__3>d": {
+        "System.Void Program/<>c__DisplayClass0_0/<<<Main>$>b__3>d::MoveNext()": {
+          "Lines": {},
+          "Branches": [
+            {
+              "Line": 61,
+              "Offset": 128,
+              "EndOffset": 130,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 61,
+              "Offset": 128,
+              "EndOffset": 174,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 1
+            }
+          ]
+        }
+      }
+    },
+    "/home/pillphil/dev/F1Competition/src/F1.Api/Services/UserContext.cs": {
+      "F1.Api.Services.UserContext": {
+        "F1.Core.Models.User F1.Api.Services.UserContext::GetCurrentUser()": {
+          "Lines": {
+            "18": 3,
+            "19": 3,
+            "21": 3,
+            "22": 1,
+            "23": 1,
+            "26": 2,
+            "27": 2,
+            "28": 2,
+            "29": 2,
+            "30": 2,
+            "31": 2,
+            "33": 2,
+            "34": 3
+          },
+          "Branches": [
+            {
+              "Line": 19,
+              "Offset": 13,
+              "EndOffset": 15,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 19,
+              "Offset": 13,
+              "EndOffset": 19,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 3
+            },
+            {
+              "Line": 21,
+              "Offset": 56,
+              "EndOffset": 58,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 21,
+              "Offset": 56,
+              "EndOffset": 64,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 2
+            }
+          ]
+        },
+        "System.Void F1.Api.Services.UserContext::.ctor(Microsoft.AspNetCore.Http.IHttpContextAccessor,Microsoft.Extensions.Configuration.IConfiguration)": {
+          "Lines": {
+            "11": 3,
+            "12": 3,
+            "13": 3,
+            "14": 3,
+            "15": 3
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/pillphil/dev/F1Competition/src/F1.Api/Middleware/CloudflareAccessMiddleware.cs": {
+      "F1.Api.Middleware.CloudflareAccessMiddleware": {
+        "System.Void F1.Api.Middleware.CloudflareAccessMiddleware::.ctor(Microsoft.AspNetCore.Http.RequestDelegate,Microsoft.Extensions.Configuration.IConfiguration)": {
+          "Lines": {
+            "15": 7,
+            "16": 7,
+            "17": 7,
+            "18": 7,
+            "19": 7
+          },
+          "Branches": []
+        }
+      },
+      "F1.Api.Middleware.CloudflareAccessMiddleware/<InvokeAsync>d__4": {
+        "System.Void F1.Api.Middleware.CloudflareAccessMiddleware/<InvokeAsync>d__4::MoveNext()": {
+          "Lines": {
+            "22": 7,
+            "23": 7,
+            "24": 7,
+            "25": 2,
+            "26": 2,
+            "27": 2,
+            "28": 2,
+            "29": 2,
+            "30": 2,
+            "31": 2,
+            "33": 7,
+            "34": 2,
+            "35": 2,
+            "36": 2,
+            "37": 2,
+            "40": 5,
+            "41": 5,
+            "42": 5,
+            "43": 5,
+            "44": 5,
+            "46": 5,
+            "47": 1,
+            "48": 1,
+            "49": 1,
+            "51": 5,
+            "52": 5,
+            "54": 5,
+            "55": 7
+          },
+          "Branches": [
+            {
+              "Line": 24,
+              "Offset": 67,
+              "EndOffset": 69,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 3
+            },
+            {
+              "Line": 24,
+              "Offset": 67,
+              "EndOffset": 87,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 4
+            },
+            {
+              "Line": 24,
+              "Offset": 90,
+              "EndOffset": 92,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 2
+            },
+            {
+              "Line": 27,
+              "Offset": 131,
+              "EndOffset": 133,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 2
+            },
+            {
+              "Line": 27,
+              "Offset": 131,
+              "EndOffset": 173,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 2
+            },
+            {
+              "Line": 24,
+              "Offset": 90,
+              "EndOffset": 181,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 7
+            },
+            {
+              "Line": 33,
+              "Offset": 218,
+              "EndOffset": 223,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 2
+            },
+            {
+              "Line": 33,
+              "Offset": 218,
+              "EndOffset": 376,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 5
+            },
+            {
+              "Line": 46,
+              "Offset": 454,
+              "EndOffset": 456,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 1
+            },
+            {
+              "Line": 46,
+              "Offset": 454,
+              "EndOffset": 485,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 5
+            }
+          ]
+        }
+      }
+    }
+  },
+  "F1.Services.dll": {
+    "/home/pillphil/dev/F1Competition/src/F1.Services/RaceService.cs": {
+      "F1.Services.RaceService": {
+        "System.Collections.Generic.List`1<F1.Core.Models.RaceResult> F1.Services.RaceService::GetMockResults()": {
+          "Lines": {
+            "9": 2,
+            "10": 2,
+            "11": 2,
+            "12": 2,
+            "13": 2,
+            "14": 2,
+            "15": 2
+          },
+          "Branches": []
+        }
+      }
+    }
+  },
+  "F1.Infrastructure.dll": {},
+  "F1.Core.dll": {
+    "/home/pillphil/dev/F1Competition/src/F1.Core/Models/RaceResult.cs": {
+      "F1.Core.Models.RaceResult": {
+        "System.String F1.Core.Models.RaceResult::get_DriverId()": {
+          "Lines": {
+            "5": 11
+          },
+          "Branches": []
+        },
+        "System.Int32 F1.Core.Models.RaceResult::get_Position()": {
+          "Lines": {
+            "6": 6
+          },
+          "Branches": []
+        },
+        "System.Decimal F1.Core.Models.RaceResult::get_Points()": {
+          "Lines": {
+            "7": 6
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/pillphil/dev/F1Competition/src/F1.Core/Models/User.cs": {
+      "F1.Core.Models.User": {
+        "System.String F1.Core.Models.User::get_Email()": {
+          "Lines": {
+            "5": 4
+          },
+          "Branches": []
+        },
+        "System.Boolean F1.Core.Models.User::get_IsAdmin()": {
+          "Lines": {
+            "6": 4
+          },
+          "Branches": []
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 using F1.Web.Models;
 using System.ComponentModel;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace F1.Web.Services
 {
@@ -32,6 +33,11 @@ namespace F1.Web.Services
             }
             catch (HttpRequestException)
             {
+                User = null;
+            }
+            catch (JsonException)
+            {
+                // Handles cases where the API returns HTML (e.g. 404 page) instead of JSON
                 User = null;
             }
         }

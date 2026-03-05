@@ -3,11 +3,45 @@ services:
     build:
       context: .
       dockerfile: src/F1.Api/Dockerfile.debug
+    container_name: f1-local
     ports:
-      - "5000:8080"
-      - "15000:15000"
+      - "5000:8080"      # API Traffic
+      - "15000:15000"    # DEBUGGER ONLY (VS Code attaches here)
     volumes:
       - .:/app
-    # Now this will actually run because we removed the Entrypoint in the Dockerfile
-    command: ["dotnet", "watch", "run", "--project", "src/F1.Api/F1.Api.csproj", "--urls", "http://0.0.0.0:8080"]
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+    command: [
+      "dotnet", "watch", "run", 
+      "--non-interactive",
+      "--project", "src/F1.Api/F1.Api.csproj", 
+      "--configuration", "Debug", 
+      "--urls", "http://0.0.0.0:8080"
+    ]
+    tty: true
+
+  f1-web:
+    build:
+      context: .
+      dockerfile: src/F1.Web/Dockerfile.web.debug
+    container_name: f1-web
+    ports:
+      - "5001:8080"      # UI Traffic
+    volumes:
+      - .:/app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+      # IMPORTANT: If browsing from another PC, use the VM IP instead of localhost
+      - API_BASE_URL=http://localhost:5000/
+    working_dir: /app/src/F1.Web
+    command: [
+      "dotnet", "watch", "run", 
+      "--non-interactive",
+      "--configuration", "Debug", 
+      "--urls", "http://0.0.0.0:8080"
+    ]
     tty: true

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http;
 using System.Security.Claims;
@@ -17,15 +19,27 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // Register a transient handler for mocking Cloudflare headers in development.
 builder.Services.AddTransient<DevMockAuthHandler>();
 
-// Register a named HttpClient for your API.
 builder.Services.AddHttpClient("F1Api", (sp, client) =>
 {
-    // Use the NavigationManager to get the app's base URI (e.g., http://localhost:5001/).
-    // This ensures we have an absolute path, preventing the "file:///" error.
-    var navigationManager = sp.GetRequiredService<NavigationManager>();
-    client.BaseAddress = new Uri(new Uri(navigationManager.BaseUri), "api/");
+    var config = sp.GetRequiredService<IConfiguration>();
+    var nav = sp.GetRequiredService<NavigationManager>();
+
+    // Access the nested value
+    var apiBaseUrl = config["F1Api:BaseUrl"];
+
+    if (!string.IsNullOrWhiteSpace(apiBaseUrl) && Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var absoluteUri))
+    {
+        client.BaseAddress = absoluteUri;
+    }
+    else
+    {
+        // Absolute fallback if appsettings is missing or broken
+        client.BaseAddress = new Uri(nav.BaseUri.EndsWith("/") ? nav.BaseUri + "api/" : nav.BaseUri + "/api/");
+    }
+
+    Console.WriteLine($"🚀 F1Api Final Address: {client.BaseAddress}");
 })
-.AddHttpMessageHandler<DevMockAuthHandler>(); // This attaches your mock header handler.
+.AddHttpMessageHandler<DevMockAuthHandler>();
 
 // Register the main HttpClient for dependency injection. It will create clients using the "F1Api" configuration.
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("F1Api"));

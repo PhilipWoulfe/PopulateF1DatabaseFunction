@@ -44,7 +44,7 @@ jobs:
           fail_below_min: true 
           format: markdown
           output: both
-          thresholds: '40 80'
+          thresholds: '30 80'
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

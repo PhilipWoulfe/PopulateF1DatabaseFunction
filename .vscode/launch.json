@@ -38,6 +38,13 @@
             "sourceFileMap": {
                 "/app": "${workspaceFolder}"
             }
+        },
+        {
+            "name": "Debug Blazor Web (Docker)",
+            "type": "blazorwasm",
+            "request": "launch",
+            "url": "http://localhost:5001",
+            "webRoot": "${workspaceFolder}/src/F1.Web"
         }
     ]
 }

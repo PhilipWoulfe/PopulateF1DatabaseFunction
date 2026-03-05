@@ -13,10 +13,19 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowBlazorOrigin",
         policy =>
         {
-            var origins = builder.Configuration["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
-            policy.WithOrigins(origins)
-                   .AllowAnyMethod()
-                   .AllowAnyHeader();
+            if (builder.Environment.IsDevelopment())
+            {
+                policy.SetIsOriginAllowed(origin => Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.Host == "localhost")
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }
+            else
+            {
+                var origins = builder.Configuration["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
+                policy.WithOrigins(origins)
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }
         });
 });
 
