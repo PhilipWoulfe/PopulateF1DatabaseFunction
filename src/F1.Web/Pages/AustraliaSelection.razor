@@ -95,18 +95,25 @@ else
 
     public async ValueTask DisposeAsync()
     {
-        if (timerCts is not null)
+        var cts = timerCts;
+        var timer = countdownTimer;
+        var task = tickTask;
+        timerCts = null;
+        countdownTimer = null;
+        tickTask = null;
+
+        if (cts is not null)
         {
-            await timerCts.CancelAsync();
+            await cts.CancelAsync();
         }
 
-        if (tickTask is not null)
+        if (task is not null)
         {
             await tickTask;
         }
 
-        timerCts?.Dispose();
-        countdownTimer?.Dispose();
+        cts?.Dispose();
+        timer?.Dispose();
     }
 
     private async Task LoadDataAsync()

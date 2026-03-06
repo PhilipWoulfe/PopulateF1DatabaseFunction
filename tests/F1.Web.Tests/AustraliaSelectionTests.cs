@@ -146,6 +146,28 @@ public class AustraliaSelectionTests : TestContext
         cut.WaitForAssertion(() => Assert.Contains("Exactly 5 unique drivers must be selected.", cut.Markup));
     }
 
+    [Fact]
+    public async Task AustraliaSelection_DisposeAsync_ShouldBeIdempotent()
+    {
+        var handler = new QueueHttpMessageHandler();
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new Driver { DriverId = "norris", FullName = "Lando Norris" }
+        }));
+        handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var cut = RenderComponent<AustraliaSelection>();
+        cut.WaitForAssertion(() => Assert.Contains("Countdown:", cut.Markup));
+
+        var component = (IAsyncDisposable)cut.Instance;
+        await component.DisposeAsync();
+        // Second call must not throw
+        await component.DisposeAsync();
+    }
+
     private static HttpResponseMessage CreateJsonResponse<T>(T payload, HttpStatusCode statusCode = HttpStatusCode.OK)
     {
         return new HttpResponseMessage(statusCode)
