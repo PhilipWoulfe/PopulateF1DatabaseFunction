@@ -2,6 +2,7 @@ using F1.Api.Controllers;
 using F1.Core.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 
 namespace F1.Api.Tests.Controllers
@@ -14,10 +15,19 @@ namespace F1.Api.Tests.Controllers
             // Arrange
             var controller = new UsersController();
 
-            // Mock the HttpContext and Headers
+            // Mock the HttpContext user claims set by middleware.
             var httpContext = new DefaultHttpContext();
-            httpContext.Request.Headers["Cf-Access-Authenticated-User-Email"] = "driver@f1.com";
-            httpContext.Request.Headers["Cf-Access-Authenticated-User-Id"] = "user-guid-123";
+            httpContext.User = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    new[]
+                    {
+                        new Claim(ClaimTypes.Email, "driver@f1.com"),
+                        new Claim(ClaimTypes.Name, "driver"),
+                        new Claim(ClaimTypes.NameIdentifier, "user-guid-123")
+                    },
+                    "Cloudflare"
+                )
+            );
 
             controller.ControllerContext = new ControllerContext()
             {

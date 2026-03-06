@@ -1,12 +1,10 @@
-﻿@inject NavigationManager Navigation
-
-<CascadingAuthenticationState>
+﻿<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
-                    <h1>🏁 Access Denied: Please Log In</h1>
-                    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("results", true)'>Login</button>
+                    <h1>🏁 Access Denied</h1>
+                    <p>Your Cloudflare Access session is required to view this app.</p>
                 </NotAuthorized>
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
