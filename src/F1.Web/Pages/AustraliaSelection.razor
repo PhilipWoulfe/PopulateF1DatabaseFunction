@@ -107,7 +107,7 @@ else
 
         try
         {
-            drivers = await Http.GetFromJsonAsync<Driver[]>("drivers");
+            drivers = await Http.GetFromJsonAsync<Driver[]>("drivers") ?? System.Array.Empty<Driver>();
             await LoadExistingSelectionAsync();
         }
         catch (Exception ex)
