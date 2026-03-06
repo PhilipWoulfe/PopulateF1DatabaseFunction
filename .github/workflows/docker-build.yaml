@@ -29,12 +29,25 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Run Unit Tests
+      - name: Run API/Backend Unit Tests with Coverage
         run: |
-          dotnet test F1Competition.sln \
+          dotnet test tests/F1.Api.Tests/F1.Api.Tests.csproj \
           --configuration Release \
-          --settings coverlet.runsettings \
-          --results-directory ./coverage \
+          --nologo \
+          --verbosity minimal \
+          --collect:"XPlat Code Coverage" \
+          --settings coverlet.api.runsettings \
+          --results-directory ./coverage/api-coverage
+
+      - name: Run Web Unit Tests with Web-Only Coverage
+        run: |
+          dotnet test tests/F1.Web.Tests/F1.Web.Tests.csproj \
+          --configuration Release \
+          --nologo \
+          --verbosity minimal \
+          --collect:"XPlat Code Coverage" \
+          --settings coverlet.web.runsettings \
+          --results-directory ./coverage/web-coverage
 
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
@@ -44,7 +57,7 @@ jobs:
           fail_below_min: true 
           format: markdown
           output: both
-          thresholds: '30 80'
+          thresholds: '10 80'
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

@@ -10,7 +10,6 @@ using Xunit;
 using System.Collections.Generic;
 using System;
 using System.Net.Http;
-using F1.Core.Models;
 
 namespace F1.Web.Tests.Pages
 {

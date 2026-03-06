@@ -26,16 +26,31 @@ rm -rf tests/**/TestResults
 if [[ "$MODE" == "Debug" ]]; then
     echo "⏭️  Skipping Unit Tests for Debug Mode..."
 else
-    echo "🏎️  Running All F1 Unit Tests ($CONFIG Mode)..."
-    if ! dotnet test F1Competition.sln -c "$CONFIG" --nologo --verbosity minimal \
+    echo "🏎️  Running API/Backend Unit Tests with Coverage ($CONFIG Mode)..."
+    if ! dotnet test tests/F1.Api.Tests/F1.Api.Tests.csproj -c "$CONFIG" --nologo --verbosity minimal \
         /p:CollectCoverage=true \
         /p:CoverletOutputFormat=cobertura \
+        /p:CoverletOutput=./TestResults/api-coverage/ \
+        /p:Include="[F1.Api]*%2c[F1.Core]*%2c[F1.Services]*%2c[F1.Infrastructure]*" \
         /p:Threshold=30; then
-        printf "\033[0;31m❌ One or more tests failed! Aborting build.\033[0m\n"
+        printf "\033[0;31m❌ API/Backend tests failed! Aborting build.\033[0m\n"
         printf "\a"
         exit 1
     fi
-    echo "✅ All tests passed!"
+
+    echo "🏎️  Running Web Unit Tests with Web-Only Coverage ($CONFIG Mode)..."
+    if ! dotnet test tests/F1.Web.Tests/F1.Web.Tests.csproj -c "$CONFIG" --nologo --verbosity minimal \
+        /p:CollectCoverage=true \
+        /p:CoverletOutputFormat=cobertura \
+        /p:CoverletOutput=./TestResults/web-coverage/ \
+        /p:Include="[F1.Web]*" \
+        /p:Threshold=30; then
+        printf "\033[0;31m❌ Web tests failed! Aborting build.\033[0m\n"
+        printf "\a"
+        exit 1
+    fi
+
+    echo "✅ API and Web tests passed!"
 fi
 
 # 4. Fire up the containers
