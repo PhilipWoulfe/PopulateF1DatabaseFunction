@@ -2,6 +2,10 @@ name: Code Quality
 
 on:
   pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -27,9 +31,34 @@ jobs:
           dotnet format whitespace F1Competition.sln --verify-no-changes --no-restore \
           --include src/F1.Api src/F1.Core src/F1.Infrastructure src/F1.Services src/F1.Web tests/F1.Api.Tests tests/F1.Web.Tests
 
+      - name: Check Analyzer Warnings
+        run: |
+          dotnet format analyzers F1Competition.sln --verify-no-changes --no-restore --severity warn \
+          --include src/F1.Api src/F1.Core src/F1.Infrastructure src/F1.Services src/F1.Web tests/F1.Api.Tests tests/F1.Web.Tests
+
+  build:
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: |
+          dotnet restore src/F1.Api/F1.Api.csproj
+          dotnet restore src/F1.Web/F1.Web.csproj
+          dotnet restore tests/F1.Api.Tests/F1.Api.Tests.csproj
+          dotnet restore tests/F1.Web.Tests/F1.Web.Tests.csproj
+
       - name: Build & Analyze
         run: |
-          dotnet build src/F1.Api/F1.Api.csproj --configuration Release --no-restore
-          dotnet build src/F1.Web/F1.Web.csproj --configuration Release --no-restore
-          dotnet build tests/F1.Api.Tests/F1.Api.Tests.csproj --configuration Release --no-restore
-          dotnet build tests/F1.Web.Tests/F1.Web.Tests.csproj --configuration Release --no-restore
+          dotnet build src/F1.Api/F1.Api.csproj --configuration Release --no-restore /warnaserror
+          dotnet build src/F1.Web/F1.Web.csproj --configuration Release --no-restore /warnaserror
+          dotnet build tests/F1.Api.Tests/F1.Api.Tests.csproj --configuration Release --no-restore /warnaserror
+          dotnet build tests/F1.Web.Tests/F1.Web.Tests.csproj --configuration Release --no-restore /warnaserror
+
