@@ -8,6 +8,7 @@ public class SelectionService : ISelectionService
 {
     public static readonly DateTime PreQualyDeadlineUtc = new(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc);
     public static readonly DateTime FinalSubmissionDeadlineUtc = new(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc);
+    public const string AustraliaRaceId2026 = "2026-australia";
 
     private readonly ISelectionRepository _selectionRepository;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -26,7 +27,8 @@ public class SelectionService : ISelectionService
             return null;
         }
 
-        selection.IsLocked = IsPreQualyLocked(selection, _dateTimeProvider.UtcNow);
+        var nowUtc = _dateTimeProvider.UtcNow;
+        selection.IsLocked = IsPreQualyLocked(selection, nowUtc) || nowUtc > FinalSubmissionDeadlineUtc;
         return selection;
     }
 
@@ -62,6 +64,21 @@ public class SelectionService : ISelectionService
         selection.IsLocked = false;
 
         return await _selectionRepository.UpsertSelectionAsync(selection);
+    }
+
+    public RaceConfigDto? GetRaceConfig(string raceId)
+    {
+        if (raceId == AustraliaRaceId2026)
+        {
+            return new RaceConfigDto
+            {
+                RaceId = AustraliaRaceId2026,
+                PreQualyDeadlineUtc = PreQualyDeadlineUtc,
+                FinalDeadlineUtc = FinalSubmissionDeadlineUtc
+            };
+        }
+
+        return null;
     }
 
     public int CalculateScore(BetType betType, bool isPerfectTopFive, int basePoints, bool submittedBeforePreQualyDeadline)

@@ -9,6 +9,13 @@ namespace F1.Web.Tests.Pages;
 
 public class AustraliaSelectionTests : TestContext
 {
+    private static readonly RaceConfig DefaultRaceConfig = new()
+    {
+        RaceId = "2026-australia",
+        PreQualyDeadlineUtc = new DateTime(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc),
+        FinalDeadlineUtc = new DateTime(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc)
+    };
+
     [Fact]
     public void AustraliaSelection_ShouldRenderWarningAndCountdown_WhenLoadedWithNoExistingSelection()
     {
@@ -21,6 +28,7 @@ public class AustraliaSelectionTests : TestContext
             new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         }));
+        handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
@@ -43,6 +51,7 @@ public class AustraliaSelectionTests : TestContext
             new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         }));
+        handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
             Id = Guid.NewGuid(),
@@ -73,6 +82,7 @@ public class AustraliaSelectionTests : TestContext
             new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         }));
+        handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
@@ -122,6 +132,7 @@ public class AustraliaSelectionTests : TestContext
             new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         }));
+        handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(new { message = "Exactly 5 unique drivers must be selected." }, HttpStatusCode.BadRequest));
 
