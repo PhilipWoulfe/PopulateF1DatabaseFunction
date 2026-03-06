@@ -66,6 +66,30 @@ public class SelectionServiceTests
     }
 
     [Fact]
+    public async Task GetSelectionAsync_ShouldReturnIsLocked_AfterFinalSubmissionDeadline()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 8, 3, 31, 0, DateTimeKind.Utc));
+
+        var existing = new Selection
+        {
+            Id = Guid.NewGuid(),
+            RaceId = "2026-australia",
+            UserId = "user@example.com",
+            BetType = BetType.Regular,
+            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+        };
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync(existing);
+
+        var result = await service.GetSelectionAsync("2026-australia", "user@example.com");
+
+        Assert.NotNull(result);
+        Assert.True(result.IsLocked);
+    }
+
+    [Fact]
     public void CalculateScore_ShouldNotApplyPreQualyMultiplier_ForAllOrNothing()
     {
         var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
