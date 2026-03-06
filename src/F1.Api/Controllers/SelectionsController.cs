@@ -17,6 +17,18 @@ public class SelectionsController : ControllerBase
         _selectionService = selectionService;
     }
 
+    [HttpGet("{raceId}/config")]
+    public IActionResult GetConfig(string raceId)
+    {
+        var config = _selectionService.GetRaceConfig(raceId);
+        if (config is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(config);
+    }
+
     [HttpGet("{raceId}/mine")]
     public async Task<IActionResult> GetMine(string raceId)
     {
