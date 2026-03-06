@@ -84,7 +84,14 @@ app.Use(async (context, next) =>
 
     if (context.Request.Headers.TryGetValue("Cf-Access-Authenticated-User-Email", out var email))
     {
-        app.Logger.LogInformation("DEBUG: Found Cloudflare Auth Header: {Email}", email.ToString());
+        if (app.Environment.IsDevelopment())
+        {
+            app.Logger.LogInformation("DEBUG: Found Cloudflare Auth Header: {Email}", email.ToString());
+        }
+        else
+        {
+            app.Logger.LogDebug("DEBUG: Found Cloudflare Auth Header (email not logged outside development).");
+        }
     }
     else
     {
