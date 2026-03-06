@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Testing;
-using System.Net;
 using Microsoft.Extensions.Configuration;
+using System.Net;
 
 namespace F1.Api.Tests.Integration
 {

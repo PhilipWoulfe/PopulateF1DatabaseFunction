@@ -9,7 +9,7 @@ namespace PopulateF1Database.Models
         // Summary:
         //     Gets the list of race results.
         [JsonProperty(nameof(Results))]
-        public IList<RaceResult> Results { get; set; }
+        public IList<RaceResult>? Results { get; set; }
 
         [JsonProperty(PropertyName = "id")]
         public string Id => $"{Season}-{Round:D2}-{Circuit.CircuitId}";

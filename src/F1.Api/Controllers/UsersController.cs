@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
 using F1.Core.Dtos;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace F1.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")] 
+[Route("[controller]")]
 public class UsersController : ControllerBase
 {
     [HttpGet("me")] // Final: /users/me (when accessed directly or via Nginx stripping /api/)
@@ -17,7 +17,7 @@ public class UsersController : ControllerBase
         {
             return Unauthorized();
         }
-        
+
         return Ok(new UserDto
         {
             Name = email.Split('@')[0],

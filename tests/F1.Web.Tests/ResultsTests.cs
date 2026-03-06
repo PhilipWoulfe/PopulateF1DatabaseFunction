@@ -1,5 +1,5 @@
-using F1.Web.Pages;
 using F1.Web.Models;
+using F1.Web.Pages;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Moq.Protected;
@@ -117,7 +117,7 @@ public class ResultsTests : TestContext
         var rows = cut.FindAll("tbody tr");
         Assert.NotEmpty(rows);
     }
-    
+
     [Fact]
     public void Results_ShouldShowError_WhenApiCallFails()
     {

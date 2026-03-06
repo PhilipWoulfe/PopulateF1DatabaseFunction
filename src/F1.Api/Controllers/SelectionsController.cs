@@ -1,8 +1,8 @@
-using System.Security.Claims;
 using F1.Core.Dtos;
 using F1.Core.Interfaces;
 using F1.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace F1.Api.Controllers;
 

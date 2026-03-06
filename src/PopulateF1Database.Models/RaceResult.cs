@@ -20,13 +20,13 @@ namespace PopulateF1Database.Models
         // Summary:
         //     Gets the driver associated with the result.
         [JsonProperty(nameof(Driver))]
-        public Driver Driver { get; set; }
+        public Driver? Driver { get; set; }
 
         //
         // Summary:
         //     Gets the constructor associated with the result.
         [JsonProperty(nameof(Constructor))]
-        public Constructor Constructor { get; set; }
+        public Constructor? Constructor { get; set; }
 
         //
         // Summary:
@@ -34,7 +34,7 @@ namespace PopulateF1Database.Models
         //     F = Failed to qualify, N = Not classified. See JolpicaApi.Responses.Models.RaceInfo.RaceResult.StatusText
         //     for more info.
         [JsonProperty("positionText")]
-        public string PositionText { get; set; }
+        public string? PositionText { get; set; }
 
         //
         // Summary:
@@ -86,6 +86,6 @@ namespace PopulateF1Database.Models
         // Summary:
         //     Status text describing the finishing status of the driver.
         [JsonProperty("status")]
-        public string StatusText { get; set; }
+        public string? StatusText { get; set; }
     }
 }

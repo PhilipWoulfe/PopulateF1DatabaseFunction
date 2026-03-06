@@ -1,0 +1,25 @@
+name: Code Quality
+
+on:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore F1Competition.sln
+
+      - name: Check Formatting
+        run: dotnet format whitespace F1Competition.sln --verify-no-changes --no-restore
+
+      - name: Build & Analyze
+        run: dotnet build F1Competition.sln --configuration Release --no-restore

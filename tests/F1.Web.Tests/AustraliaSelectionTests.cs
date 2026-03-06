@@ -1,9 +1,9 @@
-using System.Net;
-using System.Text;
-using System.Text.Json;
 using F1.Web.Models;
 using F1.Web.Pages;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace F1.Web.Tests.Pages;
 

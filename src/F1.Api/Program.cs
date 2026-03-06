@@ -101,7 +101,7 @@ app.UseAuthorization();
 
 app.MapControllers(); // This line is crucial for mapping your controllers
 
-app.MapGet("/races/results", (IRaceService raceService) => 
+app.MapGet("/races/results", (IRaceService raceService) =>
 {
     var results = raceService.GetMockResults();
     return Results.Ok(results);
