@@ -1,3 +1,4 @@
+using F1.Core.Models;
 using F1.Infrastructure.Repositories;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
@@ -6,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using F1.Core.Models;
 
 namespace F1.Api.Tests.Integration
 {
@@ -31,7 +31,7 @@ namespace F1.Api.Tests.Integration
 
             mockFeedResponse.Setup(x => x.GetEnumerator()).Returns(expectedDrivers.GetEnumerator());
             mockFeedResponse.Setup(x => x.Count).Returns(expectedDrivers.Count);
-            
+
             var mockFeedIterator = new Mock<FeedIterator<Driver>>();
             mockFeedIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
             mockFeedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))

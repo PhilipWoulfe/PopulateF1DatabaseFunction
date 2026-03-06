@@ -10,6 +10,18 @@ namespace PopulateF1Database.DataAccess.Repositories
         {
             try
             {
+                if (raceResultsResponse is null)
+                {
+                    logger.LogError("raceResultsResponse is null in WriteResultsAsync.");
+                    throw new ArgumentNullException(nameof(raceResultsResponse));
+                }
+
+                if (raceResultsResponse.Races is null)
+                {
+                    logger.LogError("raceResultsResponse.Races is null in WriteResultsAsync.");
+                    throw new InvalidOperationException("Race results response contains a null Races collection.");
+                }
+
                 await cosmosDataRepository.UpsertItemsAsync(raceResultsResponse.Races);
             }
             catch (AggregateException ex)

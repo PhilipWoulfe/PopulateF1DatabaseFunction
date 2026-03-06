@@ -1,15 +1,15 @@
-using F1.Web.Pages;
 using F1.Web.Models;
+using F1.Web.Pages;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Moq.Protected;
+using System;
+using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
-using System.Collections.Generic;
-using System;
-using System.Net.Http;
 
 namespace F1.Web.Tests.Pages
 {

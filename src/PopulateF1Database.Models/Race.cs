@@ -21,19 +21,19 @@ namespace PopulateF1Database.Models
         // Summary:
         //     Gets the name of the race.
         [JsonProperty("raceName")]
-        public string RaceName { get; set; }
+        public string? RaceName { get; set; }
 
         //
         // Summary:
         //     Gets the Wikipedia URL of the race.
         [JsonProperty("url")]
-        public string WikiUrl { get; set; }
+        public string? WikiUrl { get; set; }
 
         //
         // Summary:
         //     Gets the circuit details of the race.
         [JsonProperty("circuit")]
-        public Circuit Circuit { get; set; }
+        public Circuit? Circuit { get; set; }
 
         //
         // Summary:
@@ -47,12 +47,12 @@ namespace PopulateF1Database.Models
         // Summary:
         //     Gets the raw date of the race.
         [JsonProperty("date")]
-        public string DateRaw { get; set; }
+        public string? DateRaw { get; set; }
 
         //
         // Summary:
         //     Gets the raw time of the race.
         [JsonProperty("time")]
-        public string TimeRaw { get; set; }
+        public string? TimeRaw { get; set; }
     }
 }

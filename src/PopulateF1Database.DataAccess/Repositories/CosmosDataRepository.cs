@@ -78,7 +78,8 @@ namespace PopulateF1Database.DataAccess.Repositories
             else
             {
                 Console.WriteLine($"No container configured for type {typeof(T).Name}");
-                throw new InvalidOperationException($"No container configured for type {typeof(T)}, {_containers[_containers.Keys.LastOrDefault()]}");
+                var configuredTypes = string.Join(", ", _containers.Keys.Select(type => type.Name));
+                throw new InvalidOperationException($"No container configured for type {typeof(T).Name}. Configured types: {configuredTypes}");
             }
         }
     }

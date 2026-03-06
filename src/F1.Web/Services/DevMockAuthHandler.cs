@@ -26,7 +26,7 @@ namespace F1.Web.Services
                 {
                     request.Headers.Add("Cf-Access-Authenticated-User-Email", mockEmail);
                 }
-                
+
                 // Optional: Mock the JWT assertion header if your API validates signatures
                 if (!request.Headers.Contains("Cf-Access-Jwt-Assertion"))
                 {

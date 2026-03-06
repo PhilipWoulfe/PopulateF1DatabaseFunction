@@ -9,7 +9,7 @@ public class RaceServiceTests
     {
         // Arrange
         // (Note: This will show a red squiggly until we create the servi   ce!)
-        var service = new RaceService(); 
+        var service = new RaceService();
 
         // Act
         var results = service.GetMockResults();

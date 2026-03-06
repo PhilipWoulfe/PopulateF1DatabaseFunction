@@ -87,7 +87,7 @@ namespace F1.Api.Tests.Middleware
         public async Task InvokeAsync_ShouldSimulateCloudflare_WhenDevSettingIsTrue()
         {
             // Arrange
-            var inMemorySettings = new Dictionary<string, string> {
+            var inMemorySettings = new Dictionary<string, string?> {
                 {"DevSettings:SimulateCloudflare", "true"},
                 {"DevSettings:MockEmail", "dev-user@example.com"}
             };

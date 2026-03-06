@@ -9,6 +9,6 @@ namespace PopulateF1Database.Models
         /// Gets the list of drivers.
         /// </summary>
         [JsonProperty("DriverTable.Drivers")]
-        public new IList<Driver> Drivers { get; private set; }
+        public new IList<Driver>? Drivers { get; private set; }
     }
 }

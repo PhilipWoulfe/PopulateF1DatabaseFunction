@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
 using F1.Api.Controllers;
 using F1.Core.Dtos;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace F1.Api.Tests.Controllers
@@ -13,7 +13,7 @@ namespace F1.Api.Tests.Controllers
         {
             // Arrange
             var controller = new UsersController();
-            
+
             // Mock the HttpContext and Headers
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["Cf-Access-Authenticated-User-Email"] = "driver@f1.com";
@@ -30,7 +30,7 @@ namespace F1.Api.Tests.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
             var userDto = Assert.IsType<UserDto>(okResult.Value);
-            
+
             Assert.Equal("driver@f1.com", userDto.Email);
             Assert.Equal("user-guid-123", userDto.Id);
         }

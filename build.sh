@@ -1,33 +1,114 @@
 #!/bin/bash
 # Usage: 
-#   ./build.sh          <- Normal build (Release + Tests)
-#   ./build.sh --debug  <- Debug build (No Tests + Debug Config + Web Debug)
+#   ./build.sh            <- Normal build (Release + Tests + Docker)
+#   ./build.sh --debug    <- Debug build (No Tests + Debug Config + Web Debug)
+#   ./build.sh --quality  <- Quality gate only (format + CI-style builds, no Docker)
+#   ./build.sh --ci       <- CI mode (quality + tests + coverage, no Docker)
 
 # 1. Initialize variables
 COMPOSE_FILES="-f docker-compose.yml"
 MODE="Normal"
 CONFIG="Release"
 
+API_PROJECT="src/F1.Api/F1.Api.csproj"
+WEB_PROJECT="src/F1.Web/F1.Web.csproj"
+API_TEST_PROJECT="tests/F1.Api.Tests/F1.Api.Tests.csproj"
+WEB_TEST_PROJECT="tests/F1.Web.Tests/F1.Web.Tests.csproj"
+
+FORMAT_INCLUDE_PATHS=(
+  "src/F1.Api"
+  "src/F1.Core"
+  "src/F1.Infrastructure"
+  "src/F1.Services"
+  "src/F1.Web"
+  "tests/F1.Api.Tests"
+  "tests/F1.Web.Tests"
+)
+
 # 2. Check for the --debug flag
-if [[ "$1" == "--debug" ]]; then
-    # Ensure we include the debug override file
-    COMPOSE_FILES="-f docker-compose.yml -f docker-compose.debug.yml"
-    MODE="Debug"
-    CONFIG="Debug"
-fi
+case "$1" in
+    --debug)
+        COMPOSE_FILES="-f docker-compose.yml -f docker-compose.debug.yml"
+        MODE="Debug"
+        CONFIG="Debug"
+        ;;
+    --quality)
+        MODE="Quality"
+        CONFIG="Release"
+        ;;
+    --ci)
+        MODE="CI"
+        CONFIG="Release"
+        ;;
+esac
 
 echo "🧹 Cleaning stale artifacts and bin/obj folders..."
 # Clean local folders to prevent volume-mount pollution in Docker
 # dotnet clean
-find . -type d \( -name "bin" -o -name "obj" \) -exec rm -rf {} +
+find . -type d \( -name "bin" -o -name "obj" \) -exec rm -rf {} + 2>/dev/null || true
 rm -rf tests/**/TestResults
+
+run_quality_gate() {
+    echo "🧪 Running quality gate (F1 projects only, PopulateF1Database excluded)..."
+
+    if ! dotnet restore "$API_PROJECT"; then return 1; fi
+    if ! dotnet restore "$WEB_PROJECT"; then return 1; fi
+    if ! dotnet restore "$API_TEST_PROJECT"; then return 1; fi
+    if ! dotnet restore "$WEB_TEST_PROJECT"; then return 1; fi
+
+    if ! dotnet format whitespace F1Competition.sln --verify-no-changes --no-restore --include "${FORMAT_INCLUDE_PATHS[@]}"; then return 1; fi
+
+    if ! CI=true dotnet build "$API_PROJECT" --configuration Release --no-restore; then return 1; fi
+    if ! CI=true dotnet build "$WEB_PROJECT" --configuration Release --no-restore; then return 1; fi
+    if ! CI=true dotnet build "$API_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
+    if ! CI=true dotnet build "$WEB_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
+
+    echo "✅ Quality gate passed."
+}
 
 # 3. Conditional Test Block
 if [[ "$MODE" == "Debug" ]]; then
     echo "⏭️  Skipping Unit Tests for Debug Mode..."
+elif [[ "$MODE" == "Quality" ]]; then
+    if ! run_quality_gate; then
+        printf "\033[0;31m❌ Quality gate failed.\033[0m\n"
+        exit 1
+    fi
+    echo "🏁 Quality mode complete."
+    exit 0
+elif [[ "$MODE" == "CI" ]]; then
+    if ! run_quality_gate; then
+        printf "\033[0;31m❌ Quality gate failed in CI mode.\033[0m\n"
+        exit 1
+    fi
+
+    echo "🏎️  Running API/Backend Unit Tests with Coverage (CI Mode)..."
+    if ! CI=true dotnet test "$API_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
+        /p:CollectCoverage=true \
+        /p:CoverletOutputFormat=cobertura \
+        /p:CoverletOutput=./TestResults/api-coverage/ \
+        /p:Include="[F1.Api]*%2c[F1.Core]*%2c[F1.Services]*%2c[F1.Infrastructure]*" \
+        /p:Threshold=30; then
+        printf "\033[0;31m❌ API/Backend tests failed in CI mode.\033[0m\n"
+        exit 1
+    fi
+
+    echo "🏎️  Running Web Unit Tests with Web-Only Coverage (CI Mode)..."
+    if ! CI=true dotnet test "$WEB_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
+        /p:CollectCoverage=true \
+        /p:CoverletOutputFormat=cobertura \
+        /p:CoverletOutput=./TestResults/web-coverage/ \
+        /p:Include="[F1.Web]*" \
+        /p:Threshold=30; then
+        printf "\033[0;31m❌ Web tests failed in CI mode.\033[0m\n"
+        exit 1
+    fi
+
+    echo "✅ CI mode complete (quality + tests)."
+    exit 0
 else
     echo "🏎️  Running API/Backend Unit Tests with Coverage ($CONFIG Mode)..."
-    if ! dotnet test tests/F1.Api.Tests/F1.Api.Tests.csproj -c "$CONFIG" --nologo --verbosity minimal \
+    if ! dotnet test "$API_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
         /p:CollectCoverage=true \
         /p:CoverletOutputFormat=cobertura \
         /p:CoverletOutput=./TestResults/api-coverage/ \
@@ -39,7 +120,7 @@ else
     fi
 
     echo "🏎️  Running Web Unit Tests with Web-Only Coverage ($CONFIG Mode)..."
-    if ! dotnet test tests/F1.Web.Tests/F1.Web.Tests.csproj -c "$CONFIG" --nologo --verbosity minimal \
+    if ! dotnet test "$WEB_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
         /p:CollectCoverage=true \
         /p:CoverletOutputFormat=cobertura \
         /p:CoverletOutput=./TestResults/web-coverage/ \

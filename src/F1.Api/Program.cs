@@ -84,7 +84,14 @@ app.Use(async (context, next) =>
 
     if (context.Request.Headers.TryGetValue("Cf-Access-Authenticated-User-Email", out var email))
     {
-        app.Logger.LogInformation("DEBUG: Found Cloudflare Auth Header: {Email}", email);
+        if (app.Environment.IsDevelopment())
+        {
+            app.Logger.LogInformation("DEBUG: Found Cloudflare Auth Header: {Email}", email.ToString());
+        }
+        else
+        {
+            app.Logger.LogDebug("DEBUG: Found Cloudflare Auth Header (email not logged outside development).");
+        }
     }
     else
     {
@@ -101,7 +108,7 @@ app.UseAuthorization();
 
 app.MapControllers(); // This line is crucial for mapping your controllers
 
-app.MapGet("/races/results", (IRaceService raceService) => 
+app.MapGet("/races/results", (IRaceService raceService) =>
 {
     var results = raceService.GetMockResults();
     return Results.Ok(results);
