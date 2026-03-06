@@ -109,7 +109,7 @@ else
 
         if (task is not null)
         {
-            await tickTask;
+            await task;
         }
 
         cts?.Dispose();
@@ -150,9 +150,10 @@ else
         }
 
         selectedBetType = existing.BetType;
+        var selections = existing.Selections ?? [];
         for (var i = 0; i < selectedDriverIds.Count; i++)
         {
-            selectedDriverIds[i] = i < existing.Selections.Count ? existing.Selections[i] : "";
+            selectedDriverIds[i] = i < selections.Count ? selections[i] : "";
         }
 
         isReadOnly = existing.IsLocked;
