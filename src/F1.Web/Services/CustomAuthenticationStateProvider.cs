@@ -32,6 +32,15 @@ namespace F1.Web.Services
                 new Claim(ClaimTypes.Email, _userSession.User.Email)
             };
 
+            var displayName = string.IsNullOrWhiteSpace(_userSession.User.Name)
+                ? _userSession.User.Email
+                : _userSession.User.Name;
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                claims.Add(new Claim(ClaimTypes.Name, displayName));
+            }
+
             if (_userSession.User.IsAdmin)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));

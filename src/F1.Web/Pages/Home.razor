@@ -1,7 +1,15 @@
 ﻿@page "/"
+@inject F1.Web.Services.IUserSession UserSession
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, Phil!</h1>
+<h1>Hello, @DisplayName!</h1>
 
 Welcome to your new app.
+
+@code {
+	private string DisplayName =>
+		!string.IsNullOrWhiteSpace(UserSession.User?.Name)
+			? UserSession.User!.Name!
+			: UserSession.User?.Email?.Split('@')[0] ?? "Driver";
+}
