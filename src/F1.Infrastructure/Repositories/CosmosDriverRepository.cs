@@ -2,9 +2,6 @@ using F1.Core.Interfaces;
 using F1.Core.Models;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace F1.Infrastructure.Repositories
 {
