@@ -83,7 +83,7 @@ elif [[ "$MODE" == "CI" ]]; then
     fi
 
     echo "🏎️  Running API/Backend Unit Tests with Coverage (CI Mode)..."
-    if ! dotnet test "$API_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
+    if ! CI=true dotnet test "$API_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
         /p:CollectCoverage=true \
         /p:CoverletOutputFormat=cobertura \
         /p:CoverletOutput=./TestResults/api-coverage/ \
@@ -94,7 +94,7 @@ elif [[ "$MODE" == "CI" ]]; then
     fi
 
     echo "🏎️  Running Web Unit Tests with Web-Only Coverage (CI Mode)..."
-    if ! dotnet test "$WEB_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
+    if ! CI=true dotnet test "$WEB_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
         /p:CollectCoverage=true \
         /p:CoverletOutputFormat=cobertura \
         /p:CoverletOutput=./TestResults/web-coverage/ \
