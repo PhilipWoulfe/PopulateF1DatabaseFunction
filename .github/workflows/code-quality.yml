@@ -93,6 +93,29 @@ jobs:
             }
 
             const pullNumber = context.payload.pull_request.number;
+            const headSha = context.payload.pull_request.head.sha;
+
+            const authUser = await github.rest.users.getAuthenticated();
+            const reviewerLogin = authUser.data.login;
+
+            const existingReviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              per_page: 100
+            });
+
+            const hasApprovalForHead = existingReviews.some((review) =>
+              review.user?.login === reviewerLogin &&
+              review.state === 'APPROVED' &&
+              review.commit_id === headSha
+            );
+
+            if (hasApprovalForHead) {
+              core.info(`Skipping approval; ${reviewerLogin} already approved head commit ${headSha}.`);
+              return;
+            }
+
             const unresolvedQuery = `
               query($owner: String!, $repo: String!, $pullNumber: Int!, $cursor: String) {
                 repository(owner: $owner, name: $repo) {
