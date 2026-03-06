@@ -66,6 +66,29 @@ public class SelectionServiceTests
     }
 
     [Fact]
+    public void GetRaceConfig_ShouldReturnConfig_ForAustraliaRace()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        var config = service.GetRaceConfig("2026-australia");
+
+        Assert.NotNull(config);
+        Assert.Equal("2026-australia", config.RaceId);
+        Assert.Equal(new DateTime(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc), config.PreQualyDeadlineUtc);
+        Assert.Equal(new DateTime(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc), config.FinalDeadlineUtc);
+    }
+
+    [Fact]
+    public void GetRaceConfig_ShouldReturnNull_ForUnknownRace()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        var config = service.GetRaceConfig("unknown-race");
+
+        Assert.Null(config);
+    }
+
+    [Fact]
     public void CalculateScore_ShouldNotApplyPreQualyMultiplier_ForAllOrNothing()
     {
         var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));

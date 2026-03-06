@@ -65,6 +65,21 @@ public class SelectionService : ISelectionService
         return await _selectionRepository.UpsertSelectionAsync(selection);
     }
 
+    public RaceConfigDto? GetRaceConfig(string raceId)
+    {
+        if (raceId == AustraliaRaceId2026)
+        {
+            return new RaceConfigDto
+            {
+                RaceId = AustraliaRaceId2026,
+                PreQualyDeadlineUtc = PreQualyDeadlineUtc,
+                FinalDeadlineUtc = FinalSubmissionDeadlineUtc
+            };
+        }
+
+        return null;
+    }
+
     public int CalculateScore(BetType betType, bool isPerfectTopFive, int basePoints, bool submittedBeforePreQualyDeadline)
     {
         if (betType == BetType.AllOrNothing)
