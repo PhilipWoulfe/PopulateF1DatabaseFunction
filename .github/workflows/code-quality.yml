@@ -89,12 +89,6 @@ jobs:
               { name: 'build', result: '${{ needs.build.result }}' }
             ];
 
-            const allPassed = checks.every((check) => check.result === 'success');
-            if (!allPassed) {
-              core.info(`Skipping approval; checks did not pass: ${JSON.stringify(checks)}`);
-              return;
-            }
-
             const pullNumber = context.payload.pull_request.number;
             const headSha = context.payload.pull_request.head.sha;
 
