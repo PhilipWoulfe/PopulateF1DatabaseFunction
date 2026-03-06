@@ -72,6 +72,9 @@ jobs:
       needs.lint.result == 'success' &&
       needs.build.result == 'success'
     permissions:
+      # Note: This block limits the default GITHUB_TOKEN only.
+      # The github-script step below authenticates with secrets.GC_PAT,
+      # so effective API access is determined by the PAT scopes.
       contents: read
       pull-requests: write
 
