@@ -162,18 +162,46 @@ else
                 return;
             }
 
+            // Handle common status codes explicitly first.
+            if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                errorMessage = "You are not authorized to save this selection.";
+                return;
+            }
+
+            var fallbackMessage = "Unable to save selection.";
+            errorMessage = fallbackMessage;
+
             try
             {
-                var apiError = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
-                errorMessage = apiError?.Message ?? "Unable to save selection.";
+                var content = response.Content;
+                if (content is null)
+                {
+                    return;
+                }
+
+                var mediaType = content.Headers?.ContentType?.MediaType;
+                if (string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
+                {
+                    var apiError = await content.ReadFromJsonAsync<ApiErrorResponse>();
+                    if (!string.IsNullOrWhiteSpace(apiError?.Message))
+                    {
+                        errorMessage = apiError.Message;
+                    }
+                    return;
+                }
+
+                // Fallback: try to read a plain-text body and use it if available.
+                var text = await content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    errorMessage = text;
+                }
             }
-            catch (System.Text.Json.JsonException)
+            catch (Exception)
             {
-                errorMessage = "Unable to save selection.";
-            }
-            catch (NotSupportedException)
-            {
-                errorMessage = "Unable to save selection.";
+                // Swallow any parsing errors and fall back to the default message.
+                errorMessage = fallbackMessage;
             }
         }
         catch (HttpRequestException)
