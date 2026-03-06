@@ -152,16 +152,42 @@ else
             Selections = selectedDriverIds.ToList()
         };
 
-        var response = await Http.PutAsJsonAsync($"selections/{RaceId}/mine", submission);
-        if (response.IsSuccessStatusCode)
+        try
         {
-            successMessage = "Selection saved successfully.";
-            await LoadExistingSelectionAsync();
-            return;
-        }
+            var response = await Http.PutAsJsonAsync($"selections/{RaceId}/mine", submission);
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Selection saved successfully.";
+                await LoadExistingSelectionAsync();
+                return;
+            }
 
-        var apiError = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
-        errorMessage = apiError?.Message ?? "Unable to save selection.";
+            try
+            {
+                var apiError = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+                errorMessage = apiError?.Message ?? "Unable to save selection.";
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                errorMessage = "Unable to save selection.";
+            }
+            catch (NotSupportedException)
+            {
+                errorMessage = "Unable to save selection.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "Unable to save selection.";
+        }
+        catch (TaskCanceledException)
+        {
+            errorMessage = "Unable to save selection.";
+        }
+        catch (Exception)
+        {
+            errorMessage = "Unable to save selection.";
+        }
     }
 
     private void OnDriverChanged(int index, string? driverId)
