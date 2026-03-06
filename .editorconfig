@@ -6,10 +6,6 @@ dotnet_enable_nullable_context = true
 # Require final newline
 insert_final_newline = true
 
-# Organize usings
-dotnet_separate_import_directive_groups = true
-dotnet_sort_system_directives_first = true
-
 # C# files
 [*.cs]
 
