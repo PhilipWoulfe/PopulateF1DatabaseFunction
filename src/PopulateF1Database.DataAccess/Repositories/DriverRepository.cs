@@ -11,7 +11,7 @@ namespace PopulateF1Database.DataAccess.Repositories
         {
             try
             {
-                await cosmosDataRepository.UpsertItemsAsync(driverResponse.Drivers);
+                await cosmosDataRepository.UpsertItemsAsync(driverResponse.Drivers ?? []);
             }
             catch (AggregateException ex)
             {

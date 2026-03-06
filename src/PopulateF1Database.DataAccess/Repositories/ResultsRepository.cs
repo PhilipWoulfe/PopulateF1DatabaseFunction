@@ -10,7 +10,7 @@ namespace PopulateF1Database.DataAccess.Repositories
         {
             try
             {
-                await cosmosDataRepository.UpsertItemsAsync(raceResultsResponse.Races);
+                await cosmosDataRepository.UpsertItemsAsync(raceResultsResponse.Races ?? []);
             }
             catch (AggregateException ex)
             {

@@ -12,7 +12,7 @@ namespace PopulateF1Database.Models
         public IList<RaceResult>? Results { get; set; }
 
         [JsonProperty(PropertyName = "id")]
-        public string Id => $"{Season}-{Round:D2}-{Circuit.CircuitId}";
+        public string Id => $"{Season}-{Round:D2}-{Circuit?.CircuitId ?? "unknown"}";
 
         public DateTime LastModified => DateTime.UtcNow;
     }
