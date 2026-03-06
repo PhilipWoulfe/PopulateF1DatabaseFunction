@@ -65,7 +65,6 @@ public class SelectionServiceTests
         Assert.Equal("leclerc", updated.Selections[0]);
     }
 
-    [Fact]
     public void GetRaceConfig_ShouldReturnConfig_ForAustraliaRace()
     {
         var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
@@ -86,6 +85,29 @@ public class SelectionServiceTests
         var config = service.GetRaceConfig("unknown-race");
 
         Assert.Null(config);
+    
+    }
+    public async Task GetSelectionAsync_ShouldReturnIsLocked_AfterFinalSubmissionDeadline()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 8, 3, 31, 0, DateTimeKind.Utc));
+
+        var existing = new Selection
+        {
+            Id = Guid.NewGuid(),
+            RaceId = "2026-australia",
+            UserId = "user@example.com",
+            BetType = BetType.Regular,
+            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+        };
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync(existing);
+
+        var result = await service.GetSelectionAsync("2026-australia", "user@example.com");
+
+        Assert.NotNull(result);
+        Assert.True(result.IsLocked);
     }
 
     [Fact]

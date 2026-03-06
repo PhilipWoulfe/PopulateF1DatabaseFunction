@@ -6,9 +6,8 @@ namespace F1.Services;
 
 public class SelectionService : ISelectionService
 {
-    public const string AustraliaRaceId2026 = "2026-australia";
-    internal static readonly DateTime PreQualyDeadlineUtc = new(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc);
-    internal static readonly DateTime FinalSubmissionDeadlineUtc = new(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc);
+    public static readonly DateTime PreQualyDeadlineUtc = new(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc);
+    public static readonly DateTime FinalSubmissionDeadlineUtc = new(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc);
 
     private readonly ISelectionRepository _selectionRepository;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -27,7 +26,8 @@ public class SelectionService : ISelectionService
             return null;
         }
 
-        selection.IsLocked = IsPreQualyLocked(selection, _dateTimeProvider.UtcNow);
+        var nowUtc = _dateTimeProvider.UtcNow;
+        selection.IsLocked = IsPreQualyLocked(selection, nowUtc) || nowUtc > FinalSubmissionDeadlineUtc;
         return selection;
     }
 
