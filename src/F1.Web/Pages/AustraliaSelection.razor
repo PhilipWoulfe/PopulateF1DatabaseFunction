@@ -102,14 +102,7 @@ else
 
         if (tickTask is not null)
         {
-            try
-            {
-                await tickTask;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                Console.Error.WriteLine($"Unexpected error in countdown timer: {ex}");
-            }
+            await tickTask;
         }
 
         timerCts?.Dispose();
