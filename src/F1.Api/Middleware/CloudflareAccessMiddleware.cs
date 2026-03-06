@@ -47,11 +47,15 @@ namespace F1.Api.Middleware
                 new Claim(ClaimTypes.Email, email)
             };
 
-            var name = GetJwtClaim(context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault(), "name");
-            if (!string.IsNullOrWhiteSpace(name))
+            var userId = context.Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(userId))
             {
-                claims.Add(new Claim(ClaimTypes.Name, name));
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
             }
+
+            var name = GetJwtClaim(context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault(), "name");
+            var displayName = !string.IsNullOrWhiteSpace(name) ? name : email.Split('@')[0];
+            claims.Add(new Claim(ClaimTypes.Name, displayName));
 
             if (string.Equals(email, AdminEmail, System.StringComparison.OrdinalIgnoreCase))
             {

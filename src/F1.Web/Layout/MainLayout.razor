@@ -38,8 +38,7 @@
                     <a href="https://f1-team.cloudflareaccess.com/cdn-cgi/access/logout" class="btn btn-sm btn-outline-danger">Logout</a>
                 </Authorized>
                 <NotAuthorized>
-                    @* Forces a full page load to 'results' so Cloudflare can intercept the request *@
-                    <button class="btn btn-primary btn-sm" @onclick='() => Navigation.NavigateTo("results", true)'>Login</button>
+                    <span class="text-muted">Authenticated session required.</span>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
@@ -88,7 +87,9 @@
     private string DisplayName =>
         !string.IsNullOrWhiteSpace(UserSession.User?.Name)
             ? UserSession.User!.Name!
-            : UserSession.User?.Email ?? "User";
+            : !string.IsNullOrWhiteSpace(UserSession.User?.Email)
+                ? UserSession.User!.Email!
+                : "User";
 
     private class VersionModel { public string? Version { get; set; } }
 }

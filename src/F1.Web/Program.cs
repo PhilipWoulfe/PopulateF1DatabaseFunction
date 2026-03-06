@@ -52,10 +52,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStat
 var host = builder.Build();
 
 // Load the authenticated user session once at startup so layout/pages can render immediately.
-using (var scope = host.Services.CreateScope())
-{
-    var userSession = scope.ServiceProvider.GetRequiredService<IUserSession>();
-    await userSession.InitializeAsync();
-}
+var userSession = host.Services.GetRequiredService<IUserSession>();
+await userSession.InitializeAsync();
 
 await host.RunAsync();

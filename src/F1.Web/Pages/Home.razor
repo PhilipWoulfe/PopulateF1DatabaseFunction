@@ -8,8 +8,27 @@
 Welcome to your new app.
 
 @code {
-	private string DisplayName =>
-		!string.IsNullOrWhiteSpace(UserSession.User?.Name)
-			? UserSession.User!.Name!
-			: UserSession.User?.Email?.Split('@')[0] ?? "Driver";
+	private string DisplayName
+	{
+		get
+		{
+			if (!string.IsNullOrWhiteSpace(UserSession.User?.Name))
+			{
+				return UserSession.User!.Name!;
+			}
+
+			var email = UserSession.User?.Email;
+			if (!string.IsNullOrWhiteSpace(email))
+			{
+				var atIndex = email.IndexOf('@');
+				var localPart = atIndex > 0 ? email[..atIndex] : email;
+				if (!string.IsNullOrWhiteSpace(localPart))
+				{
+					return localPart;
+				}
+			}
+
+			return "Driver";
+		}
+	}
 }
