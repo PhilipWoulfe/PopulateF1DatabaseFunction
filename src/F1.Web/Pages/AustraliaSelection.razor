@@ -17,7 +17,7 @@
     <div class="alert alert-success">@successMessage</div>
 }
 
-@if (drivers is null)
+@if (drivers is null || raceConfig is null)
 {
     <p><em>Loading...</em></p>
 }
@@ -75,10 +75,9 @@ else
 
 @code {
     private const string RaceId = "2026-australia";
-    private static readonly DateTime PreQualyDeadlineUtc = new(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc);
-    private static readonly DateTime FinalDeadlineUtc = new(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc);
 
     private Driver[]? drivers;
+    private RaceConfig? raceConfig;
     private readonly List<string> selectedDriverIds = ["", "", "", "", ""];
     private BetType selectedBetType = BetType.Regular;
     private string? errorMessage;
@@ -108,6 +107,7 @@ else
         try
         {
             drivers = await Http.GetFromJsonAsync<Driver[]>("drivers") ?? System.Array.Empty<Driver>();
+            raceConfig = await Http.GetFromJsonAsync<RaceConfig>($"selections/{RaceId}/config");
             await LoadExistingSelectionAsync();
         }
         catch (Exception ex)
@@ -225,11 +225,16 @@ else
 
     private string GetCountdownText()
     {
-        var nowUtc = DateTime.UtcNow;
-        var nextDeadline = nowUtc < PreQualyDeadlineUtc ? PreQualyDeadlineUtc : FinalDeadlineUtc;
-        var label = nowUtc < PreQualyDeadlineUtc ? "Pre-Qualy lock" : "Final submission";
+        if (raceConfig is null)
+        {
+            return string.Empty;
+        }
 
-        if (nowUtc > FinalDeadlineUtc)
+        var nowUtc = DateTime.UtcNow;
+        var nextDeadline = nowUtc < raceConfig.PreQualyDeadlineUtc ? raceConfig.PreQualyDeadlineUtc : raceConfig.FinalDeadlineUtc;
+        var label = nowUtc < raceConfig.PreQualyDeadlineUtc ? "Pre-Qualy lock" : "Final submission";
+
+        if (nowUtc > raceConfig.FinalDeadlineUtc)
         {
             return "All deadlines have passed.";
         }
