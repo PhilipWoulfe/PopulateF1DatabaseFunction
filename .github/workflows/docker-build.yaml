@@ -35,11 +35,9 @@ jobs:
           --configuration Release \
           --nologo \
           --verbosity minimal \
-          /p:CollectCoverage=true \
-          /p:CoverletOutputFormat=cobertura \
-          /p:CoverletOutput=./coverage/api-coverage/ \
-          /p:Include="[F1.Api]*%2c[F1.Core]*%2c[F1.Services]*%2c[F1.Infrastructure]*" \
-          /p:Threshold=10
+          --collect:"XPlat Code Coverage" \
+          --settings coverlet.api.runsettings \
+          --results-directory ./coverage/api-coverage
 
       - name: Run Web Unit Tests with Web-Only Coverage
         run: |
@@ -47,11 +45,9 @@ jobs:
           --configuration Release \
           --nologo \
           --verbosity minimal \
-          /p:CollectCoverage=true \
-          /p:CoverletOutputFormat=cobertura \
-          /p:CoverletOutput=./coverage/web-coverage/ \
-          /p:Include="[F1.Web]*" \
-          /p:Threshold=10
+          --collect:"XPlat Code Coverage" \
+          --settings coverlet.web.runsettings \
+          --results-directory ./coverage/web-coverage
 
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
