@@ -2,7 +2,6 @@
 @inject NavigationManager Navigation
 @inject IUserSession UserSession
 @inject IWebAssemblyHostEnvironment HostEnvironment
-@inject HttpClient Http
 @using System.Net.Http.Json
 
 <div class="page">
@@ -35,7 +34,7 @@
             
             <AuthorizeView>
                 <Authorized>
-                    <span class="me-3">Hi, @context.User.Identity?.Name</span>
+                    <span class="me-3">Welcome, @DisplayName</span>
                     <a href="https://f1-team.cloudflareaccess.com/cdn-cgi/access/logout" class="btn btn-sm btn-outline-danger">Logout</a>
                 </Authorized>
                 <NotAuthorized>
@@ -65,16 +64,6 @@
     {
         try
         {
-            // Construct an absolute URL based on the current browser address.
-            // If you are at http://localhost:5001, this makes the API http://localhost:5001/api/
-            var absoluteApiUrl = Navigation.ToAbsoluteUri("api/");
-            
-            Http.BaseAddress = absoluteApiUrl;
-
-            Console.WriteLine($"🌐 API Base Address: {Http.BaseAddress}");
-
-            await UserSession.InitializeAsync();
-
             // Version logic
             using var localClient = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
             var versionModel = await localClient.GetFromJsonAsync<VersionModel>("version.json");
@@ -95,6 +84,11 @@
         // Force the layout to re-evaluate the AuthorizeView
         StateHasChanged(); 
     }
+
+    private string DisplayName =>
+        !string.IsNullOrWhiteSpace(UserSession.User?.Name)
+            ? UserSession.User!.Name!
+            : UserSession.User?.Email ?? "User";
 
     private class VersionModel { public string? Version { get; set; } }
 }

@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 
 namespace F1.Api.Middleware
 {
@@ -26,18 +28,30 @@ namespace F1.Api.Middleware
                 }
             }
 
-            if (!context.Request.Headers.TryGetValue("Cf-Access-Authenticated-User-Email", out var emailValues))
+            var email = context.Request.Headers["Cf-Access-Authenticated-User-Email"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                var jwtAssertion = context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault();
+                email = GetJwtClaim(jwtAssertion, "email");
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("Unauthorized: Cf-Access-Authenticated-User-Email header is missing.");
+                await context.Response.WriteAsync("Unauthorized: Cloudflare Access identity headers are missing.");
                 return;
             }
 
-            var email = emailValues.ToString();
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Email, email)
             };
+
+            var name = GetJwtClaim(context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault(), "name");
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                claims.Add(new Claim(ClaimTypes.Name, name));
+            }
 
             if (string.Equals(email, AdminEmail, System.StringComparison.OrdinalIgnoreCase))
             {
@@ -48,6 +62,47 @@ namespace F1.Api.Middleware
             context.User = new ClaimsPrincipal(identity);
 
             await _next(context);
+        }
+
+        private static string? GetJwtClaim(string? jwt, string claimName)
+        {
+            if (string.IsNullOrWhiteSpace(jwt))
+            {
+                return null;
+            }
+
+            var parts = jwt.Split('.');
+            if (parts.Length < 2)
+            {
+                return null;
+            }
+
+            try
+            {
+                var payload = parts[1]
+                    .Replace('-', '+')
+                    .Replace('_', '/');
+
+                var mod4 = payload.Length % 4;
+                if (mod4 > 0)
+                {
+                    payload = payload.PadRight(payload.Length + (4 - mod4), '=');
+                }
+
+                var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+                using var doc = JsonDocument.Parse(json);
+
+                if (doc.RootElement.TryGetProperty(claimName, out var claimValue) && claimValue.ValueKind == JsonValueKind.String)
+                {
+                    return claimValue.GetString();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+
+            return null;
         }
     }
 }
