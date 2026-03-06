@@ -21,7 +21,7 @@ namespace F1.Web.Tests.Services
         public async Task GetAuthenticationStateAsync_ShouldReturnAnonymous_WhenUserIsNull()
         {
             // Arrange
-            _userSessionMock.Setup(x => x.User).Returns((User)null);
+            _userSessionMock.Setup(x => x.User).Returns((User?)null);
 
             // Act
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();

@@ -135,6 +135,31 @@ The recommended way to run the application locally is using the provided build s
 chmod +x build.sh
 ```
 
+### 4. Build Script Modes
+
+`build.sh` now supports dedicated quality and CI flows:
+
+- `./build.sh`  
+  Runs API/Web tests with coverage and then builds/starts Docker containers.
+
+- `./build.sh --debug`  
+  Skips tests and runs debug Docker configuration.
+
+- `./build.sh --quality`  
+  Runs quality gate only (restore, `dotnet format whitespace --verify-no-changes`, and strict CI-style Release builds), then exits.
+
+- `./build.sh --ci`  
+  Runs quality gate and then tests with coverage, then exits (no Docker compose).
+
+### 5. Quality Gate Scope (F1-Only)
+
+Quality and analysis gates are intentionally scoped to F1 app code:
+
+- Included: `src/F1.Api`, `src/F1.Core`, `src/F1.Infrastructure`, `src/F1.Services`, `src/F1.Web`, `tests/F1.Api.Tests`, `tests/F1.Web.Tests`
+- Excluded from quality/build gates: `src/PopulateF1Database*`
+
+The PopulateF1Database projects remain in the repository for ingestion workflows but are not part of the F1 API/Web quality gate path.
+
 Development & Running the App
 
 This project supports two primary ways to run the application on a Linux VM via Docker. Both modes utilize the F1Competition.sln but handle code execution differently.

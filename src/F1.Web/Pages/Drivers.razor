@@ -41,14 +41,14 @@ else
 }
 
 @code {
-    private Driver[] drivers;
-    private string errorMessage;
+    private Driver[]? drivers;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            drivers = await Http.GetFromJsonAsync<Driver[]>("drivers");
+            drivers = await Http.GetFromJsonAsync<Driver[]>("drivers") ?? [];
         }
         catch (Exception ex)
         {
