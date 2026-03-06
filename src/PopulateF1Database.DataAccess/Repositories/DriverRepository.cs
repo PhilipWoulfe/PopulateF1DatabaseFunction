@@ -11,7 +11,19 @@ namespace PopulateF1Database.DataAccess.Repositories
         {
             try
             {
-                await cosmosDataRepository.UpsertItemsAsync(driverResponse.Drivers ?? []);
+                if (driverResponse is null)
+                {
+                    logger.LogError("driverResponse is null in WriteDriversAsync.");
+                    throw new ArgumentNullException(nameof(driverResponse));
+                }
+
+                if (driverResponse.Drivers is null)
+                {
+                    logger.LogError("driverResponse.Drivers is null in WriteDriversAsync.");
+                    throw new InvalidOperationException("Driver response contains a null Drivers collection.");
+                }
+
+                await cosmosDataRepository.UpsertItemsAsync(driverResponse.Drivers);
             }
             catch (AggregateException ex)
             {
