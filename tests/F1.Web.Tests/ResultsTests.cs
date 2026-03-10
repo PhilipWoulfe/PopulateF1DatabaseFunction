@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace F1.Web.Tests.Pages;
 
-public class ResultsTests : TestContext
+public class ResultsTests : BunitContext
 {
     private readonly Mock<HttpMessageHandler> _handlerMock;
     private readonly HttpClient _httpClient;
@@ -37,7 +37,7 @@ public class ResultsTests : TestContext
             .Returns(tcs.Task);
 
         // Act
-        var cut = RenderComponent<Results>();
+        var cut = Render<Results>();
 
         // Assert
         Assert.Contains("Loading race results...", cut.Markup);
@@ -75,7 +75,7 @@ public class ResultsTests : TestContext
             .ReturnsAsync(response);
 
         // Act
-        var cut = RenderComponent<Results>();
+        var cut = Render<Results>();
 
         // Assert
         cut.WaitForState(() => cut.FindAll("tbody tr").Count > 0);
@@ -110,7 +110,7 @@ public class ResultsTests : TestContext
             .ReturnsAsync(response);
 
         // Act
-        var cut = RenderComponent<Results>();
+        var cut = Render<Results>();
 
         // Assert
         cut.WaitForState(() => cut.FindAll("tbody tr").Count > 0);
@@ -131,7 +131,7 @@ public class ResultsTests : TestContext
             .ThrowsAsync(new HttpRequestException("API is down"));
 
         // Act
-        var cut = RenderComponent<Results>();
+        var cut = Render<Results>();
 
         // Assert
         cut.WaitForState(() => cut.FindAll("p").Count > 0);
@@ -163,7 +163,7 @@ public class ResultsTests : TestContext
             .ReturnsAsync(response);
 
         // Act
-        var cut = RenderComponent<Results>();
+        var cut = Render<Results>();
 
         // Assert
         _handlerMock.Protected().Verify(

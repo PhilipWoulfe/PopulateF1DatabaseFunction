@@ -3,15 +3,15 @@ using F1.Web.Layout;
 
 namespace F1.Web.Tests.Layout;
 
-public class NavMenuTests : TestContext
+public class NavMenuTests : BunitContext
 {
     [Fact]
     public void NavMenu_ShouldHideAuthorizedLinks_WhenAnonymous()
     {
-        var auth = this.AddTestAuthorization();
+        var auth = this.AddAuthorization();
         auth.SetNotAuthorized();
 
-        var cut = RenderComponent<NavMenu>();
+        var cut = Render<NavMenu>();
 
         Assert.DoesNotContain("Driver Standings", cut.Markup);
         Assert.DoesNotContain("Australia GP", cut.Markup);
@@ -21,10 +21,10 @@ public class NavMenuTests : TestContext
     [Fact]
     public void NavMenu_ShouldShowAuthorizedLinks_WhenAuthenticated()
     {
-        var auth = this.AddTestAuthorization();
+        var auth = this.AddAuthorization();
         auth.SetAuthorized("user@example.com");
 
-        var cut = RenderComponent<NavMenu>();
+        var cut = Render<NavMenu>();
 
         Assert.Contains("Driver Standings", cut.Markup);
         Assert.Contains("Australia GP", cut.Markup);
@@ -34,11 +34,11 @@ public class NavMenuTests : TestContext
     [Fact]
     public void NavMenu_ShouldShowAdminLink_WhenInAdminRole()
     {
-        var auth = this.AddTestAuthorization();
+        var auth = this.AddAuthorization();
         auth.SetAuthorized("admin@example.com");
         auth.SetRoles("Admin");
 
-        var cut = RenderComponent<NavMenu>();
+        var cut = Render<NavMenu>();
 
         Assert.Contains("Admin", cut.Markup);
     }
@@ -46,10 +46,10 @@ public class NavMenuTests : TestContext
     [Fact]
     public void NavMenu_ShouldToggleCollapsedState_WhenClicked()
     {
-        var auth = this.AddTestAuthorization();
+        var auth = this.AddAuthorization();
         auth.SetAuthorized("user@example.com");
 
-        var cut = RenderComponent<NavMenu>();
+        var cut = Render<NavMenu>();
 
         Assert.Contains("collapse", cut.Markup);
         cut.Find("button.navbar-toggler").Click();
