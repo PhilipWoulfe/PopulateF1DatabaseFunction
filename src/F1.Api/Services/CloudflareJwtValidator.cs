@@ -8,7 +8,9 @@ namespace F1.Api.Services;
 public class CloudflareJwtValidator : ICloudflareJwtValidator
 {
     private const string JwksCacheKey = "CloudflareAccess:Jwks";
-    private readonly SemaphoreSlim _jwksRefreshLock = new(1, 1);
+    private static readonly SemaphoreSlim JwksRefreshLock = new(1, 1);
+    private static readonly TimeSpan ForceRefreshCooldown = TimeSpan.FromSeconds(30);
+    private static DateTimeOffset _lastForcedRefreshAtUtc = DateTimeOffset.MinValue;
 
     private readonly HttpClient _httpClient;
     private readonly IMemoryCache _memoryCache;
@@ -122,12 +124,21 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
             return cachedJwks;
         }
 
-        await _jwksRefreshLock.WaitAsync(cancellationToken);
+        await JwksRefreshLock.WaitAsync(cancellationToken);
         try
         {
-            if (!forceRefresh && _memoryCache.TryGetValue<JsonWebKeySet>(JwksCacheKey, out cachedJwks) && cachedJwks is not null)
+            if (_memoryCache.TryGetValue<JsonWebKeySet>(JwksCacheKey, out cachedJwks) && cachedJwks is not null)
             {
-                return cachedJwks;
+                if (!forceRefresh)
+                {
+                    return cachedJwks;
+                }
+
+                // Avoid stampeding Cloudflare with repeated forced refreshes when many requests fail key lookup.
+                if (DateTimeOffset.UtcNow - _lastForcedRefreshAtUtc < ForceRefreshCooldown)
+                {
+                    return cachedJwks;
+                }
             }
 
             var certsUrl = _options.Value.CertsUrl;
@@ -141,11 +152,16 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
             var expiresAt = DateTimeOffset.UtcNow.AddHours(cacheTtlHours <= 0 ? 24 : cacheTtlHours);
             _memoryCache.Set(JwksCacheKey, jwks, expiresAt);
 
+            if (forceRefresh)
+            {
+                _lastForcedRefreshAtUtc = DateTimeOffset.UtcNow;
+            }
+
             return jwks;
         }
         finally
         {
-            _jwksRefreshLock.Release();
+            JwksRefreshLock.Release();
         }
     }
 }

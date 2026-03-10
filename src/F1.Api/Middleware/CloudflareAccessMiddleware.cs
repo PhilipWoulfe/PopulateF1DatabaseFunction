@@ -5,6 +5,7 @@ namespace F1.Api.Middleware
 {
     public class CloudflareAccessMiddleware
     {
+        private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
         private const string AdminEmail = "philip.woulfe@gmail.com";
         private readonly IConfiguration _configuration;
@@ -26,7 +27,7 @@ namespace F1.Api.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             var devSettings = _configuration.GetSection("DevSettings");
-            if (devSettings.Exists() && devSettings.GetValue<bool>("SimulateCloudflare"))
+            if (_hostEnvironment.IsDevelopment() && devSettings.Exists() && devSettings.GetValue<bool>("SimulateCloudflare"))
             {
                 var mockEmail = devSettings.GetValue<string>("MockEmail");
                 if (!string.IsNullOrEmpty(mockEmail))
@@ -57,7 +58,7 @@ namespace F1.Api.Middleware
                 }
 
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("Unauthorized: missing Cloudflare Access token.");
+                await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
             }
 
@@ -65,7 +66,7 @@ namespace F1.Api.Middleware
             if (!validation.IsValid || validation.Principal is null)
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync(validation.ErrorMessage);
+                await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
             }
 
@@ -75,7 +76,7 @@ namespace F1.Api.Middleware
             if (string.IsNullOrWhiteSpace(email))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("Unauthorized: token is missing required email claim.");
+                await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
             }
 

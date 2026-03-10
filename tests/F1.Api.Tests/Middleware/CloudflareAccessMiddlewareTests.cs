@@ -117,7 +117,7 @@ namespace F1.Api.Tests.Middleware
             {
                 nextCalled = true;
                 return Task.CompletedTask;
-            }, configuration, new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")), CreateHostEnvironment(Environments.Production));
+            }, configuration, new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")), CreateHostEnvironment(Environments.Development));
 
             var httpContext = new DefaultHttpContext();
 
@@ -127,6 +127,44 @@ namespace F1.Api.Tests.Middleware
             // Assert
             Assert.True(nextCalled);
             Assert.True(httpContext.User.HasClaim(c => c.Type == ClaimTypes.Email && c.Value == "dev-user@example.com"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldNotSimulateCloudflare_WhenNotInDevelopment()
+        {
+            var inMemorySettings = new Dictionary<string, string?> {
+                {"DevSettings:SimulateCloudflare", "true"},
+                {"DevSettings:MockEmail", "dev-user@example.com"}
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            var nextCalled = false;
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ =>
+                {
+                    nextCalled = true;
+                    return Task.CompletedTask;
+                },
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")),
+                CreateHostEnvironment(Environments.Production)
+            );
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Response.Body = new MemoryStream();
+
+            await middleware.InvokeAsync(httpContext);
+
+            httpContext.Response.Body.Position = 0;
+            using var reader = new StreamReader(httpContext.Response.Body);
+            var responseBody = await reader.ReadToEndAsync();
+
+            Assert.False(nextCalled);
+            Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+            Assert.Equal("Unauthorized.", responseBody);
         }
 
         [Fact]
@@ -215,7 +253,7 @@ namespace F1.Api.Tests.Middleware
             var responseBody = await reader.ReadToEndAsync();
 
             Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
-            Assert.Equal("Unauthorized: token is missing required email claim.", responseBody);
+            Assert.Equal("Unauthorized.", responseBody);
         }
 
         private static ClaimsPrincipal CreatePrincipal(string email, string name, string subject)
