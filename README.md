@@ -97,6 +97,16 @@ cp .env.example .env
 ```
 The default values in `.env.example` are configured for a standard local setup.
 
+Required API values in `.env`:
+
+- `COSMOSDB_CONNECTIONSTRING`: mapped to `CosmosDb__ConnectionString` for `f1-api`.
+- `CLOUDFLARE_AUDIENCE`: mapped to `CloudflareAccess__Audience` for `f1-api`.
+
+Notes:
+
+- `CloudflareAccess__Issuer` is currently set in `docker-compose.yml`.
+- `API_BASE_URL` is set to `/api/` directly in `docker-compose.yml` for `f1-web` and is not read from `.env`.
+
 #### B. Azure Function (`local.settings.json`)
 This file configures the data ingestion service. You will need to update `src/PopulateF1Database/local.settings.json` with your **Cosmos DB connection string** and other specific settings.
 
@@ -208,16 +218,19 @@ Once running, the services will be available at:
 
 ## ⚠️ Troubleshooting
 ### .env Changes Not Applying
-Symptom: You updated .env (e.g., API_BASE_URL) but the app still uses the old value.
+Symptom: You updated `.env` (for example `CLOUDFLARE_AUDIENCE` or `COSMOSDB_CONNECTIONSTRING`) but the app still uses the old value.
 Cause: Docker Compose only reads .env when creating containers. Watchtower updates the image but reuses the existing container configuration. 
 Fix: Manually recreate the container to apply changes: 
 bash +docker-compose up -d
 
 
-### Why did BLAZOR_ENVIRONMENT work but API_BASE_URL fail?
-Docker "snapshots" environment variables at creation time. 
-- BLAZOR_ENVIRONMENT was likely present when the container was first created. 
-- API_BASE_URL was likely added/changed later. Since the container wasn't recreated, it kept the old (empty) value. 
+### Why did BLAZOR_ENVIRONMENT affect both API and Web?
+`docker-compose.yml` currently maps API `ASPNETCORE_ENVIRONMENT` from `BLAZOR_ENVIRONMENT`.
+
+- `f1-api`: `ASPNETCORE_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}`
+- `f1-web`: `BLAZOR_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}`
+
+If you need independent values, split these into separate env vars (for example `API_ENVIRONMENT` and `BLAZOR_ENVIRONMENT`).
 
 ## 📄 License
 
