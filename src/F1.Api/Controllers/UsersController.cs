@@ -14,8 +14,7 @@ public class UsersController : ControllerBase
     {
         var email = User.FindFirstValue(ClaimTypes.Email);
         var name = User.FindFirstValue(ClaimTypes.Name);
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault();
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(name))
         {

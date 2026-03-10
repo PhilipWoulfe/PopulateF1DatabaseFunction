@@ -5,6 +5,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}
       # Map .env variables to ASP.NET Core configuration format
       - CosmosDb__ConnectionString=${COSMOSDB_CONNECTIONSTRING}
+      - CloudflareAccess__Audience=${CLOUDFLARE_AUDIENCE:-CloudflareAccessAudienceNotSet}
+      - CloudflareAccess__Issuer=https://f1-team.cloudflareaccess.com
     image: ghcr.io/philipwoulfe/f1competition:${TAG:-latest}
     build:
       context: .

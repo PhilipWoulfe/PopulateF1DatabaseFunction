@@ -3,9 +3,6 @@ using F1.Core.Interfaces;
 using F1.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace F1.Api.Tests.Controllers
 {

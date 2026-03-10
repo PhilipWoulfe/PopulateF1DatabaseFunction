@@ -3,10 +3,6 @@ using F1.Infrastructure.Repositories;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace F1.Api.Tests.Integration
 {

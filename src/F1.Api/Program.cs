@@ -1,4 +1,5 @@
 using F1.Api.Middleware;
+using F1.Api.Services;
 using F1.Core.Interfaces;
 using F1.Infrastructure.Repositories;
 using F1.Services;
@@ -13,6 +14,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<ISelectionService, SelectionService>();
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+builder.Services.AddMemoryCache();
+builder.Services
+    .AddOptions<CloudflareAccessOptions>()
+    .Bind(builder.Configuration.GetSection("CloudflareAccess"))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "CloudflareAccess:Issuer must be configured.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "CloudflareAccess:Audience must be configured.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<ICloudflareJwtValidator, CloudflareJwtValidator>();
 
 builder.Services.AddSingleton((provider) =>
 {
@@ -65,37 +74,19 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
     app.UseSwaggerUI();
 }
 
-var simulateCloudflare = builder.Configuration.GetValue<bool>("DevSettings:SimulateCloudflare");
-if (app.Environment.IsDevelopment() && simulateCloudflare)
-{
-    app.Use((context, next) =>
-    {
-        var mockEmail = builder.Configuration.GetValue<string>("DevSettings:MockEmail") ?? "dev-user@example.com";
-        context.Request.Headers["Cf-Access-Authenticated-User-Email"] = mockEmail;
-        return next();
-    });
-}
-
 app.UseCors("AllowBlazorOrigin");
 
 app.Use(async (context, next) =>
 {
     app.Logger.LogInformation("DEBUG: Request {Method} {Path}", context.Request.Method, context.Request.Path);
 
-    if (context.Request.Headers.TryGetValue("Cf-Access-Authenticated-User-Email", out var email))
+    if (context.Request.Headers.ContainsKey("Cf-Access-Jwt-Assertion"))
     {
-        if (app.Environment.IsDevelopment())
-        {
-            app.Logger.LogInformation("DEBUG: Found Cloudflare Auth Header: {Email}", email.ToString());
-        }
-        else
-        {
-            app.Logger.LogDebug("DEBUG: Found Cloudflare Auth Header (email not logged outside development).");
-        }
+        app.Logger.LogDebug("DEBUG: Found Cloudflare Access JWT assertion header.");
     }
     else
     {
-        app.Logger.LogWarning("DEBUG: Cloudflare Auth Header MISSING. Available Headers: {Headers}", string.Join(", ", context.Request.Headers.Keys));
+        app.Logger.LogDebug("DEBUG: Cloudflare Access JWT assertion header missing.");
     }
 
     await next();
