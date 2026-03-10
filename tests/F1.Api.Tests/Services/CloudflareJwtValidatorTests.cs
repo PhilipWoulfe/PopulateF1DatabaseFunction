@@ -83,6 +83,53 @@ public class CloudflareJwtValidatorTests
         Assert.Equal(1, handler.CallCount);
     }
 
+    [Fact]
+    public async Task ValidateAsync_RefreshesJwks_WhenKidNotFoundInCache()
+    {
+        const string issuer = "https://f1-team.cloudflareaccess.com";
+        const string audience = "test-audience";
+
+        // First key and token: populate cache with a JWKS that only contains key1
+        var (token1, key1) = CreateToken(issuer, audience, DateTime.UtcNow.AddMinutes(15));
+        var jwksJson1 = BuildJwksJson(key1);
+        var handler1 = new StaticResponseHandler(jwksJson1);
+
+        var sharedCache = new MemoryCache(new MemoryCacheOptions());
+        var options = Options.Create(new CloudflareAccessOptions
+        {
+            CertsUrl = "https://f1-team.cloudflareaccess.com/cdn-cgi/access/certs",
+            Issuer = issuer,
+            Audience = audience,
+            JwksCacheHours = 24
+        });
+
+        var validator1 = new CloudflareJwtValidator(
+            new HttpClient(handler1),
+            sharedCache,
+            options,
+            NullLogger<CloudflareJwtValidator>.Instance);
+
+        var firstResult = await validator1.ValidateAsync(token1, CancellationToken.None);
+        Assert.True(firstResult.IsValid);
+
+        // Second key and token: the cached JWKS does not contain key2's kid, so a refresh is required
+        var (token2, key2) = CreateToken(issuer, audience, DateTime.UtcNow.AddMinutes(15));
+        var jwksJson2 = BuildJwksJson(key2);
+        var handler2 = new StaticResponseHandler(jwksJson2);
+
+        var validator2 = new CloudflareJwtValidator(
+            new HttpClient(handler2),
+            sharedCache,
+            options,
+            NullLogger<CloudflareJwtValidator>.Instance);
+
+        var secondResult = await validator2.ValidateAsync(token2, CancellationToken.None);
+
+        Assert.True(secondResult.IsValid);
+        // One JWKS fetch to populate the cache, and one more after kid mismatch forces a refresh
+        Assert.Equal(1, handler1.CallCount);
+        Assert.Equal(1, handler2.CallCount);
+    }
     private static CloudflareJwtValidator CreateValidator(HttpMessageHandler handler, string issuer, string audience)
     {
         var httpClient = new HttpClient(handler);
