@@ -9,12 +9,18 @@ namespace F1.Api.Middleware
         private const string AdminEmail = "philip.woulfe@gmail.com";
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
+        private readonly IHostEnvironment _hostEnvironment;
 
-        public CloudflareAccessMiddleware(RequestDelegate next, IConfiguration configuration, ICloudflareJwtValidator jwtValidator)
+        public CloudflareAccessMiddleware(
+            RequestDelegate next,
+            IConfiguration configuration,
+            ICloudflareJwtValidator jwtValidator,
+            IHostEnvironment hostEnvironment)
         {
             _next = next;
             _configuration = configuration;
             _jwtValidator = jwtValidator;
+            _hostEnvironment = hostEnvironment;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -34,7 +40,8 @@ namespace F1.Api.Middleware
             var jwtAssertion = context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault();
             if (string.IsNullOrWhiteSpace(jwtAssertion))
             {
-                if (_configuration.GetValue<bool>("CloudflareAccess:AllowLegacyHeaderBypass"))
+                // Never allow legacy plaintext header identity outside development.
+                if (_hostEnvironment.IsDevelopment() && _configuration.GetValue<bool>("CloudflareAccess:AllowLegacyHeaderBypass"))
                 {
                     var fallbackEmail = context.Request.Headers["Cf-Access-Authenticated-User-Email"].FirstOrDefault();
                     if (!string.IsNullOrWhiteSpace(fallbackEmail))

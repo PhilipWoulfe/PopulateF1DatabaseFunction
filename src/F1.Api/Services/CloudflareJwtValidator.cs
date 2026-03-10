@@ -8,6 +8,7 @@ namespace F1.Api.Services;
 public class CloudflareJwtValidator : ICloudflareJwtValidator
 {
     private const string JwksCacheKey = "CloudflareAccess:Jwks";
+    private readonly SemaphoreSlim _jwksRefreshLock = new(1, 1);
 
     private readonly HttpClient _httpClient;
     private readonly IMemoryCache _memoryCache;
@@ -121,17 +122,30 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
             return cachedJwks;
         }
 
-        var certsUrl = _options.Value.CertsUrl;
-        using var response = await _httpClient.GetAsync(certsUrl, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await _jwksRefreshLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (!forceRefresh && _memoryCache.TryGetValue<JsonWebKeySet>(JwksCacheKey, out cachedJwks) && cachedJwks is not null)
+            {
+                return cachedJwks;
+            }
 
-        var jwksJson = await response.Content.ReadAsStringAsync(cancellationToken);
-        var jwks = new JsonWebKeySet(jwksJson);
+            var certsUrl = _options.Value.CertsUrl;
+            using var response = await _httpClient.GetAsync(certsUrl, cancellationToken);
+            response.EnsureSuccessStatusCode();
 
-        var cacheTtlHours = _options.Value.JwksCacheHours;
-        var expiresAt = DateTimeOffset.UtcNow.AddHours(cacheTtlHours <= 0 ? 24 : cacheTtlHours);
-        _memoryCache.Set(JwksCacheKey, jwks, expiresAt);
+            var jwksJson = await response.Content.ReadAsStringAsync(cancellationToken);
+            var jwks = new JsonWebKeySet(jwksJson);
 
-        return jwks;
+            var cacheTtlHours = _options.Value.JwksCacheHours;
+            var expiresAt = DateTimeOffset.UtcNow.AddHours(cacheTtlHours <= 0 ? 24 : cacheTtlHours);
+            _memoryCache.Set(JwksCacheKey, jwks, expiresAt);
+
+            return jwks;
+        }
+        finally
+        {
+            _jwksRefreshLock.Release();
+        }
     }
 }

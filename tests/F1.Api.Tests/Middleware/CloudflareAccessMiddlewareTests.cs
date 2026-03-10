@@ -2,6 +2,8 @@ using F1.Api.Middleware;
 using F1.Api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using System.Security.Claims;
 
 namespace F1.Api.Tests.Middleware
@@ -19,7 +21,7 @@ namespace F1.Api.Tests.Middleware
                 // This should not be called
                 Assert.Fail("The next middleware should not be called.");
                 return Task.CompletedTask;
-            }, configuration, validator);
+            }, configuration, validator, CreateHostEnvironment(Environments.Production));
 
             var httpContext = new DefaultHttpContext();
 
@@ -44,7 +46,7 @@ namespace F1.Api.Tests.Middleware
             {
                 nextCalled = true;
                 return Task.CompletedTask;
-            }, configuration, validator);
+            }, configuration, validator, CreateHostEnvironment(Environments.Production));
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
@@ -65,7 +67,7 @@ namespace F1.Api.Tests.Middleware
                 CloudflareTokenValidationResult.Success(CreatePrincipal("test@example.com", "Test User", "sub-123"))
             );
 
-            var middleware = new CloudflareAccessMiddleware(next: (innerHttpContext) => Task.CompletedTask, configuration, validator);
+            var middleware = new CloudflareAccessMiddleware(next: (innerHttpContext) => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
@@ -85,7 +87,7 @@ namespace F1.Api.Tests.Middleware
             var validator = new FakeCloudflareJwtValidator(_ =>
                 CloudflareTokenValidationResult.Success(CreatePrincipal("philip.woulfe@gmail.com", "Philip", "admin-1"))
             );
-            var middleware = new CloudflareAccessMiddleware(next: (innerHttpContext) => Task.CompletedTask, configuration, validator);
+            var middleware = new CloudflareAccessMiddleware(next: (innerHttpContext) => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
@@ -115,7 +117,7 @@ namespace F1.Api.Tests.Middleware
             {
                 nextCalled = true;
                 return Task.CompletedTask;
-            }, configuration, new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")));
+            }, configuration, new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")), CreateHostEnvironment(Environments.Production));
 
             var httpContext = new DefaultHttpContext();
 
@@ -134,7 +136,8 @@ namespace F1.Api.Tests.Middleware
             var middleware = new CloudflareAccessMiddleware(
                 next: _ => Task.CompletedTask,
                 configuration,
-                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("Unauthorized: invalid Cloudflare Access token."))
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("Unauthorized: invalid Cloudflare Access token.")),
+                CreateHostEnvironment(Environments.Production)
             );
 
             var httpContext = new DefaultHttpContext();
@@ -164,7 +167,8 @@ namespace F1.Api.Tests.Middleware
                     return Task.CompletedTask;
                 },
                 configuration,
-                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used"))
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")),
+                CreateHostEnvironment(Environments.Development)
             );
 
             var httpContext = new DefaultHttpContext();
@@ -174,6 +178,44 @@ namespace F1.Api.Tests.Middleware
 
             Assert.True(nextCalled);
             Assert.True(httpContext.User.HasClaim(c => c.Type == ClaimTypes.Email && c.Value == "legacy@example.com"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldReturnUnauthorized_WhenValidatedPrincipalMissingEmailClaim()
+        {
+            var configuration = new ConfigurationBuilder().Build();
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ =>
+                    CloudflareTokenValidationResult.Success(
+                        new ClaimsPrincipal(
+                            new ClaimsIdentity(
+                                new[]
+                                {
+                                    new Claim("name", "Test User"),
+                                    new Claim("sub", "sub-123")
+                                },
+                                "CloudflareJwt"
+                            )
+                        )
+                    )
+                ),
+                CreateHostEnvironment(Environments.Production)
+            );
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+            httpContext.Response.Body = new MemoryStream();
+
+            await middleware.InvokeAsync(httpContext);
+
+            httpContext.Response.Body.Position = 0;
+            using var reader = new StreamReader(httpContext.Response.Body);
+            var responseBody = await reader.ReadToEndAsync();
+
+            Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+            Assert.Equal("Unauthorized: token is missing required email claim.", responseBody);
         }
 
         private static ClaimsPrincipal CreatePrincipal(string email, string name, string subject)
@@ -204,6 +246,30 @@ namespace F1.Api.Tests.Middleware
             {
                 return Task.FromResult(_resultFactory(jwtAssertion));
             }
+        }
+
+        private static IHostEnvironment CreateHostEnvironment(string environmentName)
+        {
+            return new FakeHostEnvironment(environmentName);
+        }
+
+        private sealed class FakeHostEnvironment : IHostEnvironment
+        {
+            public FakeHostEnvironment(string environmentName)
+            {
+                EnvironmentName = environmentName;
+                ApplicationName = "F1.Api.Tests";
+                ContentRootPath = Directory.GetCurrentDirectory();
+                ContentRootFileProvider = new PhysicalFileProvider(ContentRootPath);
+            }
+
+            public string EnvironmentName { get; set; }
+
+            public string ApplicationName { get; set; }
+
+            public string ContentRootPath { get; set; }
+
+            public IFileProvider ContentRootFileProvider { get; set; }
         }
     }
 }

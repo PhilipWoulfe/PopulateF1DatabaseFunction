@@ -15,7 +15,12 @@ builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<ISelectionService, SelectionService>();
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddMemoryCache();
-builder.Services.Configure<CloudflareAccessOptions>(builder.Configuration.GetSection("CloudflareAccess"));
+builder.Services
+    .AddOptions<CloudflareAccessOptions>()
+    .Bind(builder.Configuration.GetSection("CloudflareAccess"))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "CloudflareAccess:Issuer must be configured.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "CloudflareAccess:Audience must be configured.")
+    .ValidateOnStart();
 builder.Services.AddHttpClient<ICloudflareJwtValidator, CloudflareJwtValidator>();
 
 builder.Services.AddSingleton((provider) =>
@@ -81,7 +86,7 @@ app.Use(async (context, next) =>
     }
     else
     {
-        app.Logger.LogWarning("DEBUG: Cloudflare Access JWT assertion header missing.");
+        app.Logger.LogDebug("DEBUG: Cloudflare Access JWT assertion header missing.");
     }
 
     await next();
