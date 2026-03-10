@@ -8,12 +8,12 @@ using Moq;
 
 namespace F1.Web.Tests.Layout;
 
-public class MainLayoutTests : TestContext
+public class MainLayoutTests : BunitContext
 {
     [Fact]
     public void MainLayout_ShouldShowDevelopmentBanner_AndToggleButton_InDevelopment()
     {
-        var auth = this.AddTestAuthorization();
+        var auth = this.AddAuthorization();
         auth.SetNotAuthorized();
 
         var userSession = new Mock<IUserSession>();
@@ -24,7 +24,7 @@ public class MainLayoutTests : TestContext
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Development"));
         Services.AddSingleton(new HttpClient(new HttpClientHandler()) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<MainLayout>(parameters =>
+        var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
 
         cut.WaitForAssertion(() => Assert.Contains("DEVELOPMENT MODE", cut.Markup));
@@ -34,7 +34,7 @@ public class MainLayoutTests : TestContext
     [Fact]
     public void MainLayout_ShouldShowQaBanner_InTestEnvironment()
     {
-        var auth = this.AddTestAuthorization();
+        var auth = this.AddAuthorization();
         auth.SetNotAuthorized();
 
         var userSession = new Mock<IUserSession>();
@@ -44,7 +44,7 @@ public class MainLayoutTests : TestContext
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Test"));
         Services.AddSingleton(new HttpClient(new HttpClientHandler()) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<MainLayout>(parameters =>
+        var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
 
         cut.WaitForAssertion(() => Assert.Contains("QA ENVIRONMENT", cut.Markup));
@@ -53,7 +53,7 @@ public class MainLayoutTests : TestContext
     [Fact]
     public void MainLayout_ShouldShowVersionFooter_InProduction()
     {
-        var auth = this.AddTestAuthorization();
+        var auth = this.AddAuthorization();
         auth.SetNotAuthorized();
 
         var userSession = new Mock<IUserSession>();
@@ -63,7 +63,7 @@ public class MainLayoutTests : TestContext
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Production"));
         Services.AddSingleton(new HttpClient(new HttpClientHandler()) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<MainLayout>(parameters =>
+        var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
 
         cut.WaitForAssertion(() => Assert.Contains("v. ", cut.Markup));

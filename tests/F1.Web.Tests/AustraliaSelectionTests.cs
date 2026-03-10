@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace F1.Web.Tests.Pages;
 
-public class AustraliaSelectionTests : TestContext
+public class AustraliaSelectionTests : BunitContext
 {
     private static readonly RaceConfig DefaultRaceConfig = new()
     {
@@ -33,7 +33,7 @@ public class AustraliaSelectionTests : TestContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<AustraliaSelection>();
+        var cut = Render<AustraliaSelection>();
 
         cut.WaitForAssertion(() => Assert.Contains("Locking for Pre-Qualy gives +50% points", cut.Markup));
         Assert.Contains("Countdown:", cut.Markup);
@@ -64,7 +64,7 @@ public class AustraliaSelectionTests : TestContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<AustraliaSelection>();
+        var cut = Render<AustraliaSelection>();
 
         cut.WaitForAssertion(() => Assert.Contains("This pre-qualy selection is locked.", cut.Markup));
         Assert.True(cut.Find("button[type='submit']").HasAttribute("disabled"));
@@ -105,7 +105,7 @@ public class AustraliaSelectionTests : TestContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<AustraliaSelection>();
+        var cut = Render<AustraliaSelection>();
         cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll("select").Count));
 
         ChangeSelect(cut, 0, "norris");
@@ -138,7 +138,7 @@ public class AustraliaSelectionTests : TestContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<AustraliaSelection>();
+        var cut = Render<AustraliaSelection>();
         cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll("select").Count));
 
         cut.Find("button[type='submit']").Click();
@@ -159,7 +159,7 @@ public class AustraliaSelectionTests : TestContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = RenderComponent<AustraliaSelection>();
+        var cut = Render<AustraliaSelection>();
         cut.WaitForAssertion(() => Assert.Contains("Countdown:", cut.Markup));
 
         var component = (IAsyncDisposable)cut.Instance;

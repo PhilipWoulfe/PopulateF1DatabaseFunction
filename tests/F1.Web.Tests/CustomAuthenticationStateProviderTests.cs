@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace F1.Web.Tests.Services
 {
-    public class CustomAuthenticationStateProviderTests : TestContext
+    public class CustomAuthenticationStateProviderTests : BunitContext
     {
         private readonly Mock<IUserSession> _userSessionMock;
         private readonly CustomAuthenticationStateProvider _authenticationStateProvider;

@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace F1.Web.Tests.Pages
 {
-    public class DriversTests : TestContext
+    public class DriversTests : BunitContext
     {
         private readonly Mock<HttpMessageHandler> _handlerMock;
         private readonly HttpClient _httpClient;
@@ -37,7 +37,7 @@ namespace F1.Web.Tests.Pages
                 .Returns(tcs.Task);
 
             // Act
-            var cut = RenderComponent<Drivers>();
+            var cut = Render<Drivers>();
 
             // Assert
             Assert.Contains("Loading...", cut.Markup);
@@ -75,7 +75,7 @@ namespace F1.Web.Tests.Pages
                 .ReturnsAsync(response);
 
             // Act
-            var cut = RenderComponent<Drivers>();
+            var cut = Render<Drivers>();
 
             // Assert
             cut.WaitForState(() => cut.FindAll("tbody tr").Count > 0);
@@ -98,7 +98,7 @@ namespace F1.Web.Tests.Pages
                 .ThrowsAsync(new HttpRequestException("API is down"));
 
             // Act
-            var cut = RenderComponent<Drivers>();
+            var cut = Render<Drivers>();
 
             // Assert
             cut.WaitForState(() => cut.FindAll("div.alert.alert-danger").Count > 0);
