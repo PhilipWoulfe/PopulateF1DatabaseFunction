@@ -9,8 +9,14 @@ public class Selection
 
     public string UserId { get; set; } = string.Empty;
     public string RaceId { get; set; } = string.Empty;
-    public List<string> Selections { get; set; } = [];
+    public List<SelectionPosition> OrderedSelections { get; set; } = [];    
     public BetType BetType { get; set; }
     public DateTime SubmittedAtUtc { get; set; }
     public bool IsLocked { get; set; }
+}
+
+public class SelectionPosition
+{
+    public int Position { get; set; }
+    public string DriverId { get; set; } = string.Empty;
 }

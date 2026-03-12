@@ -11,11 +11,16 @@ public class SelectionService : ISelectionService
     public const string AustraliaRaceId2026 = "2026-australia";
 
     private readonly ISelectionRepository _selectionRepository;
+    private readonly IDriverRepository _driverRepository;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public SelectionService(ISelectionRepository selectionRepository, IDateTimeProvider dateTimeProvider)
+    public SelectionService(
+        ISelectionRepository selectionRepository,
+        IDriverRepository driverRepository,
+        IDateTimeProvider dateTimeProvider)
     {
         _selectionRepository = selectionRepository;
+        _driverRepository = driverRepository;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -34,7 +39,8 @@ public class SelectionService : ISelectionService
 
     public async Task<Selection> UpsertSelectionAsync(string raceId, string userId, SelectionSubmissionDto submission)
     {
-        ValidateSelections(submission.Selections);
+        var orderedSelections = submission.OrderedSelections;
+        ValidateSelections(orderedSelections);
 
         var nowUtc = _dateTimeProvider.UtcNow;
         var existingSelection = await _selectionRepository.GetSelectionAsync(raceId, userId);
@@ -58,12 +64,52 @@ public class SelectionService : ISelectionService
         selection.Id = existingSelection?.Id ?? Guid.Empty;
         selection.RaceId = raceId;
         selection.UserId = userId;
-        selection.Selections = submission.Selections;
+        selection.OrderedSelections = orderedSelections;
         selection.BetType = submission.BetType;
         selection.SubmittedAtUtc = nowUtc;
         selection.IsLocked = false;
 
         return await _selectionRepository.UpsertSelectionAsync(selection);
+    }
+
+    public async Task<IReadOnlyList<CurrentSelectionDto>> GetCurrentSelectionsAsync(string userId)
+    {
+        var selection = await _selectionRepository.GetSelectionAsync(AustraliaRaceId2026, userId);
+        if (selection is null)
+        {
+            return [];
+        }
+
+        var orderedSelections = selection.OrderedSelections
+            .OrderBy(item => item.Position)
+            .ToList();
+
+        var drivers = await _driverRepository.GetDriversAsync();
+        var driverLookup = drivers
+            .Where(driver => !string.IsNullOrWhiteSpace(driver.DriverId))
+            .ToDictionary(driver => driver.DriverId!, driver => driver.FullName ?? driver.DriverId!, StringComparer.OrdinalIgnoreCase);
+
+        var rows = new List<CurrentSelectionDto>(orderedSelections.Count);
+        foreach (var selectionItem in orderedSelections)
+        {
+            if (string.IsNullOrWhiteSpace(selectionItem.DriverId))
+            {
+                continue;
+            }
+
+            rows.Add(new CurrentSelectionDto
+            {
+                Position = selectionItem.Position,
+                UserId = selection.UserId,
+                UserName = selection.UserId,
+                DriverId = selectionItem.DriverId,
+                DriverName = driverLookup.GetValueOrDefault(selectionItem.DriverId, selectionItem.DriverId),
+                SelectionType = selection.BetType.ToString(),
+                Timestamp = selection.SubmittedAtUtc
+            });
+        }
+
+        return rows;
     }
 
     public RaceConfigDto? GetRaceConfig(string raceId)
@@ -96,16 +142,32 @@ public class SelectionService : ISelectionService
         return basePoints;
     }
 
-    private static void ValidateSelections(List<string> selections)
+    private static void ValidateSelections(List<SelectionPosition> selections)
     {
+        var validSelections = selections
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .ToList();
+
+        var distinctPositions = validSelections
+            .Select(item => item.Position)
+            .Distinct()
+            .Count();
+
         var distinctCount = selections
-            .Where(driverId => !string.IsNullOrWhiteSpace(driverId))
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .Select(item => item.DriverId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
-        if (selections.Count != 5 || distinctCount != 5)
+        var totalCount = selections.Count;
+        if (totalCount != 5 || validSelections.Count != 5 || distinctCount != 5 || distinctPositions != 5)
         {
             throw new SelectionValidationException("Exactly 5 unique drivers must be selected.");
+        }
+
+        if (validSelections.Any(item => item.Position < 1 || item.Position > 5))
+        {
+            throw new SelectionValidationException("Selection positions must be between 1 and 5.");
         }
     }
 

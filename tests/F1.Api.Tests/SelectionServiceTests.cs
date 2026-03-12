@@ -9,7 +9,31 @@ namespace F1.Api.Tests;
 public class SelectionServiceTests
 {
     private readonly Mock<ISelectionRepository> _selectionRepositoryMock = new();
+    private readonly Mock<IDriverRepository> _driverRepositoryMock = new();
     private readonly Mock<IDateTimeProvider> _dateTimeProviderMock = new();
+
+    [Fact]
+    public async Task UpsertSelectionAsync_ShouldReject_WhenMoreThanFiveSelectionsSubmitted()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 7, 0, 0, 0, DateTimeKind.Utc));
+
+        var submission = new SelectionSubmissionDto
+        {
+            BetType = BetType.Regular,
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" },
+                new SelectionPosition { Position = 0, DriverId = "" }
+            }
+        };
+
+        await Assert.ThrowsAsync<SelectionValidationException>(() =>
+            service.UpsertSelectionAsync("2026-australia", "user@example.com", submission));
+    }
 
     [Fact]
     public async Task UpsertSelectionAsync_ShouldRejectPreQualyBet_AfterDeadline()
@@ -22,7 +46,14 @@ public class SelectionServiceTests
         var submission = new SelectionSubmissionDto
         {
             BetType = BetType.PreQualy,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         await Assert.ThrowsAsync<SelectionValidationException>(() =>
@@ -41,7 +72,14 @@ public class SelectionServiceTests
             RaceId = "2026-australia",
             UserId = "user@example.com",
             BetType = BetType.Regular,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         _selectionRepositoryMock
@@ -55,14 +93,21 @@ public class SelectionServiceTests
         var submission = new SelectionSubmissionDto
         {
             BetType = BetType.Regular,
-            Selections = ["leclerc", "norris", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         var updated = await service.UpsertSelectionAsync("2026-australia", "user@example.com", submission);
 
         Assert.Equal(BetType.Regular, updated.BetType);
         Assert.Equal(nowUtc, updated.SubmittedAtUtc);
-        Assert.Equal("leclerc", updated.Selections[0]);
+        Assert.Equal("norris", updated.OrderedSelections[0].DriverId);
     }
     [Fact]
     public void GetRaceConfig_ShouldReturnConfig_ForAustraliaRace()
@@ -98,7 +143,14 @@ public class SelectionServiceTests
             RaceId = "2026-australia",
             UserId = "user@example.com",
             BetType = BetType.Regular,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         _selectionRepositoryMock
@@ -125,9 +177,111 @@ public class SelectionServiceTests
         Assert.Equal(200, score);
     }
 
+    [Fact]
+    public async Task GetCurrentSelectionsAsync_ShouldReturnMappedRows_WhenSelectionExists()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync(new Selection
+            {
+                Id = Guid.NewGuid(),
+                RaceId = "2026-australia",
+                UserId = "user@example.com",
+                BetType = BetType.PreQualy,
+                SubmittedAtUtc = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc),
+                OrderedSelections = new List<SelectionPosition>
+                {
+                    new SelectionPosition { Position = 1, DriverId = "norris" },
+                    new SelectionPosition { Position = 2, DriverId = "leclerc" }
+                }
+            });
+
+        _driverRepositoryMock
+            .Setup(repo => repo.GetDriversAsync())
+            .ReturnsAsync([
+                new Driver { DriverId = "norris", FullName = "Lando Norris" },
+                new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" }
+            ]);
+
+        var rows = await service.GetCurrentSelectionsAsync("user@example.com");
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(1, rows[0].Position);
+        Assert.Equal("user@example.com", rows[0].UserId);
+        Assert.Equal("Lando Norris", rows[0].DriverName);
+        Assert.Equal("PreQualy", rows[0].SelectionType);
+        Assert.Equal(2, rows[1].Position);
+    }
+
+    [Fact]
+    public async Task GetCurrentSelectionsAsync_ShouldReturnRowsSortedByPosition_WhenSelectionsAreOutOfOrder()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync(new Selection
+            {
+                Id = Guid.NewGuid(),
+                RaceId = "2026-australia",
+                UserId = "user@example.com",
+                BetType = BetType.Regular,
+                SubmittedAtUtc = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc),
+                OrderedSelections = new List<SelectionPosition>
+                {
+                    new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                    new SelectionPosition { Position = 1, DriverId = "norris" },
+                    new SelectionPosition { Position = 5, DriverId = "verstappen" },
+                    new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                    new SelectionPosition { Position = 4, DriverId = "piastri" }
+                }
+            });
+
+        _driverRepositoryMock
+            .Setup(repo => repo.GetDriversAsync())
+            .ReturnsAsync([
+                new Driver { DriverId = "norris", FullName = "Lando Norris" },
+                new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" },
+                new Driver { DriverId = "hamilton", FullName = "Lewis Hamilton" },
+                new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
+                new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
+            ]);
+
+        var rows = await service.GetCurrentSelectionsAsync("user@example.com");
+
+        Assert.Equal(5, rows.Count);
+        Assert.Equal(1, rows[0].Position);
+        Assert.Equal("norris", rows[0].DriverId);
+        Assert.Equal(2, rows[1].Position);
+        Assert.Equal("leclerc", rows[1].DriverId);
+        Assert.Equal(3, rows[2].Position);
+        Assert.Equal("hamilton", rows[2].DriverId);
+        Assert.Equal(4, rows[3].Position);
+        Assert.Equal("piastri", rows[3].DriverId);
+        Assert.Equal(5, rows[4].Position);
+        Assert.Equal("verstappen", rows[4].DriverId);
+    }
+
+    [Fact]
+    public async Task GetCurrentSelectionsAsync_ShouldReturnEmpty_WhenNoSelectionExists()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync((Selection?)null);
+
+        var rows = await service.GetCurrentSelectionsAsync("user@example.com");
+
+        Assert.Empty(rows);
+        _driverRepositoryMock.Verify(repo => repo.GetDriversAsync(), Times.Never);
+    }
+
     private SelectionService CreateServiceAt(DateTime utcNow)
     {
         _dateTimeProviderMock.Setup(clock => clock.UtcNow).Returns(utcNow);
-        return new SelectionService(_selectionRepositoryMock.Object, _dateTimeProviderMock.Object);
+        return new SelectionService(_selectionRepositoryMock.Object, _driverRepositoryMock.Object, _dateTimeProviderMock.Object);
     }
 }

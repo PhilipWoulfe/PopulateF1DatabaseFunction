@@ -18,7 +18,7 @@ public class CosmosSelectionRepository : ISelectionRepository
     public async Task<Selection?> GetSelectionAsync(string raceId, string userId)
     {
         var queryDefinition = new QueryDefinition(
-            "SELECT TOP 1 * FROM c WHERE c.raceId = @raceId AND c.userId = @userId")
+            "SELECT TOP 1 * FROM c WHERE c.raceId = @raceId AND c.userId = @userId ORDER BY c._ts DESC")
             .WithParameter("@raceId", raceId)
             .WithParameter("@userId", userId);
 

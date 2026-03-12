@@ -102,6 +102,10 @@ Required API values in `.env`:
 - `COSMOSDB_CONNECTIONSTRING`: mapped to `CosmosDb__ConnectionString` for `f1-api`.
 - `CLOUDFLARE_AUDIENCE`: mapped to `CloudflareAccess__Audience` for `f1-api`.
 
+Optional development toggle in `.env`:
+
+- `DEV_MOCK_CURRENT_SELECTIONS`: mapped to `DevSettings__MockCurrentSelections` for `f1-api`. When `true` in Development, selection GET/PUT endpoints use an in-memory mock store so the UI can be validated without Cosmos data.
+
 Notes:
 
 - `CloudflareAccess__Issuer` is currently set in `docker-compose.yml`.

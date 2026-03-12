@@ -7,6 +7,7 @@ services:
       - CosmosDb__ConnectionString=${COSMOSDB_CONNECTIONSTRING}
       - CloudflareAccess__Audience=${CLOUDFLARE_AUDIENCE:-CloudflareAccessAudienceNotSet}
       - CloudflareAccess__Issuer=https://f1-team.cloudflareaccess.com
+      - DevSettings__MockCurrentSelections=${DEV_MOCK_CURRENT_SELECTIONS:-false}
     image: ghcr.io/philipwoulfe/f1competition:${TAG:-latest}
     build:
       context: .

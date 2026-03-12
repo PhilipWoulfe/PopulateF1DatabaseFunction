@@ -27,7 +27,14 @@ public class CosmosSelectionRepositoryTests
             RaceId = raceId,
             UserId = userId,
             BetType = BetType.Regular,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         var feedResponse = new Mock<FeedResponse<Selection>>();
@@ -37,8 +44,11 @@ public class CosmosSelectionRepositoryTests
         feedIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
         feedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(feedResponse.Object);
 
+        QueryDefinition? capturedQueryDefinition = null;
+
         mockContainer
             .Setup(c => c.GetItemQueryIterator<Selection>(It.IsAny<QueryDefinition>(), null, It.IsAny<QueryRequestOptions>()))
+            .Callback<QueryDefinition, string?, QueryRequestOptions?>((queryDefinition, _, _) => capturedQueryDefinition = queryDefinition)
             .Returns(feedIterator.Object);
 
         var itemResponse = new Mock<ItemResponse<Selection>>();
@@ -62,7 +72,14 @@ public class CosmosSelectionRepositoryTests
             RaceId = raceId,
             UserId = userId,
             BetType = BetType.PreQualy,
-            Selections = ["leclerc", "norris", "hamilton", "piastri", "verstappen"],
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "leclerc" },
+                new SelectionPosition { Position = 2, DriverId = "norris" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            },
             SubmittedAtUtc = DateTime.UtcNow
         };
 
@@ -73,9 +90,14 @@ public class CosmosSelectionRepositoryTests
                 s.Id == existingId &&
                 s.RaceId == raceId &&
                 s.UserId == userId &&
-                s.Selections[0] == "leclerc"),
+                s.OrderedSelections[0].DriverId == "leclerc"),
             It.Is<PartitionKey?>(pk => pk.HasValue && pk.Value.Equals(new PartitionKey(raceId))),
             null,
             It.IsAny<CancellationToken>()), Times.Once);
+
+        Assert.NotNull(capturedQueryDefinition);
+        Assert.Contains("c.raceId", capturedQueryDefinition!.QueryText, StringComparison.Ordinal);
+        Assert.Contains("c.userId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
+        Assert.Contains("ORDER BY c._ts DESC", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
     }
 }

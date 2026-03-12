@@ -30,6 +30,7 @@ public class AustraliaSelectionTests : BunitContext
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
@@ -37,6 +38,7 @@ public class AustraliaSelectionTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.Contains("Locking for Pre-Qualy gives +50% points", cut.Markup));
         Assert.Contains("Countdown:", cut.Markup);
+        Assert.Equal(string.Empty, cut.FindAll("select")[0].GetAttribute("value"));
     }
 
     [Fact]
@@ -57,9 +59,32 @@ public class AustraliaSelectionTests : BunitContext
             Id = Guid.NewGuid(),
             RaceId = "2026-australia",
             UserId = "user@example.com",
-            BetType = BetType.PreQualy,
+            BetType = BetType.Regular,
             IsLocked = true,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            Selections = ["leclerc", "norris", "hamilton", "piastri", "verstappen"]
+        }));
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new CurrentSelectionItem
+            {
+                Position = 1,
+                UserId = "user@example.com",
+                UserName = "user@example.com",
+                DriverId = "norris",
+                DriverName = "Lando Norris",
+                SelectionType = "PreQualy",
+                Timestamp = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc)
+            },
+            new CurrentSelectionItem
+            {
+                Position = 2,
+                UserId = "user@example.com",
+                UserName = "user@example.com",
+                DriverId = "leclerc",
+                DriverName = "Charles Leclerc",
+                SelectionType = "PreQualy",
+                Timestamp = new DateTime(2026, 3, 6, 10, 1, 0, DateTimeKind.Utc)
+            }
         }));
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
@@ -68,6 +93,9 @@ public class AustraliaSelectionTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.Contains("This pre-qualy selection is locked.", cut.Markup));
         Assert.True(cut.Find("button[type='submit']").HasAttribute("disabled"));
+        Assert.Equal("norris", cut.FindAll("select")[0].GetAttribute("value"));
+        Assert.Equal("leclerc", cut.FindAll("select")[1].GetAttribute("value"));
+        Assert.True(cut.Find("#strategy-prequaly").HasAttribute("checked"));
     }
 
     [Fact]
@@ -84,6 +112,7 @@ public class AustraliaSelectionTests : BunitContext
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
             Id = Guid.NewGuid(),
@@ -93,6 +122,30 @@ public class AustraliaSelectionTests : BunitContext
             IsLocked = false,
             Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
         }));
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new CurrentSelectionItem
+            {
+                Position = 1,
+                UserId = "user@example.com",
+                UserName = "user@example.com",
+                DriverId = "norris",
+                DriverName = "Lando Norris",
+                SelectionType = "Regular",
+                Timestamp = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc)
+            },
+            new CurrentSelectionItem
+            {
+                Position = 2,
+                UserId = "user@example.com",
+                UserName = "user@example.com",
+                DriverId = "leclerc",
+                DriverName = "Charles Leclerc",
+                SelectionType = "Regular",
+                Timestamp = new DateTime(2026, 3, 6, 10, 1, 0, DateTimeKind.Utc)
+            }
+        }));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.OK));
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
             Id = Guid.NewGuid(),
@@ -101,6 +154,19 @@ public class AustraliaSelectionTests : BunitContext
             BetType = BetType.Regular,
             IsLocked = false,
             Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+        }));
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new CurrentSelectionItem
+            {
+                Position = 1,
+                UserId = "user@example.com",
+                UserName = "user@example.com",
+                DriverId = "norris",
+                DriverName = "Lando Norris",
+                SelectionType = "Regular",
+                Timestamp = new DateTime(2026, 3, 6, 11, 0, 0, DateTimeKind.Utc)
+            }
         }));
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
@@ -118,6 +184,7 @@ public class AustraliaSelectionTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.Contains("Selection saved successfully.", cut.Markup));
         Assert.Contains(handler.Requests, req => req.Method == HttpMethod.Put && req.RequestUri?.AbsolutePath.EndsWith("/selections/2026-australia/mine") == true);
+        Assert.Contains(handler.Requests, req => req.Method == HttpMethod.Get && req.RequestUri?.AbsolutePath.EndsWith("/selections/current") == true);
     }
 
     [Fact]
@@ -134,6 +201,7 @@ public class AustraliaSelectionTests : BunitContext
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
         handler.EnqueueResponse(CreateJsonResponse(new { message = "Exactly 5 unique drivers must be selected." }, HttpStatusCode.BadRequest));
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
@@ -156,6 +224,7 @@ public class AustraliaSelectionTests : BunitContext
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
@@ -166,6 +235,50 @@ public class AustraliaSelectionTests : BunitContext
         await component.DisposeAsync();
         // Second call must not throw
         await component.DisposeAsync();
+    }
+
+    [Fact]
+    public void AustraliaSelection_ShouldPopulateControls_FromCurrentSelectionsSnapshot()
+    {
+        var handler = new QueueHttpMessageHandler();
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new Driver { DriverId = "norris", FullName = "Lando Norris" },
+            new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" }
+        }));
+        handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new CurrentSelectionItem
+            {
+                Position = 1,
+                UserId = "user@example.com",
+                UserName = "user@example.com",
+                DriverId = "norris",
+                DriverName = "Lando Norris",
+                SelectionType = "PreQualy",
+                Timestamp = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc)
+            },
+            new CurrentSelectionItem
+            {
+                Position = 2,
+                UserId = "user@example.com",
+                UserName = "user@example.com",
+                DriverId = "leclerc",
+                DriverName = "Charles Leclerc",
+                SelectionType = "PreQualy",
+                Timestamp = new DateTime(2026, 3, 6, 10, 1, 0, DateTimeKind.Utc)
+            }
+        }));
+
+        Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var cut = Render<AustraliaSelection>();
+
+        cut.WaitForAssertion(() => Assert.Equal("norris", cut.FindAll("select")[0].GetAttribute("value")));
+        Assert.Equal("leclerc", cut.FindAll("select")[1].GetAttribute("value"));
+        Assert.True(cut.Find("#strategy-prequaly").HasAttribute("checked"));
     }
 
     private static HttpResponseMessage CreateJsonResponse<T>(T payload, HttpStatusCode statusCode = HttpStatusCode.OK)
