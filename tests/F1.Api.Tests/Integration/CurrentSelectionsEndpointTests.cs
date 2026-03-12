@@ -28,6 +28,7 @@ public class CurrentSelectionsEndpointTests : IClassFixture<WebApplicationFactor
             .ReturnsAsync([
                 new CurrentSelectionDto
                 {
+                    Position = 1,
                     UserId = "user@example.com",
                     UserName = "user@example.com",
                     DriverId = "norris",
@@ -63,6 +64,7 @@ public class CurrentSelectionsEndpointTests : IClassFixture<WebApplicationFactor
         var payload = await response.Content.ReadFromJsonAsync<List<CurrentSelectionDto>>();
         Assert.NotNull(payload);
         Assert.Single(payload!);
+        Assert.Equal(1, payload[0].Position);
         Assert.Equal("norris", payload[0].DriverId);
     }
 }

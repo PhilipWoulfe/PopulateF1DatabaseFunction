@@ -37,8 +37,11 @@ public class CosmosSelectionRepositoryTests
         feedIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
         feedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(feedResponse.Object);
 
+        QueryDefinition? capturedQueryDefinition = null;
+
         mockContainer
             .Setup(c => c.GetItemQueryIterator<Selection>(It.IsAny<QueryDefinition>(), null, It.IsAny<QueryRequestOptions>()))
+            .Callback<QueryDefinition, string?, QueryRequestOptions?>((queryDefinition, _, _) => capturedQueryDefinition = queryDefinition)
             .Returns(feedIterator.Object);
 
         var itemResponse = new Mock<ItemResponse<Selection>>();
@@ -77,5 +80,10 @@ public class CosmosSelectionRepositoryTests
             It.Is<PartitionKey?>(pk => pk.HasValue && pk.Value.Equals(new PartitionKey(raceId))),
             null,
             It.IsAny<CancellationToken>()), Times.Once);
+
+        Assert.NotNull(capturedQueryDefinition);
+        Assert.Contains("c.RaceId", capturedQueryDefinition!.QueryText, StringComparison.Ordinal);
+        Assert.Contains("c.UserId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
+        Assert.Contains("ORDER BY c._ts DESC", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
     }
 }

@@ -85,10 +85,12 @@ public class SelectionService : ISelectionService
             .ToDictionary(driver => driver.DriverId!, driver => driver.FullName ?? driver.DriverId!, StringComparer.OrdinalIgnoreCase);
 
         var rows = new List<CurrentSelectionDto>(selection.Selections.Count);
+        var position = 1;
         foreach (var driverId in selection.Selections.Where(id => !string.IsNullOrWhiteSpace(id)))
         {
             rows.Add(new CurrentSelectionDto
             {
+                Position = position,
                 UserId = selection.UserId,
                 UserName = selection.UserId,
                 DriverId = driverId,
@@ -96,6 +98,8 @@ public class SelectionService : ISelectionService
                 SelectionType = selection.BetType.ToString(),
                 Timestamp = selection.SubmittedAtUtc
             });
+
+            position++;
         }
 
         return rows;

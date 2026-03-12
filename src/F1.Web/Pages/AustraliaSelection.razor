@@ -171,6 +171,8 @@ else
 
         var rankedDrivers = snapshot
             .Where(row => !string.IsNullOrWhiteSpace(row.DriverId))
+            .OrderBy(row => row.Position <= 0 ? int.MaxValue : row.Position)
+            .ThenBy(row => row.Timestamp)
             .Select(row => row.DriverId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(selectedDriverIds.Count)

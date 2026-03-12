@@ -1,9 +1,11 @@
 using F1.Core.Dtos;
 using F1.Core.Interfaces;
+using F1.Core.Models;
 using F1.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using System.Collections.Concurrent;
 using System.Security.Claims;
 
 namespace F1.Api.Controllers;
@@ -12,6 +14,7 @@ namespace F1.Api.Controllers;
 [Route("selections")]
 public class SelectionsController : ControllerBase
 {
+    private static readonly ConcurrentDictionary<string, Selection> MockSelections = new(StringComparer.OrdinalIgnoreCase);
     private readonly ISelectionService _selectionService;
     private readonly IConfiguration _configuration;
     private readonly IHostEnvironment _hostEnvironment;
@@ -47,6 +50,11 @@ public class SelectionsController : ControllerBase
             return Unauthorized();
         }
 
+        if (ShouldUseMockCurrentSelections())
+        {
+            return Ok(GetOrCreateMockSelection(raceId, userId));
+        }
+
         var selection = await _selectionService.GetSelectionAsync(raceId, userId);
         if (selection is null)
         {
@@ -67,7 +75,8 @@ public class SelectionsController : ControllerBase
 
         if (ShouldUseMockCurrentSelections())
         {
-            return Ok(BuildMockCurrentSelections(userId));
+            var selection = GetOrCreateMockSelection(SelectionService.AustraliaRaceId2026, userId);
+            return Ok(MapCurrentSelections(selection));
         }
 
         var selections = await _selectionService.GetCurrentSelectionsAsync(userId);
@@ -81,6 +90,18 @@ public class SelectionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(userId))
         {
             return Unauthorized();
+        }
+
+        if (ShouldUseMockCurrentSelections())
+        {
+            var validationMessage = ValidateMockSubmission(submission);
+            if (validationMessage is not null)
+            {
+                return BadRequest(new { message = validationMessage });
+            }
+
+            var selection = UpsertMockSelection(raceId, userId, submission);
+            return Ok(selection);
         }
 
         try
@@ -110,58 +131,113 @@ public class SelectionsController : ControllerBase
                && _configuration.GetValue<bool>("DevSettings:MockCurrentSelections");
     }
 
-    private static IReadOnlyList<CurrentSelectionDto> BuildMockCurrentSelections(string userId)
+    private static Selection GetOrCreateMockSelection(string raceId, string userId)
     {
-        var timestamp = new DateTime(2026, 3, 6, 9, 0, 0, DateTimeKind.Utc);
-        var userName = userId.Split('@')[0];
+        var key = BuildMockSelectionKey(raceId, userId);
+        return MockSelections.GetOrAdd(key, _ => BuildDefaultMockSelection(raceId, userId));
+    }
 
-        return
-        [
-            new CurrentSelectionDto
+    private static Selection UpsertMockSelection(string raceId, string userId, SelectionSubmissionDto submission)
+    {
+        var key = BuildMockSelectionKey(raceId, userId);
+        var updated = new Selection
+        {
+            Id = MockSelections.TryGetValue(key, out var existing) ? existing.Id : Guid.NewGuid(),
+            RaceId = raceId,
+            UserId = userId,
+            Selections = submission.Selections.ToList(),
+            BetType = submission.BetType,
+            SubmittedAtUtc = DateTime.UtcNow,
+            IsLocked = false
+        };
+
+        MockSelections[key] = updated;
+        return updated;
+    }
+
+    private static Selection BuildDefaultMockSelection(string raceId, string userId)
+    {
+        return new Selection
+        {
+            Id = Guid.NewGuid(),
+            RaceId = raceId,
+            UserId = userId,
+            BetType = BetType.Regular,
+            SubmittedAtUtc = new DateTime(2026, 3, 6, 9, 0, 0, DateTimeKind.Utc),
+            IsLocked = false,
+            Selections =
+            [
+                "max_verstappen",
+                "lando_norris",
+                "charles_leclerc",
+                "oscar_piastri",
+                "lewis_hamilton"
+            ]
+        };
+    }
+
+    private static IReadOnlyList<CurrentSelectionDto> MapCurrentSelections(Selection selection)
+    {
+        var userName = selection.UserId.Split('@')[0];
+        var rows = new List<CurrentSelectionDto>(selection.Selections.Count);
+
+        for (var index = 0; index < selection.Selections.Count; index++)
+        {
+            var driverId = selection.Selections[index];
+            if (string.IsNullOrWhiteSpace(driverId))
             {
-                UserId = userId,
-                UserName = userName,
-                DriverId = "max_verstappen",
-                DriverName = "Max Verstappen",
-                SelectionType = "Regular",
-                Timestamp = timestamp
-            },
-            new CurrentSelectionDto
-            {
-                UserId = userId,
-                UserName = userName,
-                DriverId = "lando_norris",
-                DriverName = "Lando Norris",
-                SelectionType = "Regular",
-                Timestamp = timestamp.AddMinutes(1)
-            },
-            new CurrentSelectionDto
-            {
-                UserId = userId,
-                UserName = userName,
-                DriverId = "charles_leclerc",
-                DriverName = "Charles Leclerc",
-                SelectionType = "Regular",
-                Timestamp = timestamp.AddMinutes(2)
-            },
-            new CurrentSelectionDto
-            {
-                UserId = userId,
-                UserName = userName,
-                DriverId = "oscar_piastri",
-                DriverName = "Oscar Piastri",
-                SelectionType = "Regular",
-                Timestamp = timestamp.AddMinutes(3)
-            },
-            new CurrentSelectionDto
-            {
-                UserId = userId,
-                UserName = userName,
-                DriverId = "lewis_hamilton",
-                DriverName = "Lewis Hamilton",
-                SelectionType = "Regular",
-                Timestamp = timestamp.AddMinutes(4)
+                continue;
             }
-        ];
+
+            rows.Add(new CurrentSelectionDto
+            {
+                Position = index + 1,
+                UserId = selection.UserId,
+                UserName = userName,
+                DriverId = driverId,
+                DriverName = ResolveMockDriverName(driverId),
+                SelectionType = selection.BetType.ToString(),
+                Timestamp = selection.SubmittedAtUtc
+            });
+        }
+
+        return rows;
+    }
+
+    private static string ResolveMockDriverName(string driverId)
+    {
+        return driverId switch
+        {
+            "max_verstappen" => "Max Verstappen",
+            "lando_norris" => "Lando Norris",
+            "charles_leclerc" => "Charles Leclerc",
+            "oscar_piastri" => "Oscar Piastri",
+            "lewis_hamilton" => "Lewis Hamilton",
+            "leclerc" => "Charles Leclerc",
+            "norris" => "Lando Norris",
+            "hamilton" => "Lewis Hamilton",
+            "piastri" => "Oscar Piastri",
+            _ => driverId
+        };
+    }
+
+    private static string? ValidateMockSubmission(SelectionSubmissionDto submission)
+    {
+        var distinctCount = submission.Selections
+            .Where(driverId => !string.IsNullOrWhiteSpace(driverId))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        if (submission.Selections.Count != 5 || distinctCount != 5)
+        {
+            return "Exactly 5 unique drivers must be selected.";
+        }
+
+        return null;
+    }
+
+    private static string BuildMockSelectionKey(string raceId, string userId)
+    {
+        return $"{raceId}::{userId}";
     }
 }

@@ -153,9 +153,11 @@ public class SelectionServiceTests
         var rows = await service.GetCurrentSelectionsAsync("user@example.com");
 
         Assert.Equal(2, rows.Count);
+        Assert.Equal(1, rows[0].Position);
         Assert.Equal("user@example.com", rows[0].UserId);
         Assert.Equal("Lando Norris", rows[0].DriverName);
         Assert.Equal("PreQualy", rows[0].SelectionType);
+        Assert.Equal(2, rows[1].Position);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ namespace F1.Core.Dtos;
 
 public class CurrentSelectionDto
 {
+    public int Position { get; set; }
     public string UserId { get; set; } = string.Empty;
     public string UserName { get; set; } = string.Empty;
     public string DriverId { get; set; } = string.Empty;

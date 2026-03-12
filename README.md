@@ -104,7 +104,7 @@ Required API values in `.env`:
 
 Optional development toggle in `.env`:
 
-- `DEV_MOCK_CURRENT_SELECTIONS`: mapped to `DevSettings__MockCurrentSelections` for `f1-api`. When `true` in Development, `GET /selections/current` returns mocked selection rows so the UI can be validated without Cosmos data.
+- `DEV_MOCK_CURRENT_SELECTIONS`: mapped to `DevSettings__MockCurrentSelections` for `f1-api`. When `true` in Development, selection GET/PUT endpoints use an in-memory mock store so the UI can be validated without Cosmos data.
 
 Notes:
 

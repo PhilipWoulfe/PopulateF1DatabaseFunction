@@ -36,6 +36,7 @@ public class SelectionsControllerTests
             .ReturnsAsync([
                 new CurrentSelectionDto
                 {
+                    Position = 1,
                     UserId = "user@example.com",
                     UserName = "user@example.com",
                     DriverId = "norris",
@@ -61,6 +62,7 @@ public class SelectionsControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var payload = Assert.IsAssignableFrom<IReadOnlyList<CurrentSelectionDto>>(ok.Value);
         Assert.Single(payload);
+        Assert.Equal(1, payload[0].Position);
         Assert.Equal("norris", payload[0].DriverId);
     }
 
@@ -68,10 +70,11 @@ public class SelectionsControllerTests
     public async Task GetCurrent_ShouldReturnMockRows_InDevelopmentWhenEnabled()
     {
         var serviceMock = new Mock<ISelectionService>();
+        const string userId = "mock-current@example.com";
 
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim(ClaimTypes.Email, "user@example.com")],
+            [new Claim(ClaimTypes.Email, userId)],
             "TestAuth"));
 
         var controller = CreateController(serviceMock, mockCurrentSelections: true, environmentName: Environments.Development);
@@ -85,9 +88,39 @@ public class SelectionsControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var payload = Assert.IsAssignableFrom<IReadOnlyList<CurrentSelectionDto>>(ok.Value);
         Assert.NotEmpty(payload);
+        Assert.Equal(1, payload[0].Position);
         Assert.Equal("max_verstappen", payload[0].DriverId);
 
         serviceMock.Verify(service => service.GetCurrentSelectionsAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetMine_ShouldReturnPersistedMockSelection_InDevelopmentWhenEnabled()
+    {
+        var serviceMock = new Mock<ISelectionService>();
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Email, "user@example.com")],
+            "TestAuth"));
+
+        var controller = CreateController(serviceMock, mockCurrentSelections: true, environmentName: Environments.Development);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+
+        await controller.UpsertMine("2026-australia", new SelectionSubmissionDto
+        {
+            BetType = F1.Core.Models.BetType.PreQualy,
+            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+        });
+
+        var result = await controller.GetMine("2026-australia");
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsType<F1.Core.Models.Selection>(ok.Value);
+        Assert.Equal(F1.Core.Models.BetType.PreQualy, payload.BetType);
+        Assert.Equal("norris", payload.Selections[0]);
     }
 
     private static SelectionsController CreateController(

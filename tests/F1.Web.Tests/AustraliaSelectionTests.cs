@@ -67,6 +67,7 @@ public class AustraliaSelectionTests : BunitContext
         {
             new CurrentSelectionItem
             {
+                Position = 1,
                 UserId = "user@example.com",
                 UserName = "user@example.com",
                 DriverId = "norris",
@@ -76,6 +77,7 @@ public class AustraliaSelectionTests : BunitContext
             },
             new CurrentSelectionItem
             {
+                Position = 2,
                 UserId = "user@example.com",
                 UserName = "user@example.com",
                 DriverId = "leclerc",
@@ -124,6 +126,7 @@ public class AustraliaSelectionTests : BunitContext
         {
             new CurrentSelectionItem
             {
+                Position = 1,
                 UserId = "user@example.com",
                 UserName = "user@example.com",
                 DriverId = "norris",
@@ -133,6 +136,7 @@ public class AustraliaSelectionTests : BunitContext
             },
             new CurrentSelectionItem
             {
+                Position = 2,
                 UserId = "user@example.com",
                 UserName = "user@example.com",
                 DriverId = "leclerc",
@@ -155,6 +159,7 @@ public class AustraliaSelectionTests : BunitContext
         {
             new CurrentSelectionItem
             {
+                Position = 1,
                 UserId = "user@example.com",
                 UserName = "user@example.com",
                 DriverId = "norris",
@@ -247,6 +252,7 @@ public class AustraliaSelectionTests : BunitContext
         {
             new CurrentSelectionItem
             {
+                Position = 1,
                 UserId = "user@example.com",
                 UserName = "user@example.com",
                 DriverId = "norris",
@@ -256,6 +262,7 @@ public class AustraliaSelectionTests : BunitContext
             },
             new CurrentSelectionItem
             {
+                Position = 2,
                 UserId = "user@example.com",
                 UserName = "user@example.com",
                 DriverId = "leclerc",
