@@ -1,4 +1,4 @@
-namespace F1.Services;
+namespace F1.Core.Exceptions;
 
 public class MetadataValidationException : Exception
 {

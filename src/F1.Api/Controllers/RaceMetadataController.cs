@@ -2,7 +2,6 @@ using F1.Core.Dtos;
 using F1.Core.Exceptions;
 using F1.Core.Interfaces;
 using F1.Core.Models;
-using F1.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
