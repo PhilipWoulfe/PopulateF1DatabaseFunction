@@ -83,9 +83,15 @@ namespace F1.Api.Tests.Middleware
         public async Task InvokeAsync_ShouldAddAdminRoleClaim_WhenUserIsAdmin()
         {
             // Arrange
-            var configuration = new ConfigurationBuilder().Build();
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AdminEmail"] = "admin@testemail.com"
+                })
+                .Build();
+
             var validator = new FakeCloudflareJwtValidator(_ =>
-                CloudflareTokenValidationResult.Success(CreatePrincipal("philip.woulfe@gmail.com", "Philip", "admin-1"))
+                CloudflareTokenValidationResult.Success(CreatePrincipal("admin@testemail.com", "Philip", "admin-1"))
             );
             var middleware = new CloudflareAccessMiddleware(next: (innerHttpContext) => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
 
@@ -97,6 +103,33 @@ namespace F1.Api.Tests.Middleware
 
             // Assert
             Assert.True(httpContext.User.IsInRole("Admin"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldAddAdminRoleClaim_WhenConfiguredGroupClaimMatches()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["CloudflareAccess:AdminGroupClaimType"] = "groups",
+                    ["CloudflareAccess:AdminGroups:0"] = "F1 Admins",
+                    ["AdminEmail"] = "different-admin@example.com"
+                })
+                .Build();
+
+            var validator = new FakeCloudflareJwtValidator(_ =>
+                CloudflareTokenValidationResult.Success(CreatePrincipal("user@example.com", "User", "sub-123", [new Claim("groups", "F1 Admins")]))
+            );
+
+            var middleware = new CloudflareAccessMiddleware(next: _ => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.True(httpContext.User.IsInRole("Admin"));
+            Assert.True(httpContext.User.HasClaim("groups", "F1 Admins"));
         }
 
         [Fact]
@@ -127,6 +160,37 @@ namespace F1.Api.Tests.Middleware
             // Assert
             Assert.True(nextCalled);
             Assert.True(httpContext.User.HasClaim(c => c.Type == ClaimTypes.Email && c.Value == "dev-user@example.com"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldGrantAdminRole_WhenDevMockGroupsContainConfiguredAdminGroup()
+        {
+            var inMemorySettings = new Dictionary<string, string?> {
+                {"DevSettings:SimulateCloudflare", "true"},
+                {"DevSettings:MockEmail", "dev-user@example.com"},
+                {"DevSettings:MockGroups:0", "F1 Admins"},
+                {"DevSettings:MockGroups:1", "F1 Users"},
+                {"CloudflareAccess:AdminGroupClaimType", "groups"},
+                {"CloudflareAccess:AdminGroups:0", "F1 Admins"},
+                {"AdminEmail", "someone-else@example.com"}
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")),
+                CreateHostEnvironment(Environments.Development));
+
+            var httpContext = new DefaultHttpContext();
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.True(httpContext.User.IsInRole("Admin"));
+            Assert.True(httpContext.User.HasClaim("groups", "F1 Admins"));
         }
 
         [Fact]
@@ -256,16 +320,23 @@ namespace F1.Api.Tests.Middleware
             Assert.Equal("Unauthorized.", responseBody);
         }
 
-        private static ClaimsPrincipal CreatePrincipal(string email, string name, string subject)
+        private static ClaimsPrincipal CreatePrincipal(string email, string name, string subject, IEnumerable<Claim>? additionalClaims = null)
         {
+            var claims = new List<Claim>
+            {
+                new Claim("email", email),
+                new Claim("name", name),
+                new Claim("sub", subject)
+            };
+
+            if (additionalClaims is not null)
+            {
+                claims.AddRange(additionalClaims);
+            }
+
             return new ClaimsPrincipal(
                 new ClaimsIdentity(
-                    new[]
-                    {
-                        new Claim("email", email),
-                        new Claim("name", name),
-                        new Claim("sub", subject)
-                    },
+                    claims,
                     "CloudflareJwt"
                 )
             );

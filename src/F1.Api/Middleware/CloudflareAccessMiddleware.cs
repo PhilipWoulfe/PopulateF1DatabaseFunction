@@ -1,5 +1,6 @@
 using F1.Api.Services;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace F1.Api.Middleware
 {
@@ -7,10 +8,13 @@ namespace F1.Api.Middleware
     {
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
-        private const string AdminEmail = "philip.woulfe@gmail.com";
+        private const string DefaultAdminEmail = "";
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
+        private readonly string _adminEmail;
+        private readonly string _adminGroupClaimType;
+        private readonly HashSet<string> _adminGroups;
 
         public CloudflareAccessMiddleware(
             RequestDelegate next,
@@ -22,6 +26,9 @@ namespace F1.Api.Middleware
             _configuration = configuration;
             _jwtValidator = jwtValidator;
             _hostEnvironment = hostEnvironment;
+            _adminEmail = _configuration["AdminEmail"] ?? DefaultAdminEmail;
+            _adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
+            _adminGroups = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminGroups");
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -32,7 +39,8 @@ namespace F1.Api.Middleware
                 var mockEmail = devSettings.GetValue<string>("MockEmail");
                 if (!string.IsNullOrEmpty(mockEmail))
                 {
-                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user");
+                    var mockGroups = LoadConfiguredValues(_configuration, "DevSettings:MockGroups");
+                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", mockGroups, _adminEmail, _adminGroupClaimType, _adminGroups);
                     await _next(context);
                     return;
                 }
@@ -50,7 +58,11 @@ namespace F1.Api.Middleware
                         context.User = BuildPrincipal(
                             fallbackEmail,
                             fallbackEmail.Split('@')[0],
-                            context.Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault()
+                            context.Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault(),
+                            LoadHeaderValues(context.Request.Headers["Cf-Access-Mock-Groups"].FirstOrDefault()),
+                            _adminEmail,
+                            _adminGroupClaimType,
+                            _adminGroups
                         );
                         await _next(context);
                         return;
@@ -84,13 +96,21 @@ namespace F1.Api.Middleware
                 ?? validation.Principal.FindFirst(ClaimTypes.Name)?.Value;
             var subject = validation.Principal.FindFirst("sub")?.Value
                 ?? validation.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var groups = ExtractClaimValues(validation.Principal, _adminGroupClaimType);
 
-            context.User = BuildPrincipal(email, name, subject);
+            context.User = BuildPrincipal(email, name, subject, groups, _adminEmail, _adminGroupClaimType, _adminGroups);
 
             await _next(context);
         }
 
-        private static ClaimsPrincipal BuildPrincipal(string email, string? name, string? userId)
+        private static ClaimsPrincipal BuildPrincipal(
+            string email,
+            string? name,
+            string? userId,
+            IEnumerable<string> groups,
+            string adminEmail,
+            string adminGroupClaimType,
+            IReadOnlySet<string> adminGroups)
         {
             var claims = new List<Claim>
             {
@@ -103,12 +123,96 @@ namespace F1.Api.Middleware
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
             }
 
-            if (string.Equals(email, AdminEmail, System.StringComparison.OrdinalIgnoreCase))
+            var resolvedGroups = groups
+                .Where(group => !string.IsNullOrWhiteSpace(group))
+                .Select(group => group.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var group in resolvedGroups)
+            {
+                claims.Add(new Claim(adminGroupClaimType, group));
+            }
+
+            if (resolvedGroups.Any(group => adminGroups.Contains(group))
+                || string.Equals(email, adminEmail, System.StringComparison.OrdinalIgnoreCase))
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));
             }
 
             return new ClaimsPrincipal(new ClaimsIdentity(claims, "Cloudflare"));
+        }
+
+        private static HashSet<string> LoadConfiguredValues(IConfiguration configuration, string sectionPath)
+        {
+            var section = configuration.GetSection(sectionPath);
+            var children = section.GetChildren()
+                .Select(child => child.Value)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!.Trim());
+
+            var scalar = section.Value?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                ?? [];
+
+            return children
+                .Concat(scalar)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static IReadOnlyList<string> LoadHeaderValues(string? rawValue)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return [];
+            }
+
+            return rawValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
+
+        private static IReadOnlyList<string> ExtractClaimValues(ClaimsPrincipal principal, string claimType)
+        {
+            var claims = principal.FindAll(claimType)
+                .SelectMany(claim => ExpandClaimValue(claim.Value))
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return claims;
+        }
+
+        private static IEnumerable<string> ExpandClaimValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return [];
+            }
+
+            var trimmed = value.Trim();
+            if (trimmed.StartsWith("[", StringComparison.Ordinal))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<string[]>(trimmed);
+                    if (parsed is not null)
+                    {
+                        return parsed;
+                    }
+                }
+                catch (JsonException)
+                {
+                    // Intentionally ignore JSON parse failures and fall back to treating the claim
+                    // value as a comma-separated string or single value below. This avoids breaking
+                    // authorization when claims are not strictly JSON array-shaped.
+                }
+            }
+
+            if (trimmed.Contains(',', StringComparison.Ordinal))
+            {
+                return trimmed.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
+
+            return [trimmed];
         }
     }
 }

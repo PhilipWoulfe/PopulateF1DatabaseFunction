@@ -30,6 +30,7 @@ public class AustraliaSelectionTests : BunitContext
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
@@ -39,6 +40,36 @@ public class AustraliaSelectionTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Locking for Pre-Qualy gives +50% points", cut.Markup));
         Assert.Contains("Countdown:", cut.Markup);
         Assert.Equal(string.Empty, cut.FindAll("select")[0].GetAttribute("value"));
+    }
+
+    [Fact]
+    public void AustraliaSelection_ShouldRenderPublishedRaceQuestions_WhenMetadataExists()
+    {
+        var handler = new QueueHttpMessageHandler();
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new Driver { DriverId = "norris", FullName = "Lando Norris" },
+            new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" }
+        }));
+        handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
+        handler.EnqueueResponse(CreateJsonResponse(new RaceQuestionMetadata
+        {
+            RaceId = "2026-australia",
+            H2HQuestion = "Who finishes higher: Leclerc or Norris?",
+            BonusQuestion = "How many safety-car laps?",
+            IsPublished = true,
+            UpdatedAtUtc = DateTime.UtcNow
+        }));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
+
+        Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var cut = Render<AustraliaSelection>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Race Questions", cut.Markup));
+        Assert.Contains("Who finishes higher: Leclerc or Norris?", cut.Markup);
+        Assert.Contains("How many safety-car laps?", cut.Markup);
     }
 
     [Fact]
@@ -54,6 +85,7 @@ public class AustraliaSelectionTests : BunitContext
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
             Id = Guid.NewGuid(),
@@ -111,6 +143,7 @@ public class AustraliaSelectionTests : BunitContext
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
         handler.EnqueueResponse(CreateJsonResponse(new Selection
@@ -201,6 +234,7 @@ public class AustraliaSelectionTests : BunitContext
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
         handler.EnqueueResponse(CreateJsonResponse(new { message = "Exactly 5 unique drivers must be selected." }, HttpStatusCode.BadRequest));
 
@@ -223,6 +257,7 @@ public class AustraliaSelectionTests : BunitContext
             new Driver { DriverId = "norris", FullName = "Lando Norris" }
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
 
@@ -247,6 +282,7 @@ public class AustraliaSelectionTests : BunitContext
             new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" }
         }));
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
         handler.EnqueueResponse(CreateJsonResponse(new[]
         {

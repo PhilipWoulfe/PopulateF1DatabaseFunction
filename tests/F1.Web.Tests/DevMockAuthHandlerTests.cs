@@ -13,7 +13,9 @@ public class DevMockAuthHandlerTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["DevSettings:SimulateCloudflare"] = "true",
-                ["DevSettings:MockEmail"] = "dev-user@example.com"
+                ["DevSettings:MockEmail"] = "dev-user@example.com",
+                ["DevSettings:MockGroups:0"] = "F1 Admins",
+                ["DevSettings:MockGroups:1"] = "F1 Users"
             })
             .Build();
 
@@ -26,6 +28,30 @@ public class DevMockAuthHandlerTests
         await handler.InvokeSendAsync(request, CancellationToken.None);
 
         Assert.True(request.Headers.Contains("Cf-Access-Authenticated-User-Email"));
+        Assert.True(request.Headers.Contains("Cf-Access-Mock-Groups"));
+        Assert.False(request.Headers.Contains("Cf-Access-Jwt-Assertion"));
+    }
+
+    [Fact]
+    public async Task SendAsync_ShouldInjectMockJwt_WhenExplicitlyEnabled()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["DevSettings:SimulateCloudflare"] = "true",
+                ["DevSettings:MockEmail"] = "dev-user@example.com",
+                ["DevSettings:InjectMockJwt"] = "true"
+            })
+            .Build();
+
+        var handler = new TestableDevMockAuthHandler(
+            new TestHostEnvironment("Development"),
+            configuration,
+            new TerminalHandler());
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/results");
+        await handler.InvokeSendAsync(request, CancellationToken.None);
+
         Assert.True(request.Headers.Contains("Cf-Access-Jwt-Assertion"));
     }
 
@@ -49,6 +75,7 @@ public class DevMockAuthHandlerTests
         await handler.InvokeSendAsync(request, CancellationToken.None);
 
         Assert.False(request.Headers.Contains("Cf-Access-Authenticated-User-Email"));
+        Assert.False(request.Headers.Contains("Cf-Access-Mock-Groups"));
         Assert.False(request.Headers.Contains("Cf-Access-Jwt-Assertion"));
     }
 

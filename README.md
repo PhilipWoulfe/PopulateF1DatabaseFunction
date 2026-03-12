@@ -102,9 +102,18 @@ Required API values in `.env`:
 - `COSMOSDB_CONNECTIONSTRING`: mapped to `CosmosDb__ConnectionString` for `f1-api`.
 - `CLOUDFLARE_AUDIENCE`: mapped to `CloudflareAccess__Audience` for `f1-api`.
 
+Optional API values in `.env`:
+
+- `ADMIN_EMAIL`: mapped to `AdminEmail` for `f1-api`. Controls which authenticated email receives the `Admin` role claim.
+- `ADMIN_GROUP_CLAIM_TYPE`: mapped to `CloudflareAccess__AdminGroupClaimType` for `f1-api`. Controls which claim is inspected for Cloudflare group membership.
+- `ADMIN_GROUPS`: mapped to `CloudflareAccess__AdminGroups` for `f1-api`. Any matching group grants the `Admin` role.
+
 Optional development toggle in `.env`:
 
+- `DEV_MOCK_EMAIL`: mapped to `DevSettings__MockEmail` for `f1-api`. Sets the mock user identity used when simulating Cloudflare locally.
+- `DEV_MOCK_GROUPS`: mapped to `DevSettings__MockGroups` for `f1-api`. Sets the mock group memberships used for local Admin/non-Admin testing.
 - `DEV_MOCK_CURRENT_SELECTIONS`: mapped to `DevSettings__MockCurrentSelections` for `f1-api`. When `true` in Development, selection GET/PUT endpoints use an in-memory mock store so the UI can be validated without Cosmos data.
+- `DEV_MOCK_RACE_METADATA`: mapped to `DevSettings__MockRaceMetadata` for `f1-api`. When `true` in Development, race metadata GET/PUT endpoints use an in-memory mock store so admin and player question flows can be tested without Cosmos data.
 
 Notes:
 
