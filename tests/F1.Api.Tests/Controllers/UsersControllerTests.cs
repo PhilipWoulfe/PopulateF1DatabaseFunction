@@ -23,7 +23,8 @@ namespace F1.Api.Tests.Controllers
                     {
                         new Claim(ClaimTypes.Email, "driver@f1.com"),
                         new Claim(ClaimTypes.Name, "driver"),
-                        new Claim(ClaimTypes.NameIdentifier, "user-guid-123")
+                        new Claim(ClaimTypes.NameIdentifier, "user-guid-123"),
+                        new Claim(ClaimTypes.Role, "Admin")
                     },
                     "Cloudflare"
                 )
@@ -43,6 +44,7 @@ namespace F1.Api.Tests.Controllers
 
             Assert.Equal("driver@f1.com", userDto.Email);
             Assert.Equal("user-guid-123", userDto.Id);
+            Assert.True(userDto.IsAdmin);
         }
 
         [Fact]

@@ -7,10 +7,11 @@ namespace F1.Api.Middleware
     {
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
-        private const string AdminEmail = "philip.woulfe@gmail.com";
+        private const string DefaultAdminEmail = "philip.woulfe@gmail.com";
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
+        private readonly string _adminEmail;
 
         public CloudflareAccessMiddleware(
             RequestDelegate next,
@@ -22,6 +23,7 @@ namespace F1.Api.Middleware
             _configuration = configuration;
             _jwtValidator = jwtValidator;
             _hostEnvironment = hostEnvironment;
+            _adminEmail = _configuration["AdminEmail"] ?? DefaultAdminEmail;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -32,7 +34,7 @@ namespace F1.Api.Middleware
                 var mockEmail = devSettings.GetValue<string>("MockEmail");
                 if (!string.IsNullOrEmpty(mockEmail))
                 {
-                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user");
+                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", _adminEmail);
                     await _next(context);
                     return;
                 }
@@ -50,7 +52,8 @@ namespace F1.Api.Middleware
                         context.User = BuildPrincipal(
                             fallbackEmail,
                             fallbackEmail.Split('@')[0],
-                            context.Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault()
+                            context.Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault(),
+                            _adminEmail
                         );
                         await _next(context);
                         return;
@@ -85,12 +88,12 @@ namespace F1.Api.Middleware
             var subject = validation.Principal.FindFirst("sub")?.Value
                 ?? validation.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            context.User = BuildPrincipal(email, name, subject);
+            context.User = BuildPrincipal(email, name, subject, _adminEmail);
 
             await _next(context);
         }
 
-        private static ClaimsPrincipal BuildPrincipal(string email, string? name, string? userId)
+        private static ClaimsPrincipal BuildPrincipal(string email, string? name, string? userId, string adminEmail)
         {
             var claims = new List<Claim>
             {
@@ -103,7 +106,7 @@ namespace F1.Api.Middleware
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
             }
 
-            if (string.Equals(email, AdminEmail, System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(email, adminEmail, System.StringComparison.OrdinalIgnoreCase))
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));
             }

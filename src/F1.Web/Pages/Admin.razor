@@ -1,6 +1,148 @@
 @page "/admin"
+@using F1.Web.Models
+@using System.Net
+@using System.Net.Http.Json
 @attribute [Authorize(Roles = "Admin")]
+@inject HttpClient Http
 
-<h1>Admin Page</h1>
+<h1>Race Question Admin</h1>
 
-<p>Welcome, administrator!</p>
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+	<div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(successMessage))
+{
+	<div class="alert alert-success">@successMessage</div>
+}
+
+@if (isLoading)
+{
+	<p><em>Loading race question metadata...</em></p>
+}
+else
+{
+	<EditForm Model="this" OnValidSubmit="SaveAsync">
+		<div class="mb-3">
+			<label class="form-label" for="h2h-question">Head-to-head question</label>
+			<textarea id="h2h-question" class="form-control" rows="3" @bind="h2hQuestion"></textarea>
+		</div>
+
+		<div class="mb-3">
+			<label class="form-label" for="bonus-question">Bonus question</label>
+			<textarea id="bonus-question" class="form-control" rows="3" @bind="bonusQuestion"></textarea>
+		</div>
+
+		<div class="form-check mb-3">
+			<input id="publish-toggle" class="form-check-input" type="checkbox" @bind="isPublished" />
+			<label class="form-check-label" for="publish-toggle">Publish immediately</label>
+		</div>
+
+		<button class="btn btn-primary" type="submit" disabled="@isSaving">Save Metadata</button>
+	</EditForm>
+
+	@if (!string.IsNullOrWhiteSpace(etag))
+	{
+		<p class="text-muted mt-3">Current ETag: @etag</p>
+	}
+}
+
+@code {
+	private const string RaceId = "2026-australia";
+
+	private bool isLoading = true;
+	private bool isSaving;
+	private string h2hQuestion = string.Empty;
+	private string bonusQuestion = string.Empty;
+	private bool isPublished;
+	private string? etag;
+	private string? errorMessage;
+	private string? successMessage;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadAsync();
+	}
+
+	private async Task LoadAsync()
+	{
+		isLoading = true;
+		errorMessage = null;
+		successMessage = null;
+
+		try
+		{
+			var response = await Http.GetAsync($"races/{RaceId}/metadata?includeDraft=true");
+			if (response.StatusCode == HttpStatusCode.NotFound)
+			{
+				isLoading = false;
+				return;
+			}
+
+			response.EnsureSuccessStatusCode();
+
+			var metadata = await response.Content.ReadFromJsonAsync<RaceQuestionMetadata>();
+			if (metadata is null)
+			{
+				isLoading = false;
+				return;
+			}
+
+			h2hQuestion = metadata.H2HQuestion;
+			bonusQuestion = metadata.BonusQuestion;
+			isPublished = metadata.IsPublished;
+			etag = metadata.ETag;
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"Failed to load metadata: {ex.Message}";
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+
+	private async Task SaveAsync()
+	{
+		errorMessage = null;
+		successMessage = null;
+		isSaving = true;
+
+		try
+		{
+			var request = new RaceQuestionMetadataUpdateRequest
+			{
+				H2HQuestion = h2hQuestion,
+				BonusQuestion = bonusQuestion,
+				IsPublished = isPublished,
+				ExpectedEtag = etag
+			};
+
+			var response = await Http.PutAsJsonAsync($"races/{RaceId}/metadata", request);
+			if (!response.IsSuccessStatusCode)
+			{
+				errorMessage = response.StatusCode switch
+				{
+					HttpStatusCode.PreconditionFailed => "Metadata was updated elsewhere. Refresh and retry.",
+					HttpStatusCode.Forbidden => "You are not authorized to update metadata.",
+					_ => "Failed to save metadata."
+				};
+				return;
+			}
+
+			var updated = await response.Content.ReadFromJsonAsync<RaceQuestionMetadata>();
+			etag = updated?.ETag;
+			successMessage = isPublished ? "Metadata saved and published." : "Metadata saved as draft.";
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"Failed to save metadata: {ex.Message}";
+		}
+		finally
+		{
+			isSaving = false;
+		}
+	}
+}

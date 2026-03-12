@@ -26,6 +26,7 @@ public class UsersController : ControllerBase
             Name = name ?? string.Empty,
             Email = email ?? string.Empty,
             IsAuthenticated = true,
+            IsAdmin = User.IsInRole("Admin"),
             Id = id ?? string.Empty
         });
     }
