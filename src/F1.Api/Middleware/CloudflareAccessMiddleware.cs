@@ -201,6 +201,9 @@ namespace F1.Api.Middleware
                 }
                 catch (JsonException)
                 {
+                    // Intentionally ignore JSON parse failures and fall back to treating the claim
+                    // value as a comma-separated string or single value below. This avoids breaking
+                    // authorization when claims are not strictly JSON array-shaped.
                 }
             }
 
