@@ -142,6 +142,11 @@ public class SelectionService : ISelectionService
 
     private static void ValidateSelections(List<SelectionPosition> selections)
     {
+        if (selections.Count != 5)
+        {
+            throw new SelectionValidationException("Exactly 5 unique drivers must be selected.");
+        }
+
         var validSelections = selections
             .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
             .ToList();
