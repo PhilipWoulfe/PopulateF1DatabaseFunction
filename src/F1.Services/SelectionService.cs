@@ -32,6 +32,8 @@ public class SelectionService : ISelectionService
             return null;
         }
 
+        selection.OrderedSelections = selection.OrderedSelections;
+
         var nowUtc = _dateTimeProvider.UtcNow;
         selection.IsLocked = IsPreQualyLocked(selection, nowUtc) || nowUtc > FinalSubmissionDeadlineUtc;
         return selection;
@@ -39,7 +41,8 @@ public class SelectionService : ISelectionService
 
     public async Task<Selection> UpsertSelectionAsync(string raceId, string userId, SelectionSubmissionDto submission)
     {
-        ValidateSelections(submission.Selections);
+        var orderedSelections = submission.OrderedSelections;
+        ValidateSelections(orderedSelections);
 
         var nowUtc = _dateTimeProvider.UtcNow;
         var existingSelection = await _selectionRepository.GetSelectionAsync(raceId, userId);
@@ -63,7 +66,7 @@ public class SelectionService : ISelectionService
         selection.Id = existingSelection?.Id ?? Guid.Empty;
         selection.RaceId = raceId;
         selection.UserId = userId;
-        selection.Selections = submission.Selections;
+        selection.OrderedSelections = orderedSelections;
         selection.BetType = submission.BetType;
         selection.SubmittedAtUtc = nowUtc;
         selection.IsLocked = false;
@@ -79,27 +82,31 @@ public class SelectionService : ISelectionService
             return [];
         }
 
+        var orderedSelections = selection.OrderedSelections;
+
         var drivers = await _driverRepository.GetDriversAsync();
         var driverLookup = drivers
             .Where(driver => !string.IsNullOrWhiteSpace(driver.DriverId))
             .ToDictionary(driver => driver.DriverId!, driver => driver.FullName ?? driver.DriverId!, StringComparer.OrdinalIgnoreCase);
 
-        var rows = new List<CurrentSelectionDto>(selection.Selections.Count);
-        var position = 1;
-        foreach (var driverId in selection.Selections.Where(id => !string.IsNullOrWhiteSpace(id)))
+        var rows = new List<CurrentSelectionDto>(orderedSelections.Count);
+        foreach (var selectionItem in orderedSelections)
         {
+            if (string.IsNullOrWhiteSpace(selectionItem.DriverId))
+            {
+                continue;
+            }
+
             rows.Add(new CurrentSelectionDto
             {
-                Position = position,
+                Position = selectionItem.Position,
                 UserId = selection.UserId,
                 UserName = selection.UserId,
-                DriverId = driverId,
-                DriverName = driverLookup.GetValueOrDefault(driverId, driverId),
+                DriverId = selectionItem.DriverId,
+                DriverName = driverLookup.GetValueOrDefault(selectionItem.DriverId, selectionItem.DriverId),
                 SelectionType = selection.BetType.ToString(),
                 Timestamp = selection.SubmittedAtUtc
             });
-
-            position++;
         }
 
         return rows;
@@ -135,17 +142,63 @@ public class SelectionService : ISelectionService
         return basePoints;
     }
 
-    private static void ValidateSelections(List<string> selections)
+    private static void ValidateSelections(List<SelectionPosition> selections)
     {
+        var validSelections = selections
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .ToList();
+
+        var distinctPositions = validSelections
+            .Select(item => item.Position)
+            .Distinct()
+            .Count();
+
         var distinctCount = selections
-            .Where(driverId => !string.IsNullOrWhiteSpace(driverId))
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .Select(item => item.DriverId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
-        if (selections.Count != 5 || distinctCount != 5)
+        if (validSelections.Count != 5 || distinctCount != 5 || distinctPositions != 5)
         {
             throw new SelectionValidationException("Exactly 5 unique drivers must be selected.");
         }
+
+        if (validSelections.Any(item => item.Position < 1 || item.Position > 5))
+        {
+            throw new SelectionValidationException("Selection positions must be between 1 and 5.");
+        }
+    }
+
+    private static List<SelectionPosition> NormalizeOrderedSelections(
+        List<SelectionPosition>? orderedSelections,
+        List<string>? legacySelections)
+    {
+        var normalized = (orderedSelections ?? [])
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .Select(item => new SelectionPosition
+            {
+                Position = item.Position,
+                DriverId = item.DriverId
+            })
+            .OrderBy(item => item.Position)
+            .ToList();
+
+        if (normalized.Count > 0)
+        {
+            return normalized;
+        }
+
+        var fromLegacy = (legacySelections ?? [])
+            .Where(driverId => !string.IsNullOrWhiteSpace(driverId))
+            .Select((driverId, index) => new SelectionPosition
+            {
+                Position = index + 1,
+                DriverId = driverId
+            })
+            .ToList();
+
+        return fromLegacy;
     }
 
     private static bool IsPreQualyLocked(Selection selection, DateTime nowUtc)

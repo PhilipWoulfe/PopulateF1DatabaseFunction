@@ -151,7 +151,17 @@ else
         }
 
         selectedBetType = existing.BetType;
-        var selections = existing.Selections ?? [];
+        var selections = (existing.OrderedSelections ?? [])
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .OrderBy(item => item.Position)
+            .Select(item => item.DriverId)
+            .ToList();
+
+        if (selections.Count == 0)
+        {
+            selections = existing.Selections ?? [];
+        }
+
         for (var i = 0; i < selectedDriverIds.Count; i++)
         {
             selectedDriverIds[i] = i < selections.Count ? selections[i] : "";
@@ -201,6 +211,9 @@ else
         var submission = new SelectionSubmission
         {
             BetType = selectedBetType,
+            OrderedSelections = selectedDriverIds
+                .Select((driverId, index) => new SelectionPosition { Position = index + 1, DriverId = driverId })
+                .ToList(),
             Selections = selectedDriverIds.ToList()
         };
 

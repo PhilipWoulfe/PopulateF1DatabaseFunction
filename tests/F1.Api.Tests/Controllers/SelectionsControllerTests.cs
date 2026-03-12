@@ -1,6 +1,7 @@
 using F1.Api.Controllers;
 using F1.Core.Dtos;
 using F1.Core.Interfaces;
+using F1.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -112,7 +113,14 @@ public class SelectionsControllerTests
         await controller.UpsertMine("2026-australia", new SelectionSubmissionDto
         {
             BetType = F1.Core.Models.BetType.PreQualy,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         });
 
         var result = await controller.GetMine("2026-australia");
@@ -120,7 +128,7 @@ public class SelectionsControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var payload = Assert.IsType<F1.Core.Models.Selection>(ok.Value);
         Assert.Equal(F1.Core.Models.BetType.PreQualy, payload.BetType);
-        Assert.Equal("norris", payload.Selections[0]);
+        Assert.Equal("norris", payload.OrderedSelections[0].DriverId);
     }
 
     private static SelectionsController CreateController(

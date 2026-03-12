@@ -23,7 +23,14 @@ public class SelectionServiceTests
         var submission = new SelectionSubmissionDto
         {
             BetType = BetType.PreQualy,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         await Assert.ThrowsAsync<SelectionValidationException>(() =>
@@ -42,7 +49,14 @@ public class SelectionServiceTests
             RaceId = "2026-australia",
             UserId = "user@example.com",
             BetType = BetType.Regular,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         _selectionRepositoryMock
@@ -56,14 +70,21 @@ public class SelectionServiceTests
         var submission = new SelectionSubmissionDto
         {
             BetType = BetType.Regular,
-            Selections = ["leclerc", "norris", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         var updated = await service.UpsertSelectionAsync("2026-australia", "user@example.com", submission);
 
         Assert.Equal(BetType.Regular, updated.BetType);
         Assert.Equal(nowUtc, updated.SubmittedAtUtc);
-        Assert.Equal("leclerc", updated.Selections[0]);
+        Assert.Equal("norris", updated.OrderedSelections[0].DriverId);
     }
     [Fact]
     public void GetRaceConfig_ShouldReturnConfig_ForAustraliaRace()
@@ -99,7 +120,14 @@ public class SelectionServiceTests
             RaceId = "2026-australia",
             UserId = "user@example.com",
             BetType = BetType.Regular,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         _selectionRepositoryMock
@@ -140,7 +168,11 @@ public class SelectionServiceTests
                 UserId = "user@example.com",
                 BetType = BetType.PreQualy,
                 SubmittedAtUtc = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc),
-                Selections = ["norris", "leclerc"]
+                OrderedSelections = new List<SelectionPosition>
+                {
+                    new SelectionPosition { Position = 1, DriverId = "norris" },
+                    new SelectionPosition { Position = 2, DriverId = "leclerc" }
+                }
             });
 
         _driverRepositoryMock

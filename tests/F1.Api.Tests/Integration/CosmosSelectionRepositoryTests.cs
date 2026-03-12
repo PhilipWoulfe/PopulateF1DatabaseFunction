@@ -27,7 +27,14 @@ public class CosmosSelectionRepositoryTests
             RaceId = raceId,
             UserId = userId,
             BetType = BetType.Regular,
-            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
         };
 
         var feedResponse = new Mock<FeedResponse<Selection>>();
@@ -65,7 +72,14 @@ public class CosmosSelectionRepositoryTests
             RaceId = raceId,
             UserId = userId,
             BetType = BetType.PreQualy,
-            Selections = ["leclerc", "norris", "hamilton", "piastri", "verstappen"],
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "leclerc" },
+                new SelectionPosition { Position = 2, DriverId = "norris" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            },
             SubmittedAtUtc = DateTime.UtcNow
         };
 
@@ -76,7 +90,7 @@ public class CosmosSelectionRepositoryTests
                 s.Id == existingId &&
                 s.RaceId == raceId &&
                 s.UserId == userId &&
-                s.Selections[0] == "leclerc"),
+                s.OrderedSelections[0].DriverId == "leclerc"),
             It.Is<PartitionKey?>(pk => pk.HasValue && pk.Value.Equals(new PartitionKey(raceId))),
             null,
             It.IsAny<CancellationToken>()), Times.Once);

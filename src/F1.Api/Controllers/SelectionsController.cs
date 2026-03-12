@@ -139,13 +139,14 @@ public class SelectionsController : ControllerBase
 
     private static Selection UpsertMockSelection(string raceId, string userId, SelectionSubmissionDto submission)
     {
+        var orderedSelections = submission.OrderedSelections;
         var key = BuildMockSelectionKey(raceId, userId);
         var updated = new Selection
         {
             Id = MockSelections.TryGetValue(key, out var existing) ? existing.Id : Guid.NewGuid(),
             RaceId = raceId,
             UserId = userId,
-            Selections = submission.Selections.ToList(),
+            OrderedSelections = orderedSelections,
             BetType = submission.BetType,
             SubmittedAtUtc = DateTime.UtcNow,
             IsLocked = false
@@ -165,13 +166,13 @@ public class SelectionsController : ControllerBase
             BetType = BetType.Regular,
             SubmittedAtUtc = new DateTime(2026, 3, 6, 9, 0, 0, DateTimeKind.Utc),
             IsLocked = false,
-            Selections =
+            OrderedSelections =
             [
-                "max_verstappen",
-                "lando_norris",
-                "charles_leclerc",
-                "oscar_piastri",
-                "lewis_hamilton"
+                new SelectionPosition { Position = 1, DriverId = "max_verstappen" },
+                new SelectionPosition { Position = 2, DriverId = "lando_norris" },
+                new SelectionPosition { Position = 3, DriverId = "charles_leclerc" },
+                new SelectionPosition { Position = 4, DriverId = "oscar_piastri" },
+                new SelectionPosition { Position = 5, DriverId = "lewis_hamilton" }
             ]
         };
     }
@@ -179,11 +180,12 @@ public class SelectionsController : ControllerBase
     private static IReadOnlyList<CurrentSelectionDto> MapCurrentSelections(Selection selection)
     {
         var userName = selection.UserId.Split('@')[0];
-        var rows = new List<CurrentSelectionDto>(selection.Selections.Count);
+        var orderedSelections = selection.OrderedSelections;
+        var rows = new List<CurrentSelectionDto>(orderedSelections.Count);
 
-        for (var index = 0; index < selection.Selections.Count; index++)
+        foreach (var selectionItem in orderedSelections)
         {
-            var driverId = selection.Selections[index];
+            var driverId = selectionItem.DriverId;
             if (string.IsNullOrWhiteSpace(driverId))
             {
                 continue;
@@ -191,7 +193,7 @@ public class SelectionsController : ControllerBase
 
             rows.Add(new CurrentSelectionDto
             {
-                Position = index + 1,
+                Position = selectionItem.Position,
                 UserId = selection.UserId,
                 UserName = userName,
                 DriverId = driverId,
@@ -223,14 +225,26 @@ public class SelectionsController : ControllerBase
 
     private static string? ValidateMockSubmission(SelectionSubmissionDto submission)
     {
-        var distinctCount = submission.Selections
-            .Where(driverId => !string.IsNullOrWhiteSpace(driverId))
+        var orderedSelections = submission.OrderedSelections;
+
+        var distinctCount = orderedSelections
+            .Select(item => item.DriverId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
-        if (submission.Selections.Count != 5 || distinctCount != 5)
+        var distinctPositions = orderedSelections
+            .Select(item => item.Position)
+            .Distinct()
+            .Count();
+
+        if (orderedSelections.Count != 5 || distinctCount != 5 || distinctPositions != 5)
         {
             return "Exactly 5 unique drivers must be selected.";
+        }
+
+        if (orderedSelections.Any(item => item.Position < 1 || item.Position > 5))
+        {
+            return "Selection positions must be between 1 and 5.";
         }
 
         return null;
