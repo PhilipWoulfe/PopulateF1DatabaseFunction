@@ -59,7 +59,7 @@ public class AustraliaSelectionTests : BunitContext
             Id = Guid.NewGuid(),
             RaceId = "2026-australia",
             UserId = "user@example.com",
-            BetType = BetType.Regular,
+            BetType = BetType.PreQualy,
             IsLocked = true,
             Selections = ["leclerc", "norris", "hamilton", "piastri", "verstappen"]
         }));
