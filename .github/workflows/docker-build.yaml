@@ -86,9 +86,80 @@ jobs:
           build-args: |
             COMMIT_HASH=${{ github.sha }}
 
+  run-e2e-test:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: test
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Chrome for Testing
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Resolve Chrome binary and print versions
+        run: |
+          set -e
+          CHROME_BIN_PATH=""
+          if command -v chrome >/dev/null 2>&1; then
+            CHROME_BIN_PATH="$(command -v chrome)"
+          elif command -v google-chrome >/dev/null 2>&1; then
+            CHROME_BIN_PATH="$(command -v google-chrome)"
+          elif command -v google-chrome-stable >/dev/null 2>&1; then
+            CHROME_BIN_PATH="$(command -v google-chrome-stable)"
+          fi
+
+          if [ -z "$CHROME_BIN_PATH" ]; then
+            echo "Chrome binary not found in PATH"
+            exit 1
+          fi
+
+          echo "CHROME_BIN=$CHROME_BIN_PATH" >> "$GITHUB_ENV"
+          echo "Using CHROME_BIN=$CHROME_BIN_PATH"
+          "$CHROME_BIN_PATH" --version || true
+          chromedriver --version || true
+
+      - name: Run Selenium E2E suite against test
+        env:
+          E2E_REQUIRED: "true"
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_API_BASE_URL: ${{ secrets.E2E_API_BASE_URL }}
+          E2E_CF_CLIENT_ID: ${{ secrets.E2E_CF_CLIENT_ID }}
+          E2E_CF_CLIENT_SECRET: ${{ secrets.E2E_CF_CLIENT_SECRET }}
+          E2E_HEADLESS: "true"
+          E2E_TIMEOUT_SECONDS: "30"
+          CHROME_BIN: ${{ env.CHROME_BIN }}
+          CHROMEDRIVER_LOG: ./TestResults/e2e/chromedriver.log
+        run: |
+          dotnet test tests/F1.E2E.Tests/F1.E2E.Tests.csproj \
+            --configuration Release \
+            --nologo \
+            --verbosity minimal \
+            --logger "trx;LogFileName=e2e.trx" \
+            --results-directory ./TestResults/e2e
+
+      - name: Upload E2E test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            TestResults/e2e/**
+            **/chromedriver.log
+
   # --- JOB 2: THE GATEKEEPER (Promote to :prod) ---
   deploy-prod:
-    needs: build-and-push
+    needs:
+      - build-and-push
+      - run-e2e-test
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: production # Requires your manual approval click

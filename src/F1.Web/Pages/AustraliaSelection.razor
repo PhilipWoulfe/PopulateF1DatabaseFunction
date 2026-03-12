@@ -47,7 +47,7 @@ else
             var rank = i;
             <div class="mb-2">
                 <label class="form-label">Position @(i + 1)</label>
-                <select class="form-select" value="@selectedDriverIds[rank]" @onchange="e => OnDriverChanged(rank, e.Value?.ToString())" disabled="@isReadOnly">
+                <select id="driver-select-@(i + 1)" class="form-select" value="@selectedDriverIds[rank]" @onchange="e => OnDriverChanged(rank, e.Value?.ToString())" disabled="@isReadOnly">
                     <option value="">-- Select driver --</option>
                     @foreach (var driver in drivers)
                     {
@@ -73,7 +73,7 @@ else
             </div>
         </InputRadioGroup>
 
-        <button class="btn btn-primary" type="submit" disabled="@isReadOnly">Save Selection</button>
+        <button id="submit-selection" class="btn btn-primary" type="submit" disabled="@isReadOnly">Save Selection</button>
 
         @if (isReadOnly)
         {

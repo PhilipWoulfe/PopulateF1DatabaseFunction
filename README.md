@@ -174,6 +174,27 @@ chmod +x build.sh
 - `./build.sh --ci`  
   Runs quality gate and then tests with coverage, then exits (no Docker compose).
 
+### 4.1 Post-Deploy E2E Gate (Story #82)
+
+The `Build and Push F1 API` workflow now includes a post-deploy Selenium gate:
+
+1. `build-and-push` publishes `:latest` images used by the test environment.
+2. `run-e2e-test` executes Selenium flows against `:test`.
+3. `deploy-prod` is blocked unless `run-e2e-test` succeeds.
+
+Required GitHub Environment (`test`) secrets for the E2E job:
+
+- `E2E_BASE_URL`: base URL for the deployed test web app.
+- `E2E_API_BASE_URL`: API base URL (optional if `E2E_BASE_URL + /api` works for your routing).
+- `E2E_CF_CLIENT_ID`: Cloudflare Access service token client ID.
+- `E2E_CF_CLIENT_SECRET`: Cloudflare Access service token secret.
+
+Optional E2E tuning:
+
+- `E2E_TIMEOUT_SECONDS`: defaults to 20 locally and 30 in CI.
+- `E2E_HEADLESS`: defaults to true.
+- `E2E_RACE_ID`: defaults to `2026-australia`.
+
 ### 5. Quality Gate Scope (F1-Only)
 
 Quality and analysis gates are intentionally scoped to F1 app code:
