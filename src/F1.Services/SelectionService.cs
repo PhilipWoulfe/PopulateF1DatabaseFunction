@@ -32,8 +32,6 @@ public class SelectionService : ISelectionService
             return null;
         }
 
-        selection.OrderedSelections = selection.OrderedSelections;
-
         var nowUtc = _dateTimeProvider.UtcNow;
         selection.IsLocked = IsPreQualyLocked(selection, nowUtc) || nowUtc > FinalSubmissionDeadlineUtc;
         return selection;
