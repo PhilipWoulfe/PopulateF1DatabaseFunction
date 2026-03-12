@@ -80,7 +80,9 @@ public class SelectionService : ISelectionService
             return [];
         }
 
-        var orderedSelections = selection.OrderedSelections;
+        var orderedSelections = selection.OrderedSelections
+            .OrderBy(item => item.Position)
+            .ToList();
 
         var drivers = await _driverRepository.GetDriversAsync();
         var driverLookup = drivers
