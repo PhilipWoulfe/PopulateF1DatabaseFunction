@@ -9,6 +9,7 @@ namespace F1.Api.Tests;
 public class SelectionServiceTests
 {
     private readonly Mock<ISelectionRepository> _selectionRepositoryMock = new();
+    private readonly Mock<IDriverRepository> _driverRepositoryMock = new();
     private readonly Mock<IDateTimeProvider> _dateTimeProviderMock = new();
 
     [Fact]
@@ -125,9 +126,56 @@ public class SelectionServiceTests
         Assert.Equal(200, score);
     }
 
+    [Fact]
+    public async Task GetCurrentSelectionsAsync_ShouldReturnMappedRows_WhenSelectionExists()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync(new Selection
+            {
+                Id = Guid.NewGuid(),
+                RaceId = "2026-australia",
+                UserId = "user@example.com",
+                BetType = BetType.PreQualy,
+                SubmittedAtUtc = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc),
+                Selections = ["norris", "leclerc"]
+            });
+
+        _driverRepositoryMock
+            .Setup(repo => repo.GetDriversAsync())
+            .ReturnsAsync([
+                new Driver { DriverId = "norris", FullName = "Lando Norris" },
+                new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" }
+            ]);
+
+        var rows = await service.GetCurrentSelectionsAsync("user@example.com");
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal("user@example.com", rows[0].UserId);
+        Assert.Equal("Lando Norris", rows[0].DriverName);
+        Assert.Equal("PreQualy", rows[0].SelectionType);
+    }
+
+    [Fact]
+    public async Task GetCurrentSelectionsAsync_ShouldReturnEmpty_WhenNoSelectionExists()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync((Selection?)null);
+
+        var rows = await service.GetCurrentSelectionsAsync("user@example.com");
+
+        Assert.Empty(rows);
+        _driverRepositoryMock.Verify(repo => repo.GetDriversAsync(), Times.Never);
+    }
+
     private SelectionService CreateServiceAt(DateTime utcNow)
     {
         _dateTimeProviderMock.Setup(clock => clock.UtcNow).Returns(utcNow);
-        return new SelectionService(_selectionRepositoryMock.Object, _dateTimeProviderMock.Object);
+        return new SelectionService(_selectionRepositoryMock.Object, _driverRepositoryMock.Object, _dateTimeProviderMock.Object);
     }
 }

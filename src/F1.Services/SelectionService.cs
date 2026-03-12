@@ -11,11 +11,16 @@ public class SelectionService : ISelectionService
     public const string AustraliaRaceId2026 = "2026-australia";
 
     private readonly ISelectionRepository _selectionRepository;
+    private readonly IDriverRepository _driverRepository;
     private readonly IDateTimeProvider _dateTimeProvider;
 
-    public SelectionService(ISelectionRepository selectionRepository, IDateTimeProvider dateTimeProvider)
+    public SelectionService(
+        ISelectionRepository selectionRepository,
+        IDriverRepository driverRepository,
+        IDateTimeProvider dateTimeProvider)
     {
         _selectionRepository = selectionRepository;
+        _driverRepository = driverRepository;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -64,6 +69,36 @@ public class SelectionService : ISelectionService
         selection.IsLocked = false;
 
         return await _selectionRepository.UpsertSelectionAsync(selection);
+    }
+
+    public async Task<IReadOnlyList<CurrentSelectionDto>> GetCurrentSelectionsAsync(string userId)
+    {
+        var selection = await _selectionRepository.GetSelectionAsync(AustraliaRaceId2026, userId);
+        if (selection is null)
+        {
+            return [];
+        }
+
+        var drivers = await _driverRepository.GetDriversAsync();
+        var driverLookup = drivers
+            .Where(driver => !string.IsNullOrWhiteSpace(driver.DriverId))
+            .ToDictionary(driver => driver.DriverId!, driver => driver.FullName ?? driver.DriverId!, StringComparer.OrdinalIgnoreCase);
+
+        var rows = new List<CurrentSelectionDto>(selection.Selections.Count);
+        foreach (var driverId in selection.Selections.Where(id => !string.IsNullOrWhiteSpace(id)))
+        {
+            rows.Add(new CurrentSelectionDto
+            {
+                UserId = selection.UserId,
+                UserName = selection.UserId,
+                DriverId = driverId,
+                DriverName = driverLookup.GetValueOrDefault(driverId, driverId),
+                SelectionType = selection.BetType.ToString(),
+                Timestamp = selection.SubmittedAtUtc
+            });
+        }
+
+        return rows;
     }
 
     public RaceConfigDto? GetRaceConfig(string raceId)

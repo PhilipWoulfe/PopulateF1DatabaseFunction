@@ -126,6 +126,7 @@ else
             drivers = await Http.GetFromJsonAsync<Driver[]>("drivers") ?? System.Array.Empty<Driver>();
             raceConfig = await Http.GetFromJsonAsync<RaceConfig>($"selections/{RaceId}/config");
             await LoadExistingSelectionAsync();
+            await LoadCurrentSelectionsAsync();
         }
         catch (Exception ex)
         {
@@ -159,6 +160,37 @@ else
         isReadOnly = existing.IsLocked;
     }
 
+    private async Task LoadCurrentSelectionsAsync()
+    {
+        var snapshot = await Http.GetFromJsonAsync<CurrentSelectionItem[]>("selections/current") ?? [];
+
+        if (snapshot.Length == 0)
+        {
+            return;
+        }
+
+        var rankedDrivers = snapshot
+            .Where(row => !string.IsNullOrWhiteSpace(row.DriverId))
+            .Select(row => row.DriverId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(selectedDriverIds.Count)
+            .ToList();
+
+        for (var i = 0; i < selectedDriverIds.Count; i++)
+        {
+            selectedDriverIds[i] = i < rankedDrivers.Count ? rankedDrivers[i] : string.Empty;
+        }
+
+        var selectionType = snapshot
+            .Select(row => row.SelectionType)
+            .FirstOrDefault(type => !string.IsNullOrWhiteSpace(type));
+
+        if (Enum.TryParse<BetType>(selectionType, ignoreCase: true, out var mappedBetType))
+        {
+            selectedBetType = mappedBetType;
+        }
+    }
+
     private async Task SaveSelectionAsync()
     {
         errorMessage = null;
@@ -177,6 +209,7 @@ else
             {
                 successMessage = "Selection saved successfully.";
                 await LoadExistingSelectionAsync();
+                await LoadCurrentSelectionsAsync();
                 return;
             }
 
