@@ -193,6 +193,55 @@ public class SelectionServiceTests
     }
 
     [Fact]
+    public async Task GetCurrentSelectionsAsync_ShouldReturnRowsSortedByPosition_WhenSelectionsAreOutOfOrder()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync(new Selection
+            {
+                Id = Guid.NewGuid(),
+                RaceId = "2026-australia",
+                UserId = "user@example.com",
+                BetType = BetType.Regular,
+                SubmittedAtUtc = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc),
+                OrderedSelections = new List<SelectionPosition>
+                {
+                    new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                    new SelectionPosition { Position = 1, DriverId = "norris" },
+                    new SelectionPosition { Position = 5, DriverId = "verstappen" },
+                    new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                    new SelectionPosition { Position = 4, DriverId = "piastri" }
+                }
+            });
+
+        _driverRepositoryMock
+            .Setup(repo => repo.GetDriversAsync())
+            .ReturnsAsync([
+                new Driver { DriverId = "norris", FullName = "Lando Norris" },
+                new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" },
+                new Driver { DriverId = "hamilton", FullName = "Lewis Hamilton" },
+                new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
+                new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
+            ]);
+
+        var rows = await service.GetCurrentSelectionsAsync("user@example.com");
+
+        Assert.Equal(5, rows.Count);
+        Assert.Equal(1, rows[0].Position);
+        Assert.Equal("norris", rows[0].DriverId);
+        Assert.Equal(2, rows[1].Position);
+        Assert.Equal("leclerc", rows[1].DriverId);
+        Assert.Equal(3, rows[2].Position);
+        Assert.Equal("hamilton", rows[2].DriverId);
+        Assert.Equal(4, rows[3].Position);
+        Assert.Equal("piastri", rows[3].DriverId);
+        Assert.Equal(5, rows[4].Position);
+        Assert.Equal("verstappen", rows[4].DriverId);
+    }
+
+    [Fact]
     public async Task GetCurrentSelectionsAsync_ShouldReturnEmpty_WhenNoSelectionExists()
     {
         var service = CreateServiceAt(new DateTime(2026, 3, 6, 12, 0, 0, DateTimeKind.Utc));
