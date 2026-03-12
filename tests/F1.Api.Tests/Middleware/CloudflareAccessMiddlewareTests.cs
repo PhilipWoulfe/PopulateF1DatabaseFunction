@@ -83,9 +83,15 @@ namespace F1.Api.Tests.Middleware
         public async Task InvokeAsync_ShouldAddAdminRoleClaim_WhenUserIsAdmin()
         {
             // Arrange
-            var configuration = new ConfigurationBuilder().Build();
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AdminEmail"] = "admin@testemail.com"
+                })
+                .Build();
+
             var validator = new FakeCloudflareJwtValidator(_ =>
-                CloudflareTokenValidationResult.Success(CreatePrincipal("philip.woulfe@gmail.com", "Philip", "admin-1"))
+                CloudflareTokenValidationResult.Success(CreatePrincipal("admin@testemail.com", "Philip", "admin-1"))
             );
             var middleware = new CloudflareAccessMiddleware(next: (innerHttpContext) => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
 
