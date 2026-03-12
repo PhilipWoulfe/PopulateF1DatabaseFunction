@@ -13,6 +13,29 @@ public class SelectionServiceTests
     private readonly Mock<IDateTimeProvider> _dateTimeProviderMock = new();
 
     [Fact]
+    public async Task UpsertSelectionAsync_ShouldReject_WhenMoreThanFiveSelectionsSubmitted()
+    {
+        var service = CreateServiceAt(new DateTime(2026, 3, 7, 0, 0, 0, DateTimeKind.Utc));
+
+        var submission = new SelectionSubmissionDto
+        {
+            BetType = BetType.Regular,
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" },
+                new SelectionPosition { Position = 0, DriverId = "" }
+            }
+        };
+
+        await Assert.ThrowsAsync<SelectionValidationException>(() =>
+            service.UpsertSelectionAsync("2026-australia", "user@example.com", submission));
+    }
+
+    [Fact]
     public async Task UpsertSelectionAsync_ShouldRejectPreQualyBet_AfterDeadline()
     {
         var service = CreateServiceAt(new DateTime(2026, 3, 7, 4, 31, 0, DateTimeKind.Utc));
