@@ -144,11 +144,6 @@ public class SelectionService : ISelectionService
 
     private static void ValidateSelections(List<SelectionPosition> selections)
     {
-        if (selections.Count != 5)
-        {
-            throw new SelectionValidationException("Exactly 5 unique drivers must be selected.");
-        }
-
         var validSelections = selections
             .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
             .ToList();
@@ -164,7 +159,8 @@ public class SelectionService : ISelectionService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
 
-        if (validSelections.Count != 5 || distinctCount != 5 || distinctPositions != 5)
+        var totalCount = selections.Count;
+        if (totalCount != 5 || validSelections.Count != 5 || distinctCount != 5 || distinctPositions != 5)
         {
             throw new SelectionValidationException("Exactly 5 unique drivers must be selected.");
         }
@@ -173,37 +169,6 @@ public class SelectionService : ISelectionService
         {
             throw new SelectionValidationException("Selection positions must be between 1 and 5.");
         }
-    }
-
-    private static List<SelectionPosition> NormalizeOrderedSelections(
-        List<SelectionPosition>? orderedSelections,
-        List<string>? legacySelections)
-    {
-        var normalized = (orderedSelections ?? [])
-            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
-            .Select(item => new SelectionPosition
-            {
-                Position = item.Position,
-                DriverId = item.DriverId
-            })
-            .OrderBy(item => item.Position)
-            .ToList();
-
-        if (normalized.Count > 0)
-        {
-            return normalized;
-        }
-
-        var fromLegacy = (legacySelections ?? [])
-            .Where(driverId => !string.IsNullOrWhiteSpace(driverId))
-            .Select((driverId, index) => new SelectionPosition
-            {
-                Position = index + 1,
-                DriverId = driverId
-            })
-            .ToList();
-
-        return fromLegacy;
     }
 
     private static bool IsPreQualyLocked(Selection selection, DateTime nowUtc)

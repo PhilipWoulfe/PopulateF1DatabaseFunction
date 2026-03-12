@@ -225,24 +225,28 @@ public class SelectionsController : ControllerBase
 
     private static string? ValidateMockSubmission(SelectionSubmissionDto submission)
     {
-        var orderedSelections = submission.OrderedSelections;
+        var validSelections = submission.OrderedSelections
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .ToList();
 
-        var distinctCount = orderedSelections
-            .Select(item => item.DriverId)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
-
-        var distinctPositions = orderedSelections
+        var distinctPositions = validSelections
             .Select(item => item.Position)
             .Distinct()
             .Count();
 
-        if (orderedSelections.Count != 5 || distinctCount != 5 || distinctPositions != 5)
+        var distinctCount = submission.OrderedSelections
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .Select(item => item.DriverId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        var totalCount = submission.OrderedSelections.Count;
+        if (totalCount != 5 || validSelections.Count != 5 || distinctCount != 5 || distinctPositions != 5)
         {
             return "Exactly 5 unique drivers must be selected.";
         }
 
-        if (orderedSelections.Any(item => item.Position < 1 || item.Position > 5))
+        if (validSelections.Any(item => item.Position < 1 || item.Position > 5))
         {
             return "Selection positions must be between 1 and 5.";
         }
