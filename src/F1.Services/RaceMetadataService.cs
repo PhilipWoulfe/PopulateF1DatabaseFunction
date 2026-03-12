@@ -1,3 +1,4 @@
+using F1.Core.Exceptions;
 using F1.Core.Interfaces;
 using F1.Core.Models;
 
