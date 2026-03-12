@@ -16,8 +16,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="F1.Api.Tests" />
-  </ItemGroup>
-
 </Project>
