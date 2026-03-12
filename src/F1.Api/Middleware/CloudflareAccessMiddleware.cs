@@ -8,7 +8,7 @@ namespace F1.Api.Middleware
     {
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
-        private const string DefaultAdminEmail = "philip.woulfe@gmail.com";
+        private const string DefaultAdminEmail = "";
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
