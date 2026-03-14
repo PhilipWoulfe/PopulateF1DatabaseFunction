@@ -82,9 +82,22 @@ internal static class WebDriverFactory
             return null;
         }
 
-        var candidates = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? new[] { executableName + ".exe", executableName }
-            : new[] { executableName };
+        string[] candidates;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (Path.HasExtension(executableName))
+            {
+                candidates = new[] { executableName };
+            }
+            else
+            {
+                candidates = new[] { executableName + ".exe", executableName };
+            }
+        }
+        else
+        {
+            candidates = new[] { executableName };
+        }
 
         foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
