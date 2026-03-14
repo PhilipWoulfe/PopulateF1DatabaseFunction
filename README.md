@@ -195,6 +195,48 @@ Optional E2E tuning:
 - `E2E_HEADLESS`: defaults to true.
 - `E2E_RACE_ID`: defaults to `2026-australia`.
 
+### 4.2 VM Selenium Debug Helper (Option B)
+
+For SSH-based debugging, use the checked-in helper script:
+
+```bash
+./scripts/e2e-debug-vm.sh
+```
+
+This script sets safe VM defaults and runs one focused E2E test by default:
+
+- `E2E_BASE_URL=http://localhost:5001`
+- `E2E_API_BASE_URL=http://localhost:5000`
+- `E2E_HEADLESS=true`
+- `E2E_TIMEOUT_SECONDS=30`
+
+Run a specific test filter:
+
+```bash
+./scripts/e2e-debug-vm.sh "FullyQualifiedName~SubmitSelection_ShouldPersistServerSide"
+```
+
+Run the full E2E project:
+
+```bash
+./scripts/e2e-debug-vm.sh all
+```
+
+To inspect the active Selenium Chrome target from your laptop, open an SSH tunnel first:
+
+```bash
+ssh -L 9222:localhost:9222 <user>@<vm>
+```
+
+Then open:
+
+- `http://localhost:9222/json/list`
+
+Notes:
+
+- Keep Cloudflare service token values out of the script. Set `E2E_CF_CLIENT_ID` and `E2E_CF_CLIENT_SECRET` in your shell when needed.
+- If API verification returns 404, verify `E2E_API_BASE_URL` is correct for your route path.
+
 ### 5. Quality Gate Scope (F1-Only)
 
 Quality and analysis gates are intentionally scoped to F1 app code:
