@@ -68,7 +68,7 @@ public class UsersController : ControllerBase
             .Select(claim => new UserDebugClaimDto
             {
                 Type = claim.Type,
-                Value = claim.Value
+                Value = IsEmailClaim(claim.Type) ? RedactEmail(claim.Value) : claim.Value
             })
             .ToList();
 
@@ -99,7 +99,7 @@ public class UsersController : ControllerBase
             IsAuthenticated = User.Identity?.IsAuthenticated ?? false,
             IsAdmin = User.IsInRole("Admin"),
             AuthenticationType = User.Identity?.AuthenticationType ?? string.Empty,
-            Email = email ?? string.Empty,
+            Email = RedactEmail(email),
             Name = name ?? string.Empty,
             Id = id ?? string.Empty,
             AdminGroupClaimType = adminGroupClaimType,
@@ -114,6 +114,27 @@ public class UsersController : ControllerBase
     {
         return (_hostEnvironment.IsDevelopment() || _hostEnvironment.IsEnvironment("Test"))
                && _configuration.GetValue<bool>("DevSettings:EnableDebugEndpoints");
+    }
+
+    private static bool IsEmailClaim(string claimType)
+    {
+        return string.Equals(claimType, ClaimTypes.Email, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(claimType, "email", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string RedactEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+        {
+            return string.Empty;
+        }
+
+        var atIndex = email.LastIndexOf('@');
+        var domain = atIndex >= 0 && atIndex < email.Length - 1
+            ? email.Substring(atIndex + 1)
+            : string.Empty;
+
+        return string.IsNullOrEmpty(domain) ? "***" : $"***@{domain}";
     }
 
     private List<string> LoadConfiguredValues(string sectionPath)

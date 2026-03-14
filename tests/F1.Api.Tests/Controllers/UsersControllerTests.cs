@@ -109,11 +109,12 @@ namespace F1.Api.Tests.Controllers
             Assert.True(payload.IsAuthenticated);
             Assert.True(payload.IsAdmin);
             Assert.Equal("Cloudflare", payload.AuthenticationType);
-            Assert.Equal("driver@f1.com", payload.Email);
+            Assert.Equal("***@f1.com", payload.Email);
             Assert.Equal("user-guid-123", payload.Id);
             Assert.Contains("F1 Admins", payload.Groups);
             Assert.Contains("Admin", payload.Roles);
             Assert.Contains(payload.Claims, claim => claim.Type == "groups" && claim.Value == "F1 Admins");
+            Assert.Contains(payload.Claims, claim => claim.Type == ClaimTypes.Email && claim.Value == "***@f1.com");
         }
 
         [Fact]

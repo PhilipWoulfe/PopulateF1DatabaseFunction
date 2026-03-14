@@ -1,5 +1,4 @@
 using F1.Api.Services;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Claims;
 using System.Text.Json;
@@ -13,32 +12,20 @@ namespace F1.Api.Middleware
 
         /// <summary>
         /// Returns a redacted representation of an email address to avoid logging full PII.
-        /// Examples: "user@example.com" -> "u***@example.com".
-        /// If the input is null/empty or not in the expected format, returns a non-sensitive placeholder.
+        /// Examples: "user@example.com" -> "***@example.com".
+        /// If the input is null/empty or not in the expected format, returns an empty string.
         /// </summary>
         private static string RedactEmail(string? email)
         {
-            if (string.IsNullOrWhiteSpace(email))
+            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
             {
-                return "<redacted>";
+                return string.Empty;
             }
-
-            var atIndex = email.IndexOf('@');
-            if (atIndex <= 0)
-            {
-                // Not a standard email format, avoid logging raw value.
-                return "<redacted>";
-            }
-
-            var localPart = email.Substring(0, atIndex);
-            var domainPart = email.Substring(atIndex); // includes '@'
-
-            if (localPart.Length <= 1)
-            {
-                return "***" + domainPart;
-            }
-
-            return localPart[0] + "***" + domainPart;
+            var atIndex = email.LastIndexOf('@');
+            var domain = atIndex >= 0 && atIndex < email.Length - 1
+                ? email.Substring(atIndex + 1)
+                : string.Empty;
+            return string.IsNullOrEmpty(domain) ? "***" : $"***@{domain}";
         }
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
@@ -98,31 +85,24 @@ namespace F1.Api.Middleware
                         await _next(context);
                         return;
                     }
+                }
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsync(UnauthorizedResponseMessage);
+                return;
             }
 
             var validation = await _jwtValidator.ValidateAsync(jwtAssertion, context.RequestAborted);
-            if (_logger.IsEnabled(LogLevel.Debug))
+            if (!validation.IsValid || validation.Principal is null)
             {
-                var incomingClaimTypes = validation.Principal.Claims
-                    .Select(claim => claim.Type)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-                ?? validation.Principal.FindFirst(ClaimTypes.Email)?.Value;
-                var orderedAdminGroups = _adminGroups
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-
-                _logger.LogDebug(
-                    "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
-                    email,
-                    subject ?? string.Empty,
-                    incomingClaimTypes,
-                    groups,
-                    orderedAdminGroups,
-                    context.User.IsInRole("Admin"));
+                _logger.LogDebug("Cloudflare auth validation failed. IsValid={IsValid}, PrincipalPresent={PrincipalPresent}", validation.IsValid, validation.Principal is not null);
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsync(UnauthorizedResponseMessage);
+                return;
             }
 
+            var email = validation.Principal.FindFirst("email")?.Value
+                ?? validation.Principal.FindFirst(ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrWhiteSpace(email))
             {
