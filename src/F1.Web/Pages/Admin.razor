@@ -39,7 +39,7 @@ else
 			<label class="form-check-label" for="publish-toggle">Publish immediately</label>
 		</div>
 
-		<button class="btn btn-primary" type="submit" disabled="@isSaving">Save Metadata</button>
+		<button id="save-metadata" class="btn btn-primary" type="submit" disabled="@isSaving">Save Metadata</button>
 	</EditForm>
 
 	@if (!string.IsNullOrWhiteSpace(etag))
