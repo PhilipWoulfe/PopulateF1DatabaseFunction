@@ -80,15 +80,10 @@ namespace F1.Api.Tests.Middleware
         }
 
         [Fact]
-        public async Task InvokeAsync_ShouldAddAdminRoleClaim_WhenUserIsAdmin()
+        public async Task InvokeAsync_ShouldNotAddAdminRoleClaim_WhenNoAdminGroupsAreConfigured()
         {
             // Arrange
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["AdminEmail"] = "admin@testemail.com"
-                })
-                .Build();
+            var configuration = new ConfigurationBuilder().Build();
 
             var validator = new FakeCloudflareJwtValidator(_ =>
                 CloudflareTokenValidationResult.Success(CreatePrincipal("admin@testemail.com", "Philip", "admin-1"))
@@ -102,7 +97,7 @@ namespace F1.Api.Tests.Middleware
             await middleware.InvokeAsync(httpContext);
 
             // Assert
-            Assert.True(httpContext.User.IsInRole("Admin"));
+            Assert.False(httpContext.User.IsInRole("Admin"));
         }
 
         [Fact]
@@ -112,8 +107,7 @@ namespace F1.Api.Tests.Middleware
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["CloudflareAccess:AdminGroupClaimType"] = "groups",
-                    ["CloudflareAccess:AdminGroups:0"] = "F1 Admins",
-                    ["AdminEmail"] = "different-admin@example.com"
+                    ["CloudflareAccess:AdminGroups:0"] = "F1 Admins"
                 })
                 .Build();
 
@@ -171,8 +165,7 @@ namespace F1.Api.Tests.Middleware
                 {"DevSettings:MockGroups:0", "F1 Admins"},
                 {"DevSettings:MockGroups:1", "F1 Users"},
                 {"CloudflareAccess:AdminGroupClaimType", "groups"},
-                {"CloudflareAccess:AdminGroups:0", "F1 Admins"},
-                {"AdminEmail", "someone-else@example.com"}
+                {"CloudflareAccess:AdminGroups:0", "F1 Admins"}
             };
 
             var configuration = new ConfigurationBuilder()
