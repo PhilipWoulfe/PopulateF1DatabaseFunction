@@ -20,6 +20,7 @@ internal static class WebDriverFactory
         chromeOptions.AddArgument("--no-sandbox");
         chromeOptions.AddArgument("--disable-dev-shm-usage");
         chromeOptions.AddArgument("--remote-debugging-port=9222");
+        chromeOptions.AddArgument("--remote-allow-origins=*");
 
         if (options.Headless)
         {

@@ -15,6 +15,7 @@ Notes:
   - This script is intended for SSH VM Selenium debugging.
   - Keep an SSH tunnel open from your laptop: ssh -L 9222:localhost:9222 <user>@<vm>
   - While tests run, inspect Chrome targets at: http://localhost:9222/json/list
+  - Optional: E2E_DEBUG_HOLD_SECONDS=120 keeps each test browser alive before teardown.
 HELP
 }
 
@@ -33,17 +34,31 @@ if ! command -v dotnet >/dev/null 2>&1; then
   exit 1
 fi
 
-CHROME_BIN_PATH=""
-if command -v chrome >/dev/null 2>&1; then
-  CHROME_BIN_PATH="$(command -v chrome)"
-elif command -v google-chrome >/dev/null 2>&1; then
-  CHROME_BIN_PATH="$(command -v google-chrome)"
-elif command -v google-chrome-stable >/dev/null 2>&1; then
-  CHROME_BIN_PATH="$(command -v google-chrome-stable)"
+CHROME_BIN_PATH="${CHROME_BIN:-}"
+if [[ -n "$CHROME_BIN_PATH" && ! -x "$CHROME_BIN_PATH" ]]; then
+  echo "CHROME_BIN is set but not executable: $CHROME_BIN_PATH"
+  exit 1
 fi
 
 if [[ -z "$CHROME_BIN_PATH" ]]; then
-  echo "Chrome binary not found in PATH (tried: chrome, google-chrome, google-chrome-stable)."
+  for candidate in chrome google-chrome google-chrome-stable chromium chromium-browser; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      CHROME_BIN_PATH="$(command -v "$candidate")"
+      break
+    fi
+  done
+fi
+
+if [[ -z "$CHROME_BIN_PATH" && -x "/snap/bin/chromium" ]]; then
+  CHROME_BIN_PATH="/snap/bin/chromium"
+fi
+
+if [[ -z "$CHROME_BIN_PATH" ]]; then
+  echo "Chrome/Chromium binary not found."
+  echo "Tried: CHROME_BIN env, chrome, google-chrome, google-chrome-stable, chromium, chromium-browser, /snap/bin/chromium."
+  echo "Install one of these, then rerun:"
+  echo "  sudo snap install chromium"
+  echo "  # or install Google Chrome and set CHROME_BIN=/path/to/chrome"
   exit 1
 fi
 
@@ -55,6 +70,7 @@ export E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:5001}"
 export E2E_API_BASE_URL="${E2E_API_BASE_URL:-http://localhost:5000}"
 export E2E_HEADLESS="${E2E_HEADLESS:-true}"
 export E2E_TIMEOUT_SECONDS="${E2E_TIMEOUT_SECONDS:-30}"
+export E2E_DEBUG_HOLD_SECONDS="${E2E_DEBUG_HOLD_SECONDS:-10}"
 export CHROME_BIN="$CHROME_BIN_PATH"
 export CHROMEDRIVER_LOG="${CHROMEDRIVER_LOG:-./TestResults/e2e/chromedriver.log}"
 
@@ -64,6 +80,7 @@ echo "Using CHROME_BIN=$CHROME_BIN"
 echo "Using E2E_BASE_URL=$E2E_BASE_URL"
 echo "Using E2E_API_BASE_URL=$E2E_API_BASE_URL"
 echo "Using E2E_HEADLESS=$E2E_HEADLESS"
+echo "Using E2E_DEBUG_HOLD_SECONDS=$E2E_DEBUG_HOLD_SECONDS"
 "$CHROME_BIN" --version || true
 if command -v chromedriver >/dev/null 2>&1; then
   chromedriver --version || true
