@@ -9,6 +9,36 @@ namespace F1.Api.Middleware
     {
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
+
+        /// <summary>
+        /// Returns a redacted representation of an email address to avoid logging full PII.
+        /// Examples: "user@example.com" -> "u***@example.com".
+        /// If the input is null/empty or not in the expected format, returns a non-sensitive placeholder.
+        /// </summary>
+        private static string RedactEmail(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return "<redacted>";
+            }
+
+            var atIndex = email.IndexOf('@');
+            if (atIndex <= 0)
+            {
+                // Not a standard email format, avoid logging raw value.
+                return "<redacted>";
+            }
+
+            var localPart = email.Substring(0, atIndex);
+            var domainPart = email.Substring(atIndex); // includes '@'
+
+            if (localPart.Length <= 1)
+            {
+                return "***" + domainPart;
+            }
+
+            return localPart[0] + "***" + domainPart;
+        }
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
@@ -105,9 +135,11 @@ namespace F1.Api.Middleware
 
             context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups);
 
+            var redactedEmail = RedactEmail(email);
+
             _logger.LogDebug(
                 "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
-                email,
+                redactedEmail,
                 subject ?? string.Empty,
                 incomingClaimTypes,
                 groups,
