@@ -200,12 +200,12 @@ jobs:
 
       - name: Promote API image to stable
         run: |
-          docker pull ${{ needs.build-and-push.outputs.api_sha_tag }}
-          docker tag ${{ needs.build-and-push.outputs.api_sha_tag }} ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}:stable
-          docker push ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}:stable
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}:stable \
+            ${{ needs.build-and-push.outputs.api_sha_tag }}
 
       - name: Promote Web image to stable
         run: |
-          docker pull ${{ needs.build-and-push.outputs.web_sha_tag }}
-          docker tag ${{ needs.build-and-push.outputs.web_sha_tag }} ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}-web:stable
-          docker push ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}-web:stable
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}-web:stable \
+            ${{ needs.build-and-push.outputs.web_sha_tag }}
