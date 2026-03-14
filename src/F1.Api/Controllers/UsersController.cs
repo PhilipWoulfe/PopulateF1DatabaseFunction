@@ -10,6 +10,7 @@ namespace F1.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private const int MaxDebugClaimValueLength = 128;
+    private const int MaxAdditionalDebugClaims = 25;
     private readonly IConfiguration _configuration;
     private readonly IHostEnvironment _hostEnvironment;
 
@@ -65,7 +66,14 @@ public class UsersController : ControllerBase
 
         var adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
         var configuredAdminGroups = LoadConfiguredValues("CloudflareAccess:AdminGroups");
+        var allowedClaimTypes = GetAllowedClaimTypes(adminGroupClaimType);
+        var discoveredClaimTypes = User.Claims
+            .Select(claim => claim.Type)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
         var claims = BuildSanitizedDebugClaims(adminGroupClaimType);
+        var additionalClaims = BuildAdditionalSanitizedClaims(allowedClaimTypes);
 
         var claimTypesToInspect = new[]
         {
@@ -101,7 +109,9 @@ public class UsersController : ControllerBase
             ConfiguredAdminGroups = configuredAdminGroups,
             Roles = roles,
             Groups = groups,
-            Claims = claims
+            DiscoveredClaimTypes = discoveredClaimTypes,
+            Claims = claims,
+            AdditionalClaims = additionalClaims
         });
     }
 
@@ -123,9 +133,27 @@ public class UsersController : ControllerBase
                || string.Equals(claimType, "sub", StringComparison.OrdinalIgnoreCase);
     }
 
-    private List<UserDebugClaimDto> BuildSanitizedDebugClaims(string adminGroupClaimType)
+    private static bool IsSensitiveClaimType(string claimType)
     {
-        var allowedClaimTypes = new[]
+        if (string.IsNullOrWhiteSpace(claimType))
+        {
+            return false;
+        }
+
+        return claimType.Contains("token", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("secret", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("jwt", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("assertion", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("cookie", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("authorization", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("client-id", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("client-secret", StringComparison.OrdinalIgnoreCase)
+               || claimType.Contains("sensitive", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static HashSet<string> GetAllowedClaimTypes(string adminGroupClaimType)
+    {
+        return new[]
         {
             ClaimTypes.Email,
             "email",
@@ -140,6 +168,11 @@ public class UsersController : ControllerBase
         .Where(value => !string.IsNullOrWhiteSpace(value))
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private List<UserDebugClaimDto> BuildSanitizedDebugClaims(string adminGroupClaimType)
+    {
+        var allowedClaimTypes = GetAllowedClaimTypes(adminGroupClaimType);
 
         return User.Claims
             .Where(claim => allowedClaimTypes.Contains(claim.Type))
@@ -148,6 +181,21 @@ public class UsersController : ControllerBase
                 Type = claim.Type,
                 Value = SanitizeClaimValue(claim.Type, claim.Value)
             })
+            .ToList();
+    }
+
+    private List<UserDebugClaimDto> BuildAdditionalSanitizedClaims(IReadOnlySet<string> allowedClaimTypes)
+    {
+        return User.Claims
+            .Where(claim => !allowedClaimTypes.Contains(claim.Type))
+            .Select(claim => new UserDebugClaimDto
+            {
+                Type = claim.Type,
+                Value = IsSensitiveClaimType(claim.Type)
+                    ? "[redacted]"
+                    : TruncateValue(claim.Value, MaxDebugClaimValueLength)
+            })
+            .Take(MaxAdditionalDebugClaims)
             .ToList();
     }
 

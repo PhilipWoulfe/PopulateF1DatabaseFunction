@@ -106,6 +106,7 @@ Optional API values in `.env`:
 
 - `ADMIN_GROUP_CLAIM_TYPE`: mapped to `CloudflareAccess__AdminGroupClaimType` for `f1-api`. Sets the primary/custom claim used to read Cloudflare group membership; the middleware also falls back to common group claims (`groups`, `group`, and `ClaimTypes.GroupSid`) when present.
 - `ADMIN_GROUPS`: mapped to `CloudflareAccess__AdminGroups` for `f1-api`. Any matching group value from the inspected claims grants the `Admin` role.
+- `ADMIN_EMAILS`: mapped to `CloudflareAccess__AdminEmails` for `f1-api`. Any matching email value also grants the `Admin` role, using case-insensitive matching.
 
 Optional development toggle in `.env`:
 

@@ -9,6 +9,7 @@ services:
       - CloudflareAccess__Issuer=https://f1-team.cloudflareaccess.com
       - CloudflareAccess__AdminGroupClaimType=${ADMIN_GROUP_CLAIM_TYPE:-groups}
       - CloudflareAccess__AdminGroups=${ADMIN_GROUPS:-F1 Admins}
+      - CloudflareAccess__AdminEmails=${ADMIN_EMAILS:-}
       - DevSettings__MockEmail=${DEV_MOCK_EMAIL:-dev-user@example.com}
       - DevSettings__MockGroups=${DEV_MOCK_GROUPS:-F1 Admins,F1 Users}
       - DevSettings__EnableDebugEndpoints=${DEV_ENABLE_DEBUG_ENDPOINTS:-false}

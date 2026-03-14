@@ -12,7 +12,9 @@ namespace F1.Core.Dtos
         public IReadOnlyList<string> ConfiguredAdminGroups { get; set; } = [];
         public IReadOnlyList<string> Roles { get; set; } = [];
         public IReadOnlyList<string> Groups { get; set; } = [];
+        public IReadOnlyList<string> DiscoveredClaimTypes { get; set; } = [];
         public IReadOnlyList<UserDebugClaimDto> Claims { get; set; } = [];
+        public IReadOnlyList<UserDebugClaimDto> AdditionalClaims { get; set; } = [];
     }
 
     public class UserDebugClaimDto

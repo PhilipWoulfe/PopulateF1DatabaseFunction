@@ -127,6 +127,80 @@ namespace F1.Api.Tests.Middleware
         }
 
         [Fact]
+        public async Task InvokeAsync_ShouldAddAdminRoleClaim_WhenConfiguredAdminEmailMatches()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["CloudflareAccess:AdminGroups:0"] = "F1 Admins",
+                    ["CloudflareAccess:AdminEmails:0"] = "admin@example.com"
+                })
+                .Build();
+
+            var validator = new FakeCloudflareJwtValidator(_ =>
+                CloudflareTokenValidationResult.Success(CreatePrincipal("admin@example.com", "Admin User", "sub-123", [new Claim("groups", "F1 Users")]))
+            );
+
+            var middleware = new CloudflareAccessMiddleware(next: _ => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.True(httpContext.User.IsInRole("Admin"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldNotAddAdminRoleClaim_WhenConfiguredAdminEmailDoesNotMatch()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["CloudflareAccess:AdminGroups:0"] = "F1 Admins",
+                    ["CloudflareAccess:AdminEmails:0"] = "admin@example.com"
+                })
+                .Build();
+
+            var validator = new FakeCloudflareJwtValidator(_ =>
+                CloudflareTokenValidationResult.Success(CreatePrincipal("user@example.com", "Normal User", "sub-123", [new Claim("groups", "F1 Users")]))
+            );
+
+            var middleware = new CloudflareAccessMiddleware(next: _ => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.False(httpContext.User.IsInRole("Admin"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldAddAdminRoleClaim_WhenConfiguredAdminEmailMatchesCaseInsensitive()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["CloudflareAccess:AdminEmails:0"] = "ADMIN@EXAMPLE.COM"
+                })
+                .Build();
+
+            var validator = new FakeCloudflareJwtValidator(_ =>
+                CloudflareTokenValidationResult.Success(CreatePrincipal("admin@example.com", "Admin User", "sub-123"))
+            );
+
+            var middleware = new CloudflareAccessMiddleware(next: _ => Task.CompletedTask, configuration, validator, CreateHostEnvironment(Environments.Production));
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.True(httpContext.User.IsInRole("Admin"));
+        }
+
+        [Fact]
         public async Task InvokeAsync_ShouldSimulateCloudflare_WhenDevSettingIsTrue()
         {
             // Arrange
