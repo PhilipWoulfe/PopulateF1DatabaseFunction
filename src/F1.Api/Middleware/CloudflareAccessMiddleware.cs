@@ -33,6 +33,7 @@ namespace F1.Api.Middleware
         private readonly ILogger<CloudflareAccessMiddleware> _logger;
         private readonly string _adminGroupClaimType;
         private readonly HashSet<string> _adminGroups;
+        private readonly HashSet<string> _adminEmails;
 
         public CloudflareAccessMiddleware(
             RequestDelegate next,
@@ -48,6 +49,7 @@ namespace F1.Api.Middleware
             _logger = logger ?? NullLogger<CloudflareAccessMiddleware>.Instance;
             _adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
             _adminGroups = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminGroups");
+            _adminEmails = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminEmails");
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -59,7 +61,7 @@ namespace F1.Api.Middleware
                 if (!string.IsNullOrEmpty(mockEmail))
                 {
                     var mockGroups = LoadConfiguredValues(_configuration, "DevSettings:MockGroups");
-                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", mockGroups, _adminGroupClaimType, _adminGroups);
+                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", mockGroups, _adminGroupClaimType, _adminGroups, _adminEmails);
                     await _next(context);
                     return;
                 }
@@ -80,7 +82,8 @@ namespace F1.Api.Middleware
                             context.Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault(),
                             LoadHeaderValues(context.Request.Headers["Cf-Access-Mock-Groups"].FirstOrDefault()),
                             _adminGroupClaimType,
-                            _adminGroups
+                            _adminGroups,
+                            _adminEmails
                         );
                         await _next(context);
                         return;
@@ -122,17 +125,18 @@ namespace F1.Api.Middleware
                 .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups);
+            context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups, _adminEmails);
 
             var redactedEmail = RedactEmail(email);
 
             _logger.LogDebug(
-                "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
+                "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, ConfiguredAdminEmails={ConfiguredAdminEmails}, IsAdmin={IsAdmin}",
                 redactedEmail,
                 subject ?? string.Empty,
                 incomingClaimTypes,
                 groups,
                 _adminGroups.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
+                _adminEmails.Select(RedactEmail).OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
                 context.User.IsInRole("Admin"));
 
             await _next(context);
@@ -144,7 +148,8 @@ namespace F1.Api.Middleware
             string? userId,
             IEnumerable<string> groups,
             string adminGroupClaimType,
-            IReadOnlySet<string> adminGroups)
+            IReadOnlySet<string> adminGroups,
+            IReadOnlySet<string> adminEmails)
         {
             var claims = new List<Claim>
             {
@@ -168,7 +173,10 @@ namespace F1.Api.Middleware
                 claims.Add(new Claim(adminGroupClaimType, group));
             }
 
-            if (resolvedGroups.Any(group => adminGroups.Contains(group)))
+            var isAdminByGroup = resolvedGroups.Any(group => adminGroups.Contains(group));
+            var isAdminByEmail = adminEmails.Contains(email.Trim());
+
+            if (isAdminByGroup || isAdminByEmail)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));
             }
