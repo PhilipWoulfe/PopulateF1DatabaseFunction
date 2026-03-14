@@ -90,7 +90,9 @@ namespace F1.Api.Tests.Controllers
                         new Claim(ClaimTypes.Name, "driver"),
                         new Claim(ClaimTypes.NameIdentifier, "user-guid-123"),
                         new Claim("groups", "F1 Admins"),
-                        new Claim(ClaimTypes.Role, "Admin")
+                        new Claim(ClaimTypes.Role, "Admin"),
+                        new Claim("group", new string('A', 180)),
+                        new Claim("custom-sensitive", "should-not-appear")
                     },
                     "Cloudflare"
                 )
@@ -110,11 +112,15 @@ namespace F1.Api.Tests.Controllers
             Assert.True(payload.IsAdmin);
             Assert.Equal("Cloudflare", payload.AuthenticationType);
             Assert.Equal("***@f1.com", payload.Email);
-            Assert.Equal("user-guid-123", payload.Id);
+            Assert.Equal("us***23", payload.Id);
+            Assert.Equal(string.Empty, payload.Name);
             Assert.Contains("F1 Admins", payload.Groups);
             Assert.Contains("Admin", payload.Roles);
             Assert.Contains(payload.Claims, claim => claim.Type == "groups" && claim.Value == "F1 Admins");
+            Assert.Contains(payload.Claims, claim => claim.Type == "group" && claim.Value.EndsWith("...(truncated)", StringComparison.Ordinal));
             Assert.Contains(payload.Claims, claim => claim.Type == ClaimTypes.Email && claim.Value == "***@f1.com");
+            Assert.Contains(payload.Claims, claim => claim.Type == ClaimTypes.NameIdentifier && claim.Value == "us***23");
+            Assert.DoesNotContain(payload.Claims, claim => claim.Type == "custom-sensitive");
         }
 
         [Fact]
