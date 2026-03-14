@@ -48,6 +48,11 @@ public class UsersController : ControllerBase
             return NotFound();
         }
 
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return Unauthorized();
+        }
+
         var email = User.FindFirstValue(ClaimTypes.Email);
         var name = User.FindFirstValue(ClaimTypes.Name);
         var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
