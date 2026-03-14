@@ -15,7 +15,7 @@ services:
       - DevSettings__EnableDebugEndpoints=${DEV_ENABLE_DEBUG_ENDPOINTS:-false}
       - DevSettings__MockCurrentSelections=${DEV_MOCK_CURRENT_SELECTIONS:-false}
       - DevSettings__MockRaceMetadata=${DEV_MOCK_RACE_METADATA:-false}
-    image: ghcr.io/philipwoulfe/f1competition:${TAG:-latest}
+    image: ghcr.io/philipwoulfe/f1competition:${TAG:-test}
     build:
       context: .
       dockerfile: ./src/F1.Api/Dockerfile
@@ -25,6 +25,7 @@ services:
     restart: unless-stopped
 
   f1-web:
+    image: ghcr.io/philipwoulfe/f1competition-web:${TAG:-test}
     build:
       context: ./src/F1.Web
       dockerfile: Dockerfile
@@ -45,7 +46,7 @@ services:
       environment:
         - TUNNEL_TOKEN=${TUNNEL_TOKEN} # Store that token in your .env file
 
-  # watchtower shouldn't be deployed to PROD as it will pull the latest build and deploy it
+  # watchtower shouldn't be deployed to PROD as it will auto-pull whatever tag the running test containers follow
   watchtower:
       profiles: ["cloud"]  # It won't start unless you specifically ask for it
       image: nickfedor/watchtower:latest 

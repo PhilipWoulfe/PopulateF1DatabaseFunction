@@ -30,8 +30,17 @@ The platform is hosted on a local **Proxmox Virtualization Environment** using D
 ### **The Pipeline**
 1. **Continuous Integration**: GitHub Actions builds the .NET solution, executes unit tests, and enforces a code coverage gate (80% target).
 2. **Registry**: Successful builds on `main` are packaged into Docker images and pushed to **GitHub Container Registry (GHCR)**.
-3. **Automated Staging (`f1-test`)**: The test environment runs **Watchtower**, which automatically pulls and restarts the container whenever a new `:latest` image is detected.
+3. **Automated Staging (`f1-test`)**: The test environment runs **Watchtower**, which automatically pulls and restarts the containers whenever the moving `:test` image aliases are updated.
 4. **Production Gate (`f1-prod`)**: Deployment to production requires **Manual Approval** via GitHub Environments, ensuring a stable "human-in-the-loop" verification before live updates.
+
+### **Image Tag Strategy**
+- `sha-<shortsha>`: immutable build artifact for traceability and rollback.
+- `test`: moving alias for the current main-branch build used by the test environment.
+- `stable`: moving alias for the manually approved production build.
+
+Rollback process:
+- Set `TAG=sha-<known-good-sha>` on the target host.
+- Recreate the containers so Docker Compose uses that pinned image tag.
 
 | Environment | Host IP (Internal) | Port | Deployment Logic |
 | :--- | :--- | :--- | :--- |
@@ -121,6 +130,7 @@ Notes:
 - `CloudflareAccess__Issuer` is currently set in `docker-compose.yml`.
 - `API_BASE_URL` is set to `/api/` directly in `docker-compose.yml` for `f1-web` and is not read from `.env`.
 - `/api/users/debug/me` returns sanitized post-auth claims, groups, and role resolution data only when `DEV_ENABLE_DEBUG_ENDPOINTS=true` and the API is running in `Development` or `Test`.
+- `TAG` applies to both the API and Web images. Use `TAG=test` for the test host, `TAG=stable` for production, and `TAG=sha-<shortsha>` for rollback or pinning a specific build.
 
 #### B. Azure Function (`local.settings.json`)
 This file configures the data ingestion service. You will need to update `src/PopulateF1Database/local.settings.json` with your **Cosmos DB connection string** and other specific settings.
@@ -180,9 +190,9 @@ chmod +x build.sh
 
 The `Build and Push F1 API` workflow now includes a post-deploy Selenium gate:
 
-1. `build-and-push` publishes `:latest` images used by the test environment.
-2. `run-e2e-test` executes Selenium flows against `:test`.
-3. `deploy-prod` is blocked unless `run-e2e-test` succeeds.
+1. `build-and-push` publishes immutable `:sha-<shortsha>` images and updates the moving `:test` aliases used by the test environment.
+2. `run-e2e-test` executes Selenium flows against the deployed test environment.
+3. `deploy-prod` is blocked unless `run-e2e-test` succeeds, then manually promotes the exact tested images to the moving `:stable` aliases.
 
 Required GitHub Environment (`test`) secrets for the E2E job:
 
@@ -238,6 +248,16 @@ Notes:
 
 - Keep Cloudflare service token values out of the script. Set `E2E_CF_CLIENT_ID` and `E2E_CF_CLIENT_SECRET` in your shell when needed.
 - If API verification returns 404, verify `E2E_API_BASE_URL` is correct for your route path.
+
+### 4.3 Deployment Environment Tag Settings
+
+Set deployment host `.env` files to match the image promotion flow:
+
+- Test host: `TAG=test`
+- Production host: `TAG=stable`
+- Rollback or pinning a known build: `TAG=sha-<known-good-sha>`
+
+After changing `TAG` or any other deployment environment variable, recreate the containers. Watchtower updates images but does not apply changed container environment settings on its own.
 
 ### 5. Quality Gate Scope (F1-Only)
 
@@ -296,7 +316,7 @@ Once running, the services will be available at:
 
 ## ⚠️ Troubleshooting
 ### .env Changes Not Applying
-Symptom: You updated `.env` (for example `CLOUDFLARE_AUDIENCE` or `COSMOSDB_CONNECTIONSTRING`) but the app still uses the old value.
+Symptom: You updated `.env` (for example `CLOUDFLARE_AUDIENCE`, `COSMOSDB_CONNECTIONSTRING`, or `TAG`) but the app still uses the old value.
 Cause: Docker Compose only reads .env when creating containers. Watchtower updates the image but reuses the existing container configuration. 
 Fix: Manually recreate the container to apply changes: 
 bash +docker-compose up -d

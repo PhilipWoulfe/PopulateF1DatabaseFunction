@@ -12,15 +12,27 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # --- JOB 1: THE FACTORY (Build, Test, and Push to :latest) ---
+  # --- JOB 1: THE FACTORY (Build, Test, and Push immutable + test tags) ---
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      image_name_lower: ${{ steps.image-metadata.outputs.image_name_lower }}
+      api_sha_tag: ${{ steps.image-metadata.outputs.api_sha_tag }}
+      web_sha_tag: ${{ steps.image-metadata.outputs.web_sha_tag }}
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Set image name to lower case
-        run: echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Compute image metadata
+        id: image-metadata
+        run: |
+          IMAGE_NAME_LOWER="$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')"
+          SHA_TAG="sha-${GITHUB_SHA::7}"
+          echo "IMAGE_NAME_LOWER=$IMAGE_NAME_LOWER" >> "$GITHUB_ENV"
+          echo "SHA_TAG=$SHA_TAG" >> "$GITHUB_ENV"
+          echo "image_name_lower=$IMAGE_NAME_LOWER" >> "$GITHUB_OUTPUT"
+          echo "api_sha_tag=${{ env.REGISTRY }}/$IMAGE_NAME_LOWER:$SHA_TAG" >> "$GITHUB_OUTPUT"
+          echo "web_sha_tag=${{ env.REGISTRY }}/$IMAGE_NAME_LOWER-web:$SHA_TAG" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v6
 
@@ -66,25 +78,43 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Push the build to :latest immediately for the TEST LXC
-      - name: Build and push (Test/Latest)
+      - name: Build and push API image
         uses: docker/build-push-action@v7
         with:
           context: .
           file: src/F1.Api/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }} 
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.SHA_TAG }}
 
-      # Build and push the Web App (New)
-      - name: Build and push (Web/Latest)
+      - name: Build and push Web image
         uses: docker/build-push-action@v7
         with:
           context: src/F1.Web
           file: src/F1.Web/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:latest
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:${{ env.SHA_TAG }}
           build-args: |
             COMMIT_HASH=${{ github.sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+
+      - name: Promote SHA images to :test tags
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          # Promote API image SHA tag to :test
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:test \
+            ${{ steps.image-metadata.outputs.api_sha_tag }}
+
+          # Promote Web image SHA tag to :test
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:test \
+            ${{ steps.image-metadata.outputs.web_sha_tag }}
 
   run-e2e-test:
     needs: build-and-push
@@ -155,7 +185,7 @@ jobs:
             TestResults/e2e/**
             **/chromedriver.log
 
-  # --- JOB 2: THE GATEKEEPER (Promote to :prod) ---
+  # --- JOB 2: THE GATEKEEPER (Promote tested image to :stable) ---
   deploy-prod:
     needs:
       - build-and-push
@@ -166,9 +196,6 @@ jobs:
     permissions:
       packages: write
     steps:
-      - name: Set image name to lower case
-        run: echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
@@ -176,15 +203,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Promotes the exact image we just tested/built to the :prod tag
-      - name: Tag and Push Production Image
+      - name: Promote API image to stable
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:prod
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}:stable \
+            ${{ needs.build-and-push.outputs.api_sha_tag }}
 
-      - name: Tag and Push Production Image (Web)
+      - name: Promote Web image to stable
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:latest
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:prod
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:prod
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}-web:stable \
+            ${{ needs.build-and-push.outputs.web_sha_tag }}
