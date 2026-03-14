@@ -1,21 +1,19 @@
 using F1.Api.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Moq;
+using System.Security.Claims;
 
 namespace F1.Api.Tests
 {
     public class UserContextTests
     {
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
-        private readonly Mock<IConfiguration> _configurationMock;
         private readonly UserContext _userContext;
 
         public UserContextTests()
         {
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-            _configurationMock = new Mock<IConfiguration>();
-            _userContext = new UserContext(_httpContextAccessorMock.Object, _configurationMock.Object);
+            _userContext = new UserContext(_httpContextAccessorMock.Object);
         }
 
         [Fact]
@@ -39,7 +37,6 @@ namespace F1.Api.Tests
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["Cf-Access-Authenticated-User-Email"] = "test@example.com";
             _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
-            _configurationMock.Setup(x => x["AdminEmail"]).Returns("admin@example.com");
 
             // Act
             var result = _userContext.GetCurrentUser();
@@ -51,13 +48,17 @@ namespace F1.Api.Tests
         }
 
         [Fact]
-        public void GetCurrentUser_ShouldReturnAdminUser_WhenEmailMatchesAdminEmail()
+        public void GetCurrentUser_ShouldReturnAdminUser_WhenPrincipalHasAdminRole()
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            httpContext.Request.Headers["Cf-Access-Authenticated-User-Email"] = "admin@example.com";
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Email, "admin@example.com"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Cloudflare"));
             _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
-            _configurationMock.Setup(x => x["AdminEmail"]).Returns("admin@example.com");
 
             // Act
             var result = _userContext.GetCurrentUser();

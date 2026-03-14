@@ -104,7 +104,6 @@ Required API values in `.env`:
 
 Optional API values in `.env`:
 
-- `ADMIN_EMAIL`: mapped to `AdminEmail` for `f1-api`. Controls which authenticated email receives the `Admin` role claim.
 - `ADMIN_GROUP_CLAIM_TYPE`: mapped to `CloudflareAccess__AdminGroupClaimType` for `f1-api`. Controls which claim is inspected for Cloudflare group membership.
 - `ADMIN_GROUPS`: mapped to `CloudflareAccess__AdminGroups` for `f1-api`. Any matching group grants the `Admin` role.
 

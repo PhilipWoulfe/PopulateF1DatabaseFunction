@@ -8,11 +8,9 @@ namespace F1.Api.Middleware
     {
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
-        private const string DefaultAdminEmail = "";
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
-        private readonly string _adminEmail;
         private readonly string _adminGroupClaimType;
         private readonly HashSet<string> _adminGroups;
 
@@ -26,7 +24,6 @@ namespace F1.Api.Middleware
             _configuration = configuration;
             _jwtValidator = jwtValidator;
             _hostEnvironment = hostEnvironment;
-            _adminEmail = _configuration["AdminEmail"] ?? DefaultAdminEmail;
             _adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
             _adminGroups = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminGroups");
         }
@@ -40,7 +37,7 @@ namespace F1.Api.Middleware
                 if (!string.IsNullOrEmpty(mockEmail))
                 {
                     var mockGroups = LoadConfiguredValues(_configuration, "DevSettings:MockGroups");
-                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", mockGroups, _adminEmail, _adminGroupClaimType, _adminGroups);
+                    context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", mockGroups, _adminGroupClaimType, _adminGroups);
                     await _next(context);
                     return;
                 }
@@ -60,7 +57,6 @@ namespace F1.Api.Middleware
                             fallbackEmail.Split('@')[0],
                             context.Request.Headers["Cf-Access-Authenticated-User-Id"].FirstOrDefault(),
                             LoadHeaderValues(context.Request.Headers["Cf-Access-Mock-Groups"].FirstOrDefault()),
-                            _adminEmail,
                             _adminGroupClaimType,
                             _adminGroups
                         );
@@ -96,9 +92,9 @@ namespace F1.Api.Middleware
                 ?? validation.Principal.FindFirst(ClaimTypes.Name)?.Value;
             var subject = validation.Principal.FindFirst("sub")?.Value
                 ?? validation.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var groups = ExtractClaimValues(validation.Principal, _adminGroupClaimType);
+            var groups = ExtractGroupValues(validation.Principal, _adminGroupClaimType);
 
-            context.User = BuildPrincipal(email, name, subject, groups, _adminEmail, _adminGroupClaimType, _adminGroups);
+            context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups);
 
             await _next(context);
         }
@@ -108,7 +104,6 @@ namespace F1.Api.Middleware
             string? name,
             string? userId,
             IEnumerable<string> groups,
-            string adminEmail,
             string adminGroupClaimType,
             IReadOnlySet<string> adminGroups)
         {
@@ -134,8 +129,7 @@ namespace F1.Api.Middleware
                 claims.Add(new Claim(adminGroupClaimType, group));
             }
 
-            if (resolvedGroups.Any(group => adminGroups.Contains(group))
-                || string.Equals(email, adminEmail, System.StringComparison.OrdinalIgnoreCase))
+            if (resolvedGroups.Any(group => adminGroups.Contains(group)))
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Admin"));
             }
@@ -168,6 +162,31 @@ namespace F1.Api.Middleware
             }
 
             return rawValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
+
+        private static IReadOnlyList<string> ExtractGroupValues(ClaimsPrincipal principal, string configuredClaimType)
+        {
+            var claimTypes = new[]
+            {
+                configuredClaimType,
+                "groups",
+                "group",
+                ClaimTypes.GroupSid
+            }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+            var claims = new List<string>();
+            foreach (var claimType in claimTypes)
+            {
+                claims.AddRange(ExtractClaimValues(principal, claimType));
+            }
+
+            return claims
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private static IReadOnlyList<string> ExtractClaimValues(ClaimsPrincipal principal, string claimType)
