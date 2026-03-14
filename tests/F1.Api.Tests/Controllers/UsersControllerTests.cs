@@ -121,6 +121,8 @@ namespace F1.Api.Tests.Controllers
             Assert.Contains(payload.Claims, claim => claim.Type == ClaimTypes.Email && claim.Value == "***@f1.com");
             Assert.Contains(payload.Claims, claim => claim.Type == ClaimTypes.NameIdentifier && claim.Value == "us***23");
             Assert.DoesNotContain(payload.Claims, claim => claim.Type == "custom-sensitive");
+            Assert.Contains("custom-sensitive", payload.DiscoveredClaimTypes);
+            Assert.Contains(payload.AdditionalClaims, claim => claim.Type == "custom-sensitive" && claim.Value == "[redacted]");
         }
 
         [Fact]
