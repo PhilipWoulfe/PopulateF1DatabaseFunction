@@ -1,4 +1,5 @@
 using F1.Api.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Claims;
 using System.Text.Json;
@@ -97,23 +98,31 @@ namespace F1.Api.Middleware
                         await _next(context);
                         return;
                     }
-                }
-
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync(UnauthorizedResponseMessage);
-                return;
             }
 
             var validation = await _jwtValidator.ValidateAsync(jwtAssertion, context.RequestAborted);
-            if (!validation.IsValid || validation.Principal is null)
+            if (_logger.IsEnabled(LogLevel.Debug))
             {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync(UnauthorizedResponseMessage);
-                return;
+                var incomingClaimTypes = validation.Principal.Claims
+                    .Select(claim => claim.Type)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                ?? validation.Principal.FindFirst(ClaimTypes.Email)?.Value;
+                var orderedAdminGroups = _adminGroups
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                _logger.LogDebug(
+                    "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
+                    email,
+                    subject ?? string.Empty,
+                    incomingClaimTypes,
+                    groups,
+                    orderedAdminGroups,
+                    context.User.IsInRole("Admin"));
             }
 
-            var email = validation.Principal.FindFirst("email")?.Value
-                ?? validation.Principal.FindFirst(ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrWhiteSpace(email))
             {
