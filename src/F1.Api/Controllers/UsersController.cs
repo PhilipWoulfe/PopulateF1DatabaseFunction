@@ -9,6 +9,15 @@ namespace F1.Api.Controllers;
 [Route("users")]
 public class UsersController : ControllerBase
 {
+    private readonly IConfiguration _configuration;
+    private readonly IHostEnvironment _hostEnvironment;
+
+    public UsersController(IConfiguration configuration, IHostEnvironment hostEnvironment)
+    {
+        _configuration = configuration;
+        _hostEnvironment = hostEnvironment;
+    }
+
     [HttpGet("me")]
     public ActionResult<UserDto> GetMe()
     {
@@ -29,5 +38,94 @@ public class UsersController : ControllerBase
             IsAdmin = User.IsInRole("Admin"),
             Id = id ?? string.Empty
         });
+    }
+
+    [HttpGet("debug/me")]
+    public ActionResult<UserDebugDto> GetDebugMe()
+    {
+        if (!IsDebugEndpointEnabled())
+        {
+            return NotFound();
+        }
+
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var name = User.FindFirstValue(ClaimTypes.Name);
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(name))
+        {
+            return Unauthorized();
+        }
+
+        var adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
+        var configuredAdminGroups = LoadConfiguredValues("CloudflareAccess:AdminGroups");
+        var claims = User.Claims
+            .Select(claim => new UserDebugClaimDto
+            {
+                Type = claim.Type,
+                Value = claim.Value
+            })
+            .ToList();
+
+        var claimTypesToInspect = new[]
+        {
+            adminGroupClaimType,
+            "groups",
+            "group",
+            ClaimTypes.GroupSid
+        }
+        .Where(value => !string.IsNullOrWhiteSpace(value))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+        var groups = User.Claims
+            .Where(claim => claimTypesToInspect.Contains(claim.Type, StringComparer.OrdinalIgnoreCase))
+            .Select(claim => claim.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var roles = User.FindAll(ClaimTypes.Role)
+            .Select(claim => claim.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return Ok(new UserDebugDto
+        {
+            IsAuthenticated = User.Identity?.IsAuthenticated ?? false,
+            IsAdmin = User.IsInRole("Admin"),
+            AuthenticationType = User.Identity?.AuthenticationType ?? string.Empty,
+            Email = email ?? string.Empty,
+            Name = name ?? string.Empty,
+            Id = id ?? string.Empty,
+            AdminGroupClaimType = adminGroupClaimType,
+            ConfiguredAdminGroups = configuredAdminGroups,
+            Roles = roles,
+            Groups = groups,
+            Claims = claims
+        });
+    }
+
+    private bool IsDebugEndpointEnabled()
+    {
+        return (_hostEnvironment.IsDevelopment() || _hostEnvironment.IsEnvironment("Test"))
+               && _configuration.GetValue<bool>("DevSettings:EnableDebugEndpoints");
+    }
+
+    private List<string> LoadConfiguredValues(string sectionPath)
+    {
+        var section = _configuration.GetSection(sectionPath);
+        var children = section.GetChildren()
+            .Select(child => child.Value)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!.Trim());
+
+        var scalar = section.Value?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ?? [];
+
+        return children
+            .Concat(scalar)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 }

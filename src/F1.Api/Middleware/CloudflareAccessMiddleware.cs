@@ -1,4 +1,5 @@
 using F1.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -11,6 +12,7 @@ namespace F1.Api.Middleware
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
+        private readonly ILogger<CloudflareAccessMiddleware> _logger;
         private readonly string _adminGroupClaimType;
         private readonly HashSet<string> _adminGroups;
 
@@ -18,12 +20,14 @@ namespace F1.Api.Middleware
             RequestDelegate next,
             IConfiguration configuration,
             ICloudflareJwtValidator jwtValidator,
-            IHostEnvironment hostEnvironment)
+            IHostEnvironment hostEnvironment,
+            ILogger<CloudflareAccessMiddleware>? logger = null)
         {
             _next = next;
             _configuration = configuration;
             _jwtValidator = jwtValidator;
             _hostEnvironment = hostEnvironment;
+            _logger = logger ?? NullLogger<CloudflareAccessMiddleware>.Instance;
             _adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
             _adminGroups = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminGroups");
         }
@@ -93,8 +97,22 @@ namespace F1.Api.Middleware
             var subject = validation.Principal.FindFirst("sub")?.Value
                 ?? validation.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var groups = ExtractGroupValues(validation.Principal, _adminGroupClaimType);
+            var incomingClaimTypes = validation.Principal.Claims
+                .Select(claim => claim.Type)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
             context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups);
+
+            _logger.LogDebug(
+                "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
+                email,
+                subject ?? string.Empty,
+                incomingClaimTypes,
+                groups,
+                _adminGroups.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
+                context.User.IsInRole("Admin"));
 
             await _next(context);
         }
