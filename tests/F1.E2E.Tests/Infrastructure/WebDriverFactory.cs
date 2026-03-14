@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
@@ -48,7 +49,9 @@ internal static class WebDriverFactory
         var chromedriverPath = ResolveExecutablePath("chromedriver");
         if (!string.IsNullOrWhiteSpace(chromedriverPath))
         {
-            var service = ChromeDriverService.CreateDefaultService();
+            var driverDirectory = Path.GetDirectoryName(chromedriverPath)!;
+            var driverFileName = Path.GetFileName(chromedriverPath);
+            var service = ChromeDriverService.CreateDefaultService(driverDirectory, driverFileName);
             service.EnableVerboseLogging = true;
 
             var driverLogPath = Environment.GetEnvironmentVariable("CHROMEDRIVER_LOG");
@@ -79,12 +82,32 @@ internal static class WebDriverFactory
             return null;
         }
 
+        string[] candidates;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (Path.HasExtension(executableName))
+            {
+                candidates = new[] { executableName };
+            }
+            else
+            {
+                candidates = new[] { executableName + ".exe", executableName };
+            }
+        }
+        else
+        {
+            candidates = new[] { executableName };
+        }
+
         foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
-            var fullPath = Path.Combine(directory, executableName);
-            if (File.Exists(fullPath))
+            foreach (var candidate in candidates)
             {
-                return fullPath;
+                var fullPath = Path.Combine(directory, candidate);
+                if (File.Exists(fullPath))
+                {
+                    return fullPath;
+                }
             }
         }
 
