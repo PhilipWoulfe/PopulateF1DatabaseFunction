@@ -98,6 +98,11 @@ jobs:
           build-args: |
             COMMIT_HASH=${{ github.sha }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+
       - name: Promote SHA images to :test tags
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
