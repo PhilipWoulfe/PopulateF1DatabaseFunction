@@ -104,8 +104,8 @@ Required API values in `.env`:
 
 Optional API values in `.env`:
 
-- `ADMIN_GROUP_CLAIM_TYPE`: mapped to `CloudflareAccess__AdminGroupClaimType` for `f1-api`. Controls which claim is inspected for Cloudflare group membership.
-- `ADMIN_GROUPS`: mapped to `CloudflareAccess__AdminGroups` for `f1-api`. Any matching group grants the `Admin` role.
+- `ADMIN_GROUP_CLAIM_TYPE`: mapped to `CloudflareAccess__AdminGroupClaimType` for `f1-api`. Sets the primary/custom claim used to read Cloudflare group membership; the middleware also falls back to common group claims (`groups`, `group`, and `ClaimTypes.GroupSid`) when present.
+- `ADMIN_GROUPS`: mapped to `CloudflareAccess__AdminGroups` for `f1-api`. Any matching group value from the inspected claims grants the `Admin` role.
 
 Optional development toggle in `.env`:
 
