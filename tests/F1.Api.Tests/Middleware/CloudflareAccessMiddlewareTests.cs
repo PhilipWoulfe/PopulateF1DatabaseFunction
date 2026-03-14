@@ -80,7 +80,7 @@ namespace F1.Api.Tests.Middleware
         }
 
         [Fact]
-        public async Task InvokeAsync_ShouldNotAddAdminRoleClaim_WhenNoConfiguredGroupClaimMatches()
+        public async Task InvokeAsync_ShouldNotAddAdminRoleClaim_WhenNoAdminGroupsAreConfigured()
         {
             // Arrange
             var configuration = new ConfigurationBuilder().Build();
