@@ -86,7 +86,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.SHA_TAG }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:test
 
       - name: Build and push Web image
         uses: docker/build-push-action@v7
@@ -96,9 +95,21 @@ jobs:
           push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:${{ env.SHA_TAG }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:test
           build-args: |
             COMMIT_HASH=${{ github.sha }}
+
+      - name: Promote SHA images to :test tags
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          # Promote API image SHA tag to :test
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:test \
+            ${{ steps.image-metadata.outputs.api_sha_tag }}
+
+          # Promote Web image SHA tag to :test
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:test \
+            ${{ steps.image-metadata.outputs.web_sha_tag }}
 
   run-e2e-test:
     needs: build-and-push
