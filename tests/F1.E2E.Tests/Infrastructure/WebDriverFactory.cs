@@ -26,23 +26,7 @@ internal static class WebDriverFactory
             chromeOptions.AddArgument("--headless=new");
         }
 
-        var service = ChromeDriverService.CreateDefaultService();
-        service.EnableVerboseLogging = true;
-
-        var driverLogPath = Environment.GetEnvironmentVariable("CHROMEDRIVER_LOG");
-        if (!string.IsNullOrWhiteSpace(driverLogPath))
-        {
-            var fullPath = Path.GetFullPath(driverLogPath);
-            var directory = Path.GetDirectoryName(fullPath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            service.LogPath = fullPath;
-        }
-
-        var driver = new ChromeDriver(service, chromeOptions, TimeSpan.FromSeconds(60));
+        var driver = CreateDriver(chromeOptions);
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
 
         var headers = options.BuildCloudflareHeaders();
@@ -56,6 +40,54 @@ internal static class WebDriverFactory
         }
 
         return driver;
+    }
+
+    private static ChromeDriver CreateDriver(ChromeOptions chromeOptions)
+    {
+        var chromedriverPath = ResolveExecutablePath("chromedriver");
+        if (!string.IsNullOrWhiteSpace(chromedriverPath))
+        {
+            var service = ChromeDriverService.CreateDefaultService();
+            service.EnableVerboseLogging = true;
+
+            var driverLogPath = Environment.GetEnvironmentVariable("CHROMEDRIVER_LOG");
+            if (!string.IsNullOrWhiteSpace(driverLogPath))
+            {
+                var fullPath = Path.GetFullPath(driverLogPath);
+                var directory = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                service.LogPath = fullPath;
+            }
+
+            return new ChromeDriver(service, chromeOptions, TimeSpan.FromSeconds(60));
+        }
+
+        // Fall back to Selenium Manager when chromedriver is not preinstalled on the host.
+        return new ChromeDriver(chromeOptions);
+    }
+
+    private static string? ResolveExecutablePath(string executableName)
+    {
+        var path = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var fullPath = Path.Combine(directory, executableName);
+            if (File.Exists(fullPath))
+            {
+                return fullPath;
+            }
+        }
+
+        return null;
     }
 
     public static WebDriverWait CreateWait(IWebDriver driver, TimeSpan timeout)

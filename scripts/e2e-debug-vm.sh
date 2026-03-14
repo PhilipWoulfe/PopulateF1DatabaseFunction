@@ -33,11 +33,6 @@ if ! command -v dotnet >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v chromedriver >/dev/null 2>&1; then
-  echo "chromedriver is not installed or not in PATH."
-  exit 1
-fi
-
 CHROME_BIN_PATH=""
 if command -v chrome >/dev/null 2>&1; then
   CHROME_BIN_PATH="$(command -v chrome)"
@@ -70,7 +65,11 @@ echo "Using E2E_BASE_URL=$E2E_BASE_URL"
 echo "Using E2E_API_BASE_URL=$E2E_API_BASE_URL"
 echo "Using E2E_HEADLESS=$E2E_HEADLESS"
 "$CHROME_BIN" --version || true
-chromedriver --version || true
+if command -v chromedriver >/dev/null 2>&1; then
+  chromedriver --version || true
+else
+  echo "chromedriver not found in PATH; Selenium Manager fallback will be used."
+fi
 
 if [[ "$FILTER" == "all" ]]; then
   dotnet test tests/F1.E2E.Tests/F1.E2E.Tests.csproj \
