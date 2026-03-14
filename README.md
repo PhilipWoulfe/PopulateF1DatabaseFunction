@@ -111,6 +111,7 @@ Optional development toggle in `.env`:
 
 - `DEV_MOCK_EMAIL`: mapped to `DevSettings__MockEmail` for `f1-api`. Sets the mock user identity used when simulating Cloudflare locally.
 - `DEV_MOCK_GROUPS`: mapped to `DevSettings__MockGroups` for `f1-api`. Sets the mock group memberships used for local Admin/non-Admin testing.
+- `DEV_ENABLE_DEBUG_ENDPOINTS`: mapped to `DevSettings__EnableDebugEndpoints` for `f1-api`. When `true`, enables the test-only `/api/users/debug/me` diagnostics endpoint in allowed environments.
 - `DEV_MOCK_CURRENT_SELECTIONS`: mapped to `DevSettings__MockCurrentSelections` for `f1-api`. When `true` in Development, selection GET/PUT endpoints use an in-memory mock store so the UI can be validated without Cosmos data.
 - `DEV_MOCK_RACE_METADATA`: mapped to `DevSettings__MockRaceMetadata` for `f1-api`. When `true` in Development, race metadata GET/PUT endpoints use an in-memory mock store so admin and player question flows can be tested without Cosmos data.
 
@@ -118,6 +119,7 @@ Notes:
 
 - `CloudflareAccess__Issuer` is currently set in `docker-compose.yml`.
 - `API_BASE_URL` is set to `/api/` directly in `docker-compose.yml` for `f1-web` and is not read from `.env`.
+- `/api/users/debug/me` returns sanitized post-auth claims, groups, and role resolution data only when `DEV_ENABLE_DEBUG_ENDPOINTS=true` and the API is running in `Development` or `Test`.
 
 #### B. Azure Function (`local.settings.json`)
 This file configures the data ingestion service. You will need to update `src/PopulateF1Database/local.settings.json` with your **Cosmos DB connection string** and other specific settings.

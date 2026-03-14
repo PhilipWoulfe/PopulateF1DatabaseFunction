@@ -1,4 +1,5 @@
 using F1.Api.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -8,9 +9,28 @@ namespace F1.Api.Middleware
     {
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
+
+        /// <summary>
+        /// Returns a redacted representation of an email address to avoid logging full PII.
+        /// Examples: "user@example.com" -> "***@example.com".
+        /// If the input is null/empty or not in the expected format, returns an empty string.
+        /// </summary>
+        private static string RedactEmail(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+            {
+                return string.Empty;
+            }
+            var atIndex = email.LastIndexOf('@');
+            var domain = atIndex >= 0 && atIndex < email.Length - 1
+                ? email.Substring(atIndex + 1)
+                : string.Empty;
+            return string.IsNullOrEmpty(domain) ? "***" : $"***@{domain}";
+        }
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
+        private readonly ILogger<CloudflareAccessMiddleware> _logger;
         private readonly string _adminGroupClaimType;
         private readonly HashSet<string> _adminGroups;
 
@@ -18,12 +38,14 @@ namespace F1.Api.Middleware
             RequestDelegate next,
             IConfiguration configuration,
             ICloudflareJwtValidator jwtValidator,
-            IHostEnvironment hostEnvironment)
+            IHostEnvironment hostEnvironment,
+            ILogger<CloudflareAccessMiddleware>? logger = null)
         {
             _next = next;
             _configuration = configuration;
             _jwtValidator = jwtValidator;
             _hostEnvironment = hostEnvironment;
+            _logger = logger ?? NullLogger<CloudflareAccessMiddleware>.Instance;
             _adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
             _adminGroups = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminGroups");
         }
@@ -73,6 +95,7 @@ namespace F1.Api.Middleware
             var validation = await _jwtValidator.ValidateAsync(jwtAssertion, context.RequestAborted);
             if (!validation.IsValid || validation.Principal is null)
             {
+                _logger.LogDebug("Cloudflare auth validation failed. IsValid={IsValid}, PrincipalPresent={PrincipalPresent}", validation.IsValid, validation.Principal is not null);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -93,8 +116,24 @@ namespace F1.Api.Middleware
             var subject = validation.Principal.FindFirst("sub")?.Value
                 ?? validation.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var groups = ExtractGroupValues(validation.Principal, _adminGroupClaimType);
+            var incomingClaimTypes = validation.Principal.Claims
+                .Select(claim => claim.Type)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
             context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups);
+
+            var redactedEmail = RedactEmail(email);
+
+            _logger.LogDebug(
+                "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
+                redactedEmail,
+                subject ?? string.Empty,
+                incomingClaimTypes,
+                groups,
+                _adminGroups.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
+                context.User.IsInRole("Admin"));
 
             await _next(context);
         }
