@@ -133,7 +133,7 @@ jobs:
 
       - name: Setup Chrome for Testing
         id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2
 
       - name: Resolve Chrome binary and print versions
         run: |
