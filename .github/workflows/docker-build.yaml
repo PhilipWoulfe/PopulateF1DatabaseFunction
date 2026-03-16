@@ -159,7 +159,7 @@ jobs:
 
       - name: Run Selenium E2E suite against test
         env:
-          E2E_REQUIRED: "false"
+          E2E_REQUIRED: "true"
           E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
           E2E_API_BASE_URL: ${{ secrets.E2E_API_BASE_URL }}
           E2E_CF_CLIENT_ID: ${{ secrets.E2E_CF_CLIENT_ID }}
