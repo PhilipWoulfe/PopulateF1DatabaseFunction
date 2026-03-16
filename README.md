@@ -317,19 +317,19 @@ tail -f "$(ls -1t /mnt/f1-logs | head -n 1 | sed 's#^#/mnt/f1-logs/#')"
 Filter auth failures by reason code:
 
 ```bash
-grep 'reasonCode' /mnt/f1-logs/*.json | grep 'missing_jwt_header\|missing_email_claim\|token_invalid\|token_expired'
+grep 'reasonCode' /mnt/f1-logs/*.log | grep 'missing_jwt_header\|missing_email_claim\|token_invalid\|token_expired'
 ```
 
 Pretty-print compact JSON logs with `jq`:
 
 ```bash
-jq -c 'select(.eventName == "auth_failure") | {time: .@t, reason: .reasonCode, path, statusCode, requestId, traceId}' /mnt/f1-logs/*.json
+jq -c 'select(.eventName == "auth_failure") | {time: .["@t"], reason: .reasonCode, path: .Path, statusCode: .StatusCode, requestId: .RequestId, traceId: .TraceId}' /mnt/f1-logs/*.log
 ```
 
 Find a single request by request ID:
 
 ```bash
-grep 'YOUR_REQUEST_ID' /mnt/f1-logs/*.json
+grep 'YOUR_REQUEST_ID' /mnt/f1-logs/*.log
 ```
 
 Inspect manual Selenium artifacts when they exist:

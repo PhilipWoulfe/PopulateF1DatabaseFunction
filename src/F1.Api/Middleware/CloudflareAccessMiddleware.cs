@@ -50,7 +50,7 @@ namespace F1.Api.Middleware
                         "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} RequestId={RequestId} Environment={Environment}",
                         "CloudflareAuthEvent", "simulate_cloudflare_used",
                         context.Request.Path.Value, 
-                        SanitiseForLoggging(context.Request.Method),
+                        SanitiseForLogging(context.Request.Method),
                         context.TraceIdentifier, _hostEnvironment.EnvironmentName);
                     await _next(context);
                     return;
@@ -83,7 +83,7 @@ namespace F1.Api.Middleware
                             "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
                             "CloudflareAuthEvent", "legacy_bypass_used",
                             context.Request.Path.Value, 
-                            SanitiseForLoggging(context.Request.Method),
+                            SanitiseForLogging(context.Request.Method),
                             200,
                             context.TraceIdentifier, Activity.Current?.Id,
                             _hostEnvironment.EnvironmentName, hasJwtHeader, false,
@@ -134,12 +134,11 @@ namespace F1.Api.Middleware
             context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups, _adminEmails);
 
             _logger.LogDebug(
-                "Cloudflare auth resolved Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, ConfiguredAdminEmails={ConfiguredAdminEmails}, IsAdmin={IsAdmin}",
+                "Cloudflare auth resolved Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
                 subject ?? string.Empty,
                 incomingClaimTypes,
                 groups,
                 _adminGroups.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
-                _adminEmails.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
                 context.User.IsInRole("Admin"));
 
             await _next(context);
@@ -155,11 +154,11 @@ namespace F1.Api.Middleware
         {
             _logger.LogWarning(
                 exception,
-                "CloudflareAuthFailure: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
-                "CloudflareAuthFailure",
+                "CloudflareAuthFailure: eventName={eventName} reasonCode={reasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
+                "auth_failure",
                 reasonCode,
                 context.Request.Path.Value,
-                SanitiseForLoggging(context.Request.Method),
+                SanitiseForLogging(context.Request.Method),
                 statusCode,
                 context.TraceIdentifier,
                 Activity.Current?.Id,
@@ -312,7 +311,7 @@ namespace F1.Api.Middleware
         /// Returns a log-safe representation of a value by removing newline characters.
         /// This helps prevent log forging via user-controlled input.
         /// </summary>
-        private static string SanitiseForLoggging(string? value)
+        private static string SanitiseForLogging(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
