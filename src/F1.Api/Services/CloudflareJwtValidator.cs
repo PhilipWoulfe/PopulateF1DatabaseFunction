@@ -150,6 +150,12 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
             var expiresAt = DateTimeOffset.UtcNow.AddHours(cacheTtlHours <= 0 ? 24 : cacheTtlHours);
             _memoryCache.Set(JwksCacheKey, jwks, expiresAt);
 
+            _logger.LogDebug(
+                 "Fetched Cloudflare JWKS from {CertsUrl}. ForceRefresh={ForceRefresh}, ExpiresAtUtc={ExpiresAtUtc}",
+                 certsUrl,
+                 forceRefresh,
+                 expiresAt);
+
             if (forceRefresh)
             {
                 _lastForcedRefreshAtUtc = DateTimeOffset.UtcNow;

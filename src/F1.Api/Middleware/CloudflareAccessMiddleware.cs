@@ -66,14 +66,19 @@ namespace F1.Api.Middleware
                     _logger.LogInformation(
                         "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} RequestId={RequestId} Environment={Environment}",
                         "CloudflareAuthEvent", "simulate_cloudflare_used",
-                        context.Request.Path.Value, context.Request.Method,
+                        context.Request.Path.Value, 
+                        SanitiseForLoggging(context.Request.Method),
                         context.TraceIdentifier, _hostEnvironment.EnvironmentName);
                     await _next(context);
                     return;
                 }
             }
 
-            var jwtAssertion = context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault();
+            var hasJwtHeader = context.Request.Headers.ContainsKey("Cf-Access-Jwt-Assertion");
+            var jwtAssertion = hasJwtHeader
+                ? context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault()
+                : null;
+
             if (string.IsNullOrWhiteSpace(jwtAssertion))
             {
                 // Never allow legacy plaintext header identity outside development.
@@ -94,16 +99,19 @@ namespace F1.Api.Middleware
                         _logger.LogWarning(
                             "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
                             "CloudflareAuthEvent", "legacy_bypass_used",
-                            context.Request.Path.Value, context.Request.Method, 200,
+                            context.Request.Path.Value, 
+                            SanitiseForLoggging(context.Request.Method),
+                            200,
                             context.TraceIdentifier, Activity.Current?.Id,
-                            _hostEnvironment.EnvironmentName, false, false,
+                            _hostEnvironment.EnvironmentName, hasJwtHeader, false,
                             context.Connection.RemoteIpAddress?.ToString());
                         await _next(context);
                         return;
                     }
                 }
 
-                LogAuthFailure(context, "missing_jwt_header", hasJwtHeader: false, kidPresent: false);
+                var reasonCode = hasJwtHeader ? "malformed_jwt" : "missing_jwt_header";
+                LogAuthFailure(context, reasonCode, hasJwtHeader: hasJwtHeader, kidPresent: false);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -171,7 +179,7 @@ namespace F1.Api.Middleware
                 "CloudflareAuthFailure",
                 reasonCode,
                 context.Request.Path.Value,
-                context.Request.Method,
+                SanitiseForLoggging(context.Request.Method),
                 statusCode,
                 context.TraceIdentifier,
                 Activity.Current?.Id,
@@ -318,6 +326,22 @@ namespace F1.Api.Middleware
             }
 
             return [trimmed];
+        }
+
+                /// <summary>
+        /// Returns a log-safe representation of a value by removing newline characters.
+        /// This helps prevent log forging via user-controlled input.
+        /// </summary>
+        private static string SanitiseForLoggging(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return value
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
         }
     }
 }
