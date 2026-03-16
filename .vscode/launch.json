@@ -45,6 +45,24 @@
             "request": "launch",
             "url": "http://localhost:5001",
             "webRoot": "${workspaceFolder}/src/F1.Web"
+        },
+        {
+            "name": "Attach to Remote E2E Test",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickRemoteProcess}",
+            "pipeTransport": {
+                "pipeCwd": "${workspaceFolder}",
+                "pipeProgram": "/usr/bin/ssh",
+                "pipeArgs": [
+                    "debugger@192.168.0.50"
+                ],
+                "debuggerPath": "~/vsdbg/vsdbg",
+                "quoteArgs": false
+            },
+            "sourceFileMap": {
+                "/home/pillphil/dev/F1Competition": "${workspaceFolder}"
+            }
         }
     ]
 }
