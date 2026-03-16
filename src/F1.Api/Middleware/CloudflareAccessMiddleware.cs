@@ -1,5 +1,6 @@
 using F1.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -62,6 +63,11 @@ namespace F1.Api.Middleware
                 {
                     var mockGroups = LoadConfiguredValues(_configuration, "DevSettings:MockGroups");
                     context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", mockGroups, _adminGroupClaimType, _adminGroups, _adminEmails);
+                    _logger.LogInformation(
+                        "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} RequestId={RequestId} Environment={Environment}",
+                        "CloudflareAuthEvent", "simulate_cloudflare_used",
+                        context.Request.Path.Value, context.Request.Method,
+                        context.TraceIdentifier, _hostEnvironment.EnvironmentName);
                     await _next(context);
                     return;
                 }
@@ -85,11 +91,19 @@ namespace F1.Api.Middleware
                             _adminGroups,
                             _adminEmails
                         );
+                        _logger.LogWarning(
+                            "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
+                            "CloudflareAuthEvent", "legacy_bypass_used",
+                            context.Request.Path.Value, context.Request.Method, 200,
+                            context.TraceIdentifier, Activity.Current?.Id,
+                            _hostEnvironment.EnvironmentName, false, false,
+                            context.Connection.RemoteIpAddress?.ToString());
                         await _next(context);
                         return;
                     }
                 }
 
+                LogAuthFailure(context, "missing_jwt_header", hasJwtHeader: false, kidPresent: false);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -98,7 +112,7 @@ namespace F1.Api.Middleware
             var validation = await _jwtValidator.ValidateAsync(jwtAssertion, context.RequestAborted);
             if (!validation.IsValid || validation.Principal is null)
             {
-                _logger.LogDebug("Cloudflare auth validation failed. IsValid={IsValid}, PrincipalPresent={PrincipalPresent}", validation.IsValid, validation.Principal is not null);
+                LogAuthFailure(context, validation.ReasonCode, hasJwtHeader: true, kidPresent: validation.KidPresent, exception: validation.Exception);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -109,6 +123,7 @@ namespace F1.Api.Middleware
 
             if (string.IsNullOrWhiteSpace(email))
             {
+                LogAuthFailure(context, "missing_email_claim", hasJwtHeader: true, kidPresent: true);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -140,6 +155,30 @@ namespace F1.Api.Middleware
                 context.User.IsInRole("Admin"));
 
             await _next(context);
+        }
+
+        private void LogAuthFailure(
+            HttpContext context,
+            string reasonCode,
+            bool hasJwtHeader,
+            bool kidPresent,
+            int statusCode = StatusCodes.Status401Unauthorized,
+            Exception? exception = null)
+        {
+            _logger.LogWarning(
+                exception,
+                "CloudflareAuthFailure: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
+                "CloudflareAuthFailure",
+                reasonCode,
+                context.Request.Path.Value,
+                context.Request.Method,
+                statusCode,
+                context.TraceIdentifier,
+                Activity.Current?.Id,
+                _hostEnvironment.EnvironmentName,
+                hasJwtHeader,
+                kidPresent,
+                context.Connection.RemoteIpAddress?.ToString());
         }
 
         private static ClaimsPrincipal BuildPrincipal(

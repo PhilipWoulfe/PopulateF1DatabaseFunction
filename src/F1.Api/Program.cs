@@ -1,4 +1,6 @@
 using F1.Api.Middleware;
+using Serilog;
+using Serilog.Formatting.Compact;
 using F1.Api.Services;
 using F1.Core.Interfaces;
 using F1.Infrastructure.Repositories;
@@ -7,6 +9,28 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, logConfig) =>
+{
+    logConfig
+        .ReadFrom.Configuration(ctx.Configuration)
+        .Enrich.FromLogContext();
+
+    logConfig.WriteTo.Console(new CompactJsonFormatter());
+
+    var logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH");
+    if (!string.IsNullOrWhiteSpace(logFilePath))
+    {
+        logConfig.WriteTo.File(
+            new CompactJsonFormatter(),
+            Path.Combine(logFilePath, "f1api-.log"),
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            fileSizeLimitBytes: 100 * 1024 * 1024,
+            rollOnFileSizeLimit: true,
+            shared: true);
+    }
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers(); // Add this line to register controller services
@@ -77,22 +101,6 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
 }
 
 app.UseCors("AllowBlazorOrigin");
-
-app.Use(async (context, next) =>
-{
-    app.Logger.LogInformation("DEBUG: Request {Method} {Path}", context.Request.Method, context.Request.Path);
-
-    if (context.Request.Headers.ContainsKey("Cf-Access-Jwt-Assertion"))
-    {
-        app.Logger.LogDebug("DEBUG: Found Cloudflare Access JWT assertion header.");
-    }
-    else
-    {
-        app.Logger.LogDebug("DEBUG: Cloudflare Access JWT assertion header missing.");
-    }
-
-    await next();
-});
 
 app.UseMiddleware<CloudflareAccessMiddleware>();
 

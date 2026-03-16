@@ -33,7 +33,7 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
     {
         if (string.IsNullOrWhiteSpace(jwtAssertion))
         {
-            return CloudflareTokenValidationResult.Failure("Unauthorized: missing Cloudflare Access token.");
+            return CloudflareTokenValidationResult.Failure("malformed_jwt");
         }
 
         var jwtHandler = new JwtSecurityTokenHandler { MapInboundClaims = false };
@@ -43,22 +43,21 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
         {
             unvalidatedToken = jwtHandler.ReadJwtToken(jwtAssertion);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return CloudflareTokenValidationResult.Failure("Unauthorized: malformed Cloudflare Access token.");
+            return CloudflareTokenValidationResult.Failure("malformed_jwt", ex: ex);
         }
 
         var kid = unvalidatedToken.Header.Kid;
         if (string.IsNullOrWhiteSpace(kid))
         {
-            return CloudflareTokenValidationResult.Failure("Unauthorized: invalid Cloudflare Access token.");
+            return CloudflareTokenValidationResult.Failure("missing_kid");
         }
 
         var options = _options.Value;
         if (string.IsNullOrWhiteSpace(options.Audience) || string.IsNullOrWhiteSpace(options.Issuer))
         {
-            _logger.LogWarning("CloudflareAccess options are incomplete. Audience/Issuer must be configured.");
-            return CloudflareTokenValidationResult.Failure("Unauthorized: Cloudflare Access configuration is invalid.");
+            return CloudflareTokenValidationResult.Failure("config_invalid", kidPresent: true);
         }
 
         JsonWebKeySet jwks;
@@ -77,13 +76,12 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Unable to fetch or parse Cloudflare JWKS.");
-            return CloudflareTokenValidationResult.Failure("Unauthorized: unable to verify Cloudflare Access token.");
+            return CloudflareTokenValidationResult.Failure("jwks_fetch_failed", kidPresent: true, ex: ex);
         }
 
         if (signingKeys.Count == 0)
         {
-            return CloudflareTokenValidationResult.Failure("Unauthorized: invalid Cloudflare Access token.");
+            return CloudflareTokenValidationResult.Failure("signing_key_not_found", kidPresent: true);
         }
 
         var validationParameters = new TokenValidationParameters
@@ -103,17 +101,17 @@ public class CloudflareJwtValidator : ICloudflareJwtValidator
             var principal = jwtHandler.ValidateToken(jwtAssertion, validationParameters, out _);
             return CloudflareTokenValidationResult.Success(principal);
         }
-        catch (SecurityTokenExpiredException)
+        catch (SecurityTokenExpiredException ex)
         {
-            return CloudflareTokenValidationResult.Failure("Unauthorized: Cloudflare Access token has expired.");
+            return CloudflareTokenValidationResult.Failure("token_expired", kidPresent: true, ex: ex);
         }
-        catch (SecurityTokenException)
+        catch (SecurityTokenException ex)
         {
-            return CloudflareTokenValidationResult.Failure("Unauthorized: invalid Cloudflare Access token.");
+            return CloudflareTokenValidationResult.Failure("token_invalid", kidPresent: true, ex: ex);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return CloudflareTokenValidationResult.Failure("Unauthorized: unable to verify Cloudflare Access token.");
+            return CloudflareTokenValidationResult.Failure("token_validation_unexpected_error", kidPresent: true, ex: ex);
         }
     }
 

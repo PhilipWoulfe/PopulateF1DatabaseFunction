@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace F1.Api.Tests.Middleware
@@ -46,7 +47,7 @@ namespace F1.Api.Tests.Middleware
             {
                 nextCalled = true;
                 return Task.CompletedTask;
-            }, configuration, validator, CreateHostEnvironment(Environments.Production));
+            }, configuration, validator, CreateHostEnvironment(Environments.Production), new CapturingLogger<CloudflareAccessMiddleware>());
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
@@ -218,7 +219,7 @@ namespace F1.Api.Tests.Middleware
             {
                 nextCalled = true;
                 return Task.CompletedTask;
-            }, configuration, new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")), CreateHostEnvironment(Environments.Development));
+            }, configuration, new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not_used")), CreateHostEnvironment(Environments.Development));
 
             var httpContext = new DefaultHttpContext();
 
@@ -249,7 +250,7 @@ namespace F1.Api.Tests.Middleware
             var middleware = new CloudflareAccessMiddleware(
                 next: _ => Task.CompletedTask,
                 configuration,
-                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")),
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not_used")),
                 CreateHostEnvironment(Environments.Development));
 
             var httpContext = new DefaultHttpContext();
@@ -280,7 +281,7 @@ namespace F1.Api.Tests.Middleware
                     return Task.CompletedTask;
                 },
                 configuration,
-                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")),
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not_used")),
                 CreateHostEnvironment(Environments.Production)
             );
 
@@ -305,7 +306,7 @@ namespace F1.Api.Tests.Middleware
             var middleware = new CloudflareAccessMiddleware(
                 next: _ => Task.CompletedTask,
                 configuration,
-                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("Unauthorized: invalid Cloudflare Access token.")),
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("token_invalid")),
                 CreateHostEnvironment(Environments.Production)
             );
 
@@ -336,7 +337,7 @@ namespace F1.Api.Tests.Middleware
                     return Task.CompletedTask;
                 },
                 configuration,
-                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not used")),
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("not_used")),
                 CreateHostEnvironment(Environments.Development)
             );
 
@@ -446,6 +447,100 @@ namespace F1.Api.Tests.Middleware
             public string ContentRootPath { get; set; }
 
             public IFileProvider ContentRootFileProvider { get; set; }
+        }
+
+        private sealed class CapturingLogger<T> : ILogger<T>
+        {
+            public readonly List<(LogLevel Level, string Message)> Entries = new();
+
+            IDisposable? ILogger.BeginScope<TState>(TState state) => null;
+            bool ILogger.IsEnabled(LogLevel logLevel) => true;
+            void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+                => Entries.Add((logLevel, formatter(state, exception)));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldLogWarning_WithMissingJwtHeaderReasonCode_WhenJwtHeaderAbsent()
+        {
+            var configuration = new ConfigurationBuilder().Build();
+            var logger = new CapturingLogger<CloudflareAccessMiddleware>();
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => { Assert.Fail("Next should not be called."); return Task.CompletedTask; },
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(new ClaimsPrincipal())),
+                CreateHostEnvironment(Environments.Production),
+                logger);
+
+            await middleware.InvokeAsync(new DefaultHttpContext());
+
+            Assert.Contains(logger.Entries, e => e.Level == LogLevel.Warning && e.Message.Contains("missing_jwt_header"));
+            Assert.Equal(1, logger.Entries.Count(e => e.Level == LogLevel.Warning));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldLogWarning_WithValidatorReasonCode_WhenValidatorRejectsToken()
+        {
+            var configuration = new ConfigurationBuilder().Build();
+            var logger = new CapturingLogger<CloudflareAccessMiddleware>();
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Failure("token_invalid", kidPresent: true)),
+                CreateHostEnvironment(Environments.Production),
+                logger);
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.sig";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.Contains(logger.Entries, e => e.Level == LogLevel.Warning && e.Message.Contains("token_invalid"));
+            Assert.Equal(1, logger.Entries.Count(e => e.Level == LogLevel.Warning));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldLogWarning_WithMissingEmailClaimReasonCode_WhenEmailClaimAbsent()
+        {
+            var configuration = new ConfigurationBuilder().Build();
+            var logger = new CapturingLogger<CloudflareAccessMiddleware>();
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    new[] { new Claim("name", "No Email"), new Claim("sub", "sub-1") },
+                    "CloudflareJwt"));
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment(Environments.Production),
+                logger);
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.sig";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.Contains(logger.Entries, e => e.Level == LogLevel.Warning && e.Message.Contains("missing_email_claim"));
+            Assert.Equal(1, logger.Entries.Count(e => e.Level == LogLevel.Warning));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldNotLogWarning_WhenAuthSucceeds()
+        {
+            var configuration = new ConfigurationBuilder().Build();
+            var logger = new CapturingLogger<CloudflareAccessMiddleware>();
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(CreatePrincipal("user@example.com", "User", "sub-1"))),
+                CreateHostEnvironment(Environments.Production),
+                logger);
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.sig";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.DoesNotContain(logger.Entries, e => e.Level == LogLevel.Warning);
         }
     }
 }
