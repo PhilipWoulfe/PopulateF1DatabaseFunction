@@ -11,23 +11,6 @@ namespace F1.Api.Middleware
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
 
-        /// <summary>
-        /// Returns a redacted representation of an email address to avoid logging full PII.
-        /// Examples: "user@example.com" -> "***@example.com".
-        /// If the input is null/empty or not in the expected format, returns an empty string.
-        /// </summary>
-        private static string RedactEmail(string? email)
-        {
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
-            {
-                return string.Empty;
-            }
-            var atIndex = email.LastIndexOf('@');
-            var domain = atIndex >= 0 && atIndex < email.Length - 1
-                ? email.Substring(atIndex + 1)
-                : string.Empty;
-            return string.IsNullOrEmpty(domain) ? "***" : $"***@{domain}";
-        }
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
@@ -150,16 +133,13 @@ namespace F1.Api.Middleware
 
             context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups, _adminEmails);
 
-            var redactedEmail = RedactEmail(email);
-
             _logger.LogDebug(
-                "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, ConfiguredAdminEmails={ConfiguredAdminEmails}, IsAdmin={IsAdmin}",
-                redactedEmail,
+                "Cloudflare auth resolved Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, ConfiguredAdminEmails={ConfiguredAdminEmails}, IsAdmin={IsAdmin}",
                 subject ?? string.Empty,
                 incomingClaimTypes,
                 groups,
                 _adminGroups.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
-                _adminEmails.Select(RedactEmail).OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
+                _adminEmails.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
                 context.User.IsInRole("Admin"));
 
             await _next(context);
