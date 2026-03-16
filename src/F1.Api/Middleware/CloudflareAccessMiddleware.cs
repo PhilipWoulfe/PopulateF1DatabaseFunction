@@ -1,5 +1,6 @@
 using F1.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -10,23 +11,6 @@ namespace F1.Api.Middleware
         private const string UnauthorizedResponseMessage = "Unauthorized.";
         private readonly RequestDelegate _next;
 
-        /// <summary>
-        /// Returns a redacted representation of an email address to avoid logging full PII.
-        /// Examples: "user@example.com" -> "***@example.com".
-        /// If the input is null/empty or not in the expected format, returns an empty string.
-        /// </summary>
-        private static string RedactEmail(string? email)
-        {
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
-            {
-                return string.Empty;
-            }
-            var atIndex = email.LastIndexOf('@');
-            var domain = atIndex >= 0 && atIndex < email.Length - 1
-                ? email.Substring(atIndex + 1)
-                : string.Empty;
-            return string.IsNullOrEmpty(domain) ? "***" : $"***@{domain}";
-        }
         private readonly IConfiguration _configuration;
         private readonly ICloudflareJwtValidator _jwtValidator;
         private readonly IHostEnvironment _hostEnvironment;
@@ -62,12 +46,22 @@ namespace F1.Api.Middleware
                 {
                     var mockGroups = LoadConfiguredValues(_configuration, "DevSettings:MockGroups");
                     context.User = BuildPrincipal(mockEmail, mockEmail.Split('@')[0], "dev-mock-user", mockGroups, _adminGroupClaimType, _adminGroups, _adminEmails);
+                    _logger.LogInformation(
+                        "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} RequestId={RequestId} Environment={Environment}",
+                        "CloudflareAuthEvent", "simulate_cloudflare_used",
+                        context.Request.Path.Value, 
+                        SanitiseForLogging(context.Request.Method),
+                        context.TraceIdentifier, _hostEnvironment.EnvironmentName);
                     await _next(context);
                     return;
                 }
             }
 
-            var jwtAssertion = context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault();
+            var hasJwtHeader = context.Request.Headers.ContainsKey("Cf-Access-Jwt-Assertion");
+            var jwtAssertion = hasJwtHeader
+                ? context.Request.Headers["Cf-Access-Jwt-Assertion"].FirstOrDefault()
+                : null;
+
             if (string.IsNullOrWhiteSpace(jwtAssertion))
             {
                 // Never allow legacy plaintext header identity outside development.
@@ -85,11 +79,22 @@ namespace F1.Api.Middleware
                             _adminGroups,
                             _adminEmails
                         );
+                        _logger.LogWarning(
+                            "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
+                            "CloudflareAuthEvent", "legacy_bypass_used",
+                            context.Request.Path.Value, 
+                            SanitiseForLogging(context.Request.Method),
+                            200,
+                            context.TraceIdentifier, Activity.Current?.Id,
+                            _hostEnvironment.EnvironmentName, hasJwtHeader, false,
+                            context.Connection.RemoteIpAddress?.ToString());
                         await _next(context);
                         return;
                     }
                 }
 
+                var reasonCode = hasJwtHeader ? "malformed_jwt" : "missing_jwt_header";
+                LogAuthFailure(context, reasonCode, hasJwtHeader: hasJwtHeader, kidPresent: false);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -98,7 +103,7 @@ namespace F1.Api.Middleware
             var validation = await _jwtValidator.ValidateAsync(jwtAssertion, context.RequestAborted);
             if (!validation.IsValid || validation.Principal is null)
             {
-                _logger.LogDebug("Cloudflare auth validation failed. IsValid={IsValid}, PrincipalPresent={PrincipalPresent}", validation.IsValid, validation.Principal is not null);
+                LogAuthFailure(context, validation.ReasonCode, hasJwtHeader: true, kidPresent: validation.KidPresent, exception: validation.Exception);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -109,6 +114,7 @@ namespace F1.Api.Middleware
 
             if (string.IsNullOrWhiteSpace(email))
             {
+                LogAuthFailure(context, "missing_email_claim", hasJwtHeader: true, kidPresent: true);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
                 return;
@@ -127,19 +133,39 @@ namespace F1.Api.Middleware
 
             context.User = BuildPrincipal(email, name, subject, groups, _adminGroupClaimType, _adminGroups, _adminEmails);
 
-            var redactedEmail = RedactEmail(email);
-
             _logger.LogDebug(
-                "Cloudflare auth resolved Email={Email}, Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, ConfiguredAdminEmails={ConfiguredAdminEmails}, IsAdmin={IsAdmin}",
-                redactedEmail,
+                "Cloudflare auth resolved Subject={Subject}, IncomingClaimTypes={IncomingClaimTypes}, ExtractedGroups={ExtractedGroups}, ConfiguredAdminGroups={ConfiguredAdminGroups}, IsAdmin={IsAdmin}",
                 subject ?? string.Empty,
                 incomingClaimTypes,
                 groups,
                 _adminGroups.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
-                _adminEmails.Select(RedactEmail).OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
                 context.User.IsInRole("Admin"));
 
             await _next(context);
+        }
+
+        private void LogAuthFailure(
+            HttpContext context,
+            string reasonCode,
+            bool hasJwtHeader,
+            bool kidPresent,
+            int statusCode = StatusCodes.Status401Unauthorized,
+            Exception? exception = null)
+        {
+            _logger.LogWarning(
+                exception,
+                "CloudflareAuthFailure: eventName={eventName} reasonCode={reasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} HasJwtHeader={HasJwtHeader} KidPresent={KidPresent} RemoteIp={RemoteIp}",
+                "auth_failure",
+                reasonCode,
+                context.Request.Path.Value,
+                SanitiseForLogging(context.Request.Method),
+                statusCode,
+                context.TraceIdentifier,
+                Activity.Current?.Id,
+                _hostEnvironment.EnvironmentName,
+                hasJwtHeader,
+                kidPresent,
+                context.Connection.RemoteIpAddress?.ToString());
         }
 
         private static ClaimsPrincipal BuildPrincipal(
@@ -279,6 +305,22 @@ namespace F1.Api.Middleware
             }
 
             return [trimmed];
+        }
+
+                /// <summary>
+        /// Returns a log-safe representation of a value by removing newline characters.
+        /// This helps prevent log forging via user-controlled input.
+        /// </summary>
+        private static string SanitiseForLogging(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return value
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
         }
     }
 }

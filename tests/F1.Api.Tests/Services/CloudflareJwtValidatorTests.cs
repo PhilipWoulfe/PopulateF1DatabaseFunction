@@ -45,7 +45,7 @@ public class CloudflareJwtValidatorTests
         var result = await validator.ValidateAsync(token, CancellationToken.None);
 
         Assert.False(result.IsValid);
-        Assert.Contains("expired", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("token_expired", result.ReasonCode);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class CloudflareJwtValidatorTests
         var result = await validator.ValidateAsync(token, CancellationToken.None);
 
         Assert.False(result.IsValid);
-        Assert.Contains("invalid", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("token_invalid", result.ReasonCode);
     }
 
     [Fact]
