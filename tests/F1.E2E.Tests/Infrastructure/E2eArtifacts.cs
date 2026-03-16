@@ -9,7 +9,7 @@ internal static class E2eArtifacts
     private static readonly HashSet<char> InvalidFileNameChars = new(Path.GetInvalidFileNameChars());
 
     private static readonly string ArtifactsDir =
-        Path.Combine("TestResults", "e2e", "failure-artifacts");
+        ResolveArtifactsDir();
 
     /// <summary>
     /// Captures a screenshot and page HTML to the artifacts directory when a test fails.
@@ -36,5 +36,13 @@ internal static class E2eArtifacts
         {
             output?.WriteLine($"[E2E] Artifact capture failed (non-fatal): {ex.Message}");
         }
+    }
+
+    private static string ResolveArtifactsDir()
+    {
+        var configuredPath = Environment.GetEnvironmentVariable("E2E_ARTIFACT_PATH");
+        return string.IsNullOrWhiteSpace(configuredPath)
+            ? Path.Combine("TestResults", "e2e", "failure-artifacts")
+            : Path.GetFullPath(configuredPath);
     }
 }
