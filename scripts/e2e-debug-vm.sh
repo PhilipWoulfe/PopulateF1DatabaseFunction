@@ -93,6 +93,18 @@ if [[ -z "$CHROME_BIN_PATH" && -x "/snap/bin/chromium" ]]; then
   CHROME_BIN_PATH="/snap/bin/chromium"
 fi
 
+# Snap shim binaries can fail under ChromeDriver execvp; prefer the real Chromium binary path.
+if [[ "$CHROME_BIN_PATH" == "/snap/bin/chromium" ]]; then
+  for snap_candidate in \
+    "/snap/chromium/current/usr/lib/chromium-browser/chrome" \
+    "/snap/chromium/current/usr/lib/chromium-browser/chromium-browser"; do
+    if [[ -x "$snap_candidate" ]]; then
+      CHROME_BIN_PATH="$snap_candidate"
+      break
+    fi
+  done
+fi
+
 if [[ -z "$CHROME_BIN_PATH" ]]; then
   echo "Chrome/Chromium binary not found."
   echo "Tried: CHROME_BIN env, chrome, google-chrome, google-chrome-stable, chromium, chromium-browser, /snap/bin/chromium."
@@ -131,6 +143,8 @@ echo "UI requests will go through $E2E_BASE_URL and direct API verification will
 "$CHROME_BIN" --version || true
 if command -v chromedriver >/dev/null 2>&1; then
   chromedriver --version || true
+elif command -v chromium.chromedriver >/dev/null 2>&1; then
+  chromium.chromedriver --version || true
 else
   echo "chromedriver not found in PATH; Selenium Manager fallback will be used."
 fi

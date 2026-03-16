@@ -166,8 +166,9 @@ jobs:
           E2E_CF_CLIENT_SECRET: ${{ secrets.E2E_CF_CLIENT_SECRET }}
           E2E_HEADLESS: "true"
           E2E_TIMEOUT_SECONDS: "30"
+          E2E_ARTIFACT_PATH: ${{ github.workspace }}/TestResults/e2e/failure-artifacts
           CHROME_BIN: ${{ env.CHROME_BIN }}
-          CHROMEDRIVER_LOG: ./TestResults/e2e/chromedriver.log
+          CHROMEDRIVER_LOG: ${{ github.workspace }}/TestResults/e2e/chromedriver.log
         run: |
           dotnet test tests/F1.E2E.Tests/F1.E2E.Tests.csproj \
             --configuration Release \
@@ -183,6 +184,7 @@ jobs:
           name: e2e-results
           path: |
             TestResults/e2e/**
+            **/TestResults/e2e/**
             **/chromedriver.log
 
   # --- JOB 2: THE GATEKEEPER (Promote tested image to :stable) ---

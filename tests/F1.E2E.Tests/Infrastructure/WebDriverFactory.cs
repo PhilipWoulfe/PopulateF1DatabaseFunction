@@ -20,7 +20,6 @@ internal static class WebDriverFactory
         chromeOptions.AddArgument("--disable-gpu");
         chromeOptions.AddArgument("--no-sandbox");
         chromeOptions.AddArgument("--disable-dev-shm-usage");
-        chromeOptions.AddArgument("--remote-debugging-port=9222");
         chromeOptions.AddArgument("--remote-allow-origins=*");
 
         if (options.Headless)
@@ -96,7 +95,10 @@ internal static class WebDriverFactory
         }
         else
         {
-            candidates = new[] { executableName };
+            // Snap packages often expose ChromeDriver as "chromium.chromedriver" instead of "chromedriver".
+            candidates = executableName.Equals("chromedriver", StringComparison.OrdinalIgnoreCase)
+                ? new[] { executableName, "chromium.chromedriver" }
+                : new[] { executableName };
         }
 
         foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
