@@ -34,10 +34,10 @@ internal static class WebDriverFactory
         var headers = options.BuildCloudflareHeaders();
         if (headers.Count > 0)
         {
-            driver.ExecuteCdpCommand("Network.enable", new Dictionary<string, object>());
-            driver.ExecuteCdpCommand("Network.setExtraHTTPHeaders", new Dictionary<string, object>
+            driver.ExecuteCdpCommand("Network.enable", new Dictionary<string, object?>());
+            driver.ExecuteCdpCommand("Network.setExtraHTTPHeaders", new Dictionary<string, object?>
             {
-                ["headers"] = headers.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value, StringComparer.OrdinalIgnoreCase)
+                ["headers"] = headers.ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value, StringComparer.OrdinalIgnoreCase)
             });
         }
 
