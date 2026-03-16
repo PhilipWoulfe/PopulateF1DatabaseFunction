@@ -11,6 +11,10 @@ services:
       - CloudflareAccess__AdminGroupClaimType=${ADMIN_GROUP_CLAIM_TYPE:-groups}
       - CloudflareAccess__AdminGroups=${ADMIN_GROUPS:-F1 Admins}
       - CloudflareAccess__AdminEmails=${ADMIN_EMAILS:-}
+      - CloudflareAccess__EnableTestServiceTokenFallback=${CLOUDFLARE_ENABLE_TEST_SERVICE_TOKEN_FALLBACK:-false}
+      - CloudflareAccess__TestServiceTokenSubjectAllowlist=${CLOUDFLARE_TEST_SERVICE_TOKEN_SUBJECT_ALLOWLIST:-}
+      - CloudflareAccess__TestServiceTokenAdminSubjectAllowlist=${CLOUDFLARE_TEST_SERVICE_TOKEN_ADMIN_SUBJECT_ALLOWLIST:-}
+      - CloudflareAccess__TestServiceTokenEmailDomain=${CLOUDFLARE_TEST_SERVICE_TOKEN_EMAIL_DOMAIN:-test.local}
       - DevSettings__MockEmail=${DEV_MOCK_EMAIL:-dev-user@example.com}
       - DevSettings__MockGroups=${DEV_MOCK_GROUPS:-F1 Admins,F1 Users}
       - DevSettings__EnableDebugEndpoints=${DEV_ENABLE_DEBUG_ENDPOINTS:-false}
