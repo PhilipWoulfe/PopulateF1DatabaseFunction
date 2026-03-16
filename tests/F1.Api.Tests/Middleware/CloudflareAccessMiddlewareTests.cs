@@ -388,6 +388,188 @@ namespace F1.Api.Tests.Middleware
             Assert.Equal("Unauthorized.", responseBody);
         }
 
+        [Fact]
+        public async Task InvokeAsync_ShouldUseServiceTokenFallbackIdentity_InTestEnvironment_WhenAllowlisted()
+        {
+            var inMemorySettings = new Dictionary<string, string?>
+            {
+                ["CloudflareAccess:EnableTestServiceTokenFallback"] = "true",
+                ["CloudflareAccess:TestServiceTokenSubjectAllowlist:0"] = "token-sub-123",
+                ["CloudflareAccess:TestServiceTokenEmailDomain"] = "e2e.local"
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            var nextCalled = false;
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    new[]
+                    {
+                        new Claim("sub", "token-sub-123"),
+                        new Claim("common_name", "CI Service Token")
+                    },
+                    "CloudflareJwt"));
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ =>
+                {
+                    nextCalled = true;
+                    return Task.CompletedTask;
+                },
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment("Test")
+            );
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.True(nextCalled);
+            Assert.True(httpContext.User.Identity?.IsAuthenticated ?? false);
+            Assert.True(httpContext.User.HasClaim(c => c.Type == ClaimTypes.Email && c.Value == "token-sub-123@e2e.local"));
+            Assert.False(httpContext.User.IsInRole("Admin"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldNotUseServiceTokenFallbackIdentity_WhenSubjectNotAllowlisted()
+        {
+            var inMemorySettings = new Dictionary<string, string?>
+            {
+                ["CloudflareAccess:EnableTestServiceTokenFallback"] = "true",
+                ["CloudflareAccess:TestServiceTokenSubjectAllowlist:0"] = "different-subject"
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    new[] { new Claim("sub", "token-sub-123") },
+                    "CloudflareJwt"));
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment("Test")
+            );
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+            httpContext.Response.Body = new MemoryStream();
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldGrantAdminRoleViaServiceTokenFallback_WhenAdminSubjectAllowlisted()
+        {
+            var inMemorySettings = new Dictionary<string, string?>
+            {
+                ["CloudflareAccess:EnableTestServiceTokenFallback"] = "true",
+                ["CloudflareAccess:TestServiceTokenSubjectAllowlist:0"] = "token-sub-123",
+                ["CloudflareAccess:TestServiceTokenAdminSubjectAllowlist:0"] = "token-sub-123"
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    new[] { new Claim("sub", "token-sub-123") },
+                    "CloudflareJwt"));
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment("Test")
+            );
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.True(httpContext.User.IsInRole("Admin"));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldUseServiceTokenFallback_WhenCommonNameMatchesAllowlist()
+        {
+            var inMemorySettings = new Dictionary<string, string?>
+            {
+                ["CloudflareAccess:EnableTestServiceTokenFallback"] = "true",
+                ["CloudflareAccess:TestServiceTokenSubjectAllowlist:0"] = "d49e39507f256c184afceafc7048e6e7.access"
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    new[] { new Claim("common_name", "d49e39507f256c184afceafc7048e6e7.access") },
+                    "CloudflareJwt"));
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment("Test")
+            );
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.Equal(StatusCodes.Status200OK, httpContext.Response.StatusCode);
+            Assert.True(httpContext.User.Identity?.IsAuthenticated ?? false);
+            Assert.True(httpContext.User.HasClaim(c => c.Type == ClaimTypes.Email));
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldNotUseServiceTokenFallbackIdentity_OutsideTestEnvironment()
+        {
+            var inMemorySettings = new Dictionary<string, string?>
+            {
+                ["CloudflareAccess:EnableTestServiceTokenFallback"] = "true",
+                ["CloudflareAccess:TestServiceTokenSubjectAllowlist:0"] = "token-sub-123"
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    new[] { new Claim("sub", "token-sub-123") },
+                    "CloudflareJwt"));
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: _ => Task.CompletedTask,
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment(Environments.Production)
+            );
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            Assert.Equal(StatusCodes.Status401Unauthorized, httpContext.Response.StatusCode);
+        }
+
         private static ClaimsPrincipal CreatePrincipal(string email, string name, string subject, IEnumerable<Claim>? additionalClaims = null)
         {
             var claims = new List<Claim>

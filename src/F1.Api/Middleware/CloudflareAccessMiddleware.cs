@@ -18,6 +18,10 @@ namespace F1.Api.Middleware
         private readonly string _adminGroupClaimType;
         private readonly HashSet<string> _adminGroups;
         private readonly HashSet<string> _adminEmails;
+        private readonly bool _enableTestServiceTokenFallback;
+        private readonly HashSet<string> _testServiceTokenSubjects;
+        private readonly HashSet<string> _testServiceTokenAdminSubjects;
+        private readonly string _testServiceTokenEmailDomain;
 
         public CloudflareAccessMiddleware(
             RequestDelegate next,
@@ -34,6 +38,10 @@ namespace F1.Api.Middleware
             _adminGroupClaimType = _configuration["CloudflareAccess:AdminGroupClaimType"] ?? "groups";
             _adminGroups = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminGroups");
             _adminEmails = LoadConfiguredValues(_configuration, "CloudflareAccess:AdminEmails");
+            _enableTestServiceTokenFallback = _configuration.GetValue<bool>("CloudflareAccess:EnableTestServiceTokenFallback");
+            _testServiceTokenSubjects = LoadConfiguredValues(_configuration, "CloudflareAccess:TestServiceTokenSubjectAllowlist");
+            _testServiceTokenAdminSubjects = LoadConfiguredValues(_configuration, "CloudflareAccess:TestServiceTokenAdminSubjectAllowlist");
+            _testServiceTokenEmailDomain = _configuration["CloudflareAccess:TestServiceTokenEmailDomain"] ?? "test.local";
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -114,6 +122,26 @@ namespace F1.Api.Middleware
 
             if (string.IsNullOrWhiteSpace(email))
             {
+                if (TryBuildTestServiceTokenPrincipal(validation.Principal, out var fallbackPrincipal, out var fallbackSubject, out var fallbackIsAdmin))
+                {
+                    context.User = fallbackPrincipal;
+                    _logger.LogWarning(
+                        "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} ServiceTokenSubject={ServiceTokenSubject} FallbackIdentityUsed={FallbackIdentityUsed} IsAdmin={IsAdmin}",
+                        "CloudflareAuthEvent",
+                        "service_token_email_fallback_used",
+                        context.Request.Path.Value,
+                        SanitiseForLogging(context.Request.Method),
+                        200,
+                        context.TraceIdentifier,
+                        Activity.Current?.Id,
+                        _hostEnvironment.EnvironmentName,
+                        fallbackSubject,
+                        true,
+                        fallbackIsAdmin);
+                    await _next(context);
+                    return;
+                }
+
                 LogAuthFailure(context, "missing_email_claim", hasJwtHeader: true, kidPresent: true);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(UnauthorizedResponseMessage);
@@ -225,6 +253,93 @@ namespace F1.Api.Middleware
                 .Concat(scalar)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private bool TryBuildTestServiceTokenPrincipal(
+            ClaimsPrincipal validatedPrincipal,
+            out ClaimsPrincipal fallbackPrincipal,
+            out string subject,
+            out bool isAdmin)
+        {
+            fallbackPrincipal = new ClaimsPrincipal();
+            subject = string.Empty;
+            isAdmin = false;
+
+            if (!_hostEnvironment.IsEnvironment("Test") || !_enableTestServiceTokenFallback)
+            {
+                return false;
+            }
+
+            var tokenIdentifiers = GetServiceTokenIdentifiers(validatedPrincipal);
+            if (_testServiceTokenSubjects.Count == 0 || tokenIdentifiers.Count == 0)
+            {
+                return false;
+            }
+
+            var matchedIdentifier = tokenIdentifiers
+                .FirstOrDefault(identifier => _testServiceTokenSubjects.Contains(identifier));
+            if (string.IsNullOrWhiteSpace(matchedIdentifier))
+            {
+                return false;
+            }
+
+            subject = matchedIdentifier;
+
+            isAdmin = _testServiceTokenAdminSubjects.Contains(subject);
+
+            var name = validatedPrincipal.FindFirst("name")?.Value
+                ?? validatedPrincipal.FindFirst("common_name")?.Value
+                ?? "Service Token";
+            var email = BuildSyntheticServiceTokenEmail(subject, _testServiceTokenEmailDomain);
+
+            fallbackPrincipal = BuildServiceTokenPrincipal(email, name, subject, isAdmin);
+            return true;
+        }
+
+        private static IReadOnlyList<string> GetServiceTokenIdentifiers(ClaimsPrincipal principal)
+        {
+            return new[]
+            {
+                principal.FindFirst("sub")?.Value,
+                principal.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+                principal.FindFirst("common_name")?.Value
+            }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        }
+
+        private static ClaimsPrincipal BuildServiceTokenPrincipal(string email, string name, string subject, bool isAdmin)
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.Email, email),
+                new(ClaimTypes.Name, name),
+                new(ClaimTypes.NameIdentifier, subject)
+            };
+
+            if (isAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            }
+
+            return new ClaimsPrincipal(new ClaimsIdentity(claims, "CloudflareServiceTokenFallback"));
+        }
+
+        private static string BuildSyntheticServiceTokenEmail(string subject, string domain)
+        {
+            var safeLocalPart = new string(subject
+                .Where(ch => char.IsLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == '.')
+                .ToArray());
+
+            if (string.IsNullOrWhiteSpace(safeLocalPart))
+            {
+                safeLocalPart = "service-token";
+            }
+
+            var safeDomain = string.IsNullOrWhiteSpace(domain) ? "test.local" : domain.Trim();
+            return $"{safeLocalPart}@{safeDomain}";
         }
 
         private static IReadOnlyList<string> LoadHeaderValues(string? rawValue)

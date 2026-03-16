@@ -207,6 +207,13 @@ Optional E2E tuning:
 - `E2E_HEADLESS`: defaults to true.
 - `E2E_RACE_ID`: defaults to `2026-australia`.
 
+Test-only service-token fallback controls (use only when Cloudflare service-token JWTs omit email claims):
+
+- `CLOUDFLARE_ENABLE_TEST_SERVICE_TOKEN_FALLBACK`: default `false`; only active when API environment is `Test`.
+- `CLOUDFLARE_TEST_SERVICE_TOKEN_SUBJECT_ALLOWLIST`: required allowlist of token `sub` values permitted to use fallback identity.
+- `CLOUDFLARE_TEST_SERVICE_TOKEN_ADMIN_SUBJECT_ALLOWLIST`: optional subset of allowlisted `sub` values that should receive Admin role.
+- `CLOUDFLARE_TEST_SERVICE_TOKEN_EMAIL_DOMAIN`: default `test.local`; used for synthesized fallback email addresses.
+
 GitHub Actions artifact behavior:
 
 - CI writes E2E output to `TestResults/e2e` on the runner.
