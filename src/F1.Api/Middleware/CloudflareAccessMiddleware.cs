@@ -125,20 +125,36 @@ namespace F1.Api.Middleware
                 if (TryBuildTestServiceTokenPrincipal(validation.Principal, out var fallbackPrincipal, out var fallbackSubject, out var fallbackIsAdmin))
                 {
                     context.User = fallbackPrincipal;
-                    _logger.LogWarning(
-                        "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} ServiceTokenSubject={ServiceTokenSubject} FallbackIdentityUsed={FallbackIdentityUsed} IsAdmin={IsAdmin}",
-                        "CloudflareAuthEvent",
-                        "service_token_email_fallback_used",
-                        context.Request.Path.Value,
-                        SanitiseForLogging(context.Request.Method),
-                        200,
-                        context.TraceIdentifier,
-                        Activity.Current?.Id,
-                        _hostEnvironment.EnvironmentName,
-                        fallbackSubject,
-                        true,
-                        fallbackIsAdmin);
-                    await _next(context);
+                    Exception? downstreamException = null;
+                    try
+                    {
+                        await _next(context);
+                    }
+                    catch (Exception ex)
+                    {
+                        downstreamException = ex;
+                        throw;
+                    }
+                    finally
+                    {
+                        var statusCode = downstreamException is null
+                            ? context.Response.StatusCode
+                            : StatusCodes.Status500InternalServerError;
+                        _logger.LogWarning(
+                            downstreamException,
+                            "CloudflareAuthEvent: EventName={EventName} ReasonCode={ReasonCode} Path={Path} Method={Method} StatusCode={StatusCode} RequestId={RequestId} TraceId={TraceId} Environment={Environment} ServiceTokenSubject={ServiceTokenSubject} FallbackIdentityUsed={FallbackIdentityUsed} IsAdmin={IsAdmin}",
+                            "CloudflareAuthEvent",
+                            "service_token_email_fallback_used",
+                            context.Request.Path.Value,
+                            SanitiseForLogging(context.Request.Method),
+                            statusCode,
+                            context.TraceIdentifier,
+                            Activity.Current?.Id,
+                            _hostEnvironment.EnvironmentName,
+                            fallbackSubject,
+                            true,
+                            fallbackIsAdmin);
+                    }
                     return;
                 }
 
