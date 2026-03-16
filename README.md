@@ -207,6 +207,13 @@ Optional E2E tuning:
 - `E2E_HEADLESS`: defaults to true.
 - `E2E_RACE_ID`: defaults to `2026-australia`.
 
+GitHub Actions artifact behavior:
+
+- CI writes E2E output to `TestResults/e2e` on the runner.
+- Failure screenshots and HTML are written to `TestResults/e2e/failure-artifacts` when capture runs.
+- The workflow uploads `TestResults/e2e/**` and `chromedriver.log` as the `e2e-results` artifact.
+- Runner-local files are discarded after the job completes, so GitHub Actions artifacts are the persisted copy for CI runs.
+
 ### 4.2 VM Selenium Debug Helper (Option B)
 
 For SSH-based debugging, use the checked-in helper script:
@@ -258,6 +265,79 @@ Set deployment host `.env` files to match the image promotion flow:
 - Rollback or pinning a known build: `TAG=sha-<known-good-sha>`
 
 After changing `TAG` or any other deployment environment variable, recreate the containers. Watchtower updates images but does not apply changed container environment settings on its own.
+
+### 4.4 Proxmox ZFS Log Storage
+
+For persistent API logs on Proxmox, keep test and production isolated with separate ZFS datasets and mount each dataset into its matching LXC.
+
+On the Proxmox host:
+
+```bash
+zfs create tank/f1/test
+zfs create tank/f1/test/logs
+zfs create tank/f1/test/selenium
+
+zfs create tank/f1/prod
+zfs create tank/f1/prod/logs
+zfs create tank/f1/prod/selenium
+
+chown -R 101000:101000 /tank/f1/test /tank/f1/prod
+chmod -R 0775 /tank/f1/test /tank/f1/prod
+
+pct set 101 -mp0 /tank/f1/test/logs,mp=/mnt/f1-logs
+pct set 101 -mp1 /tank/f1/test/selenium,mp=/mnt/f1-sel
+
+pct set 103 -mp0 /tank/f1/prod/logs,mp=/mnt/f1-logs
+pct set 103 -mp1 /tank/f1/prod/selenium,mp=/mnt/f1-sel
+```
+
+Notes:
+
+- `101000:101000` matches UID/GID `1000:1000` inside the current unprivileged LXCs (`f1-test` and `f1-prod`).
+- Restart the containers after adding `mp` mounts.
+- Inside each LXC, set `HOST_LOG_PATH=/mnt/f1-logs` in the deployment `.env` before recreating the API container.
+- The `selenium` mount is reserved for manual or self-hosted test runs. GitHub Actions still uploads CI artifacts to the workflow run rather than writing them to Proxmox storage.
+
+### 4.5 SSH Log Cheat Sheet
+
+After the mount is in place and the API container has been recreated, use the following commands inside `f1-test` or `f1-prod`.
+
+List log files:
+
+```bash
+ls -lah /mnt/f1-logs
+```
+
+Follow the newest log file:
+
+```bash
+tail -f "$(ls -1t /mnt/f1-logs | head -n 1 | sed 's#^#/mnt/f1-logs/#')"
+```
+
+Filter auth failures by reason code:
+
+```bash
+grep 'reasonCode' /mnt/f1-logs/*.json | grep 'missing_jwt_header\|missing_email_claim\|token_invalid\|token_expired'
+```
+
+Pretty-print compact JSON logs with `jq`:
+
+```bash
+jq -c 'select(.eventName == "auth_failure") | {time: .@t, reason: .reasonCode, path, statusCode, requestId, traceId}' /mnt/f1-logs/*.json
+```
+
+Find a single request by request ID:
+
+```bash
+grep 'YOUR_REQUEST_ID' /mnt/f1-logs/*.json
+```
+
+Inspect manual Selenium artifacts when they exist:
+
+```bash
+ls -lah /mnt/f1-sel
+find /mnt/f1-sel -type f | sort
+```
 
 ### 5. Quality Gate Scope (F1-Only)
 
