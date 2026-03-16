@@ -6,6 +6,8 @@ namespace F1.E2E.Tests.Infrastructure;
 
 internal static class E2eArtifacts
 {
+    private static readonly HashSet<char> InvalidFileNameChars = new(Path.GetInvalidFileNameChars());
+
     private static readonly string ArtifactsDir =
         Path.Combine("TestResults", "e2e", "failure-artifacts");
 
@@ -20,7 +22,7 @@ internal static class E2eArtifacts
             Directory.CreateDirectory(ArtifactsDir);
 
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-            var safeName = string.Concat(testName.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+            var safeName = string.Concat(testName.Where(c => !InvalidFileNameChars.Contains(c)));
 
             var screenshotPath = Path.Combine(ArtifactsDir, $"{safeName}-{timestamp}.png");
             ((ITakesScreenshot)driver).GetScreenshot().SaveAsFile(screenshotPath);
