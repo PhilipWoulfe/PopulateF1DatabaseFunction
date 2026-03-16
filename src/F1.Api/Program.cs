@@ -18,12 +18,19 @@ builder.Host.UseSerilog((ctx, logConfig) =>
 
     logConfig.WriteTo.Console(new CompactJsonFormatter());
 
-    var logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH");
-    if (!string.IsNullOrWhiteSpace(logFilePath))
+    var configuredLogPath = Environment.GetEnvironmentVariable("LOG_FILE_PATH");
+    var writableLogPath = ResolveWritableLogPath(configuredLogPath, "/tmp/f1api-logs", out var fallbackReason);
+
+    if (!string.IsNullOrWhiteSpace(fallbackReason))
+    {
+        Console.Error.WriteLine($"[Startup] {fallbackReason}");
+    }
+
+    if (!string.IsNullOrWhiteSpace(writableLogPath))
     {
         logConfig.WriteTo.File(
             new CompactJsonFormatter(),
-            Path.Combine(logFilePath, "f1api-.log"),
+            Path.Combine(writableLogPath, "f1api-.log"),
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 30,
             fileSizeLimitBytes: 100 * 1024 * 1024,
@@ -116,6 +123,58 @@ app.MapGet("/races/results", (IRaceService raceService) =>
 }).RequireAuthorization();
 
 app.Run();
+
+static string? ResolveWritableLogPath(string? preferredPath, string fallbackPath, out string? fallbackReason)
+{
+    fallbackReason = null;
+
+    if (TryEnsureWritableDirectory(preferredPath, out _))
+    {
+        return preferredPath;
+    }
+
+    if (!string.IsNullOrWhiteSpace(preferredPath))
+    {
+        fallbackReason = $"File logging path '{preferredPath}' is unavailable or not writable by the runtime user. Falling back to '{fallbackPath}'.";
+    }
+
+    if (TryEnsureWritableDirectory(fallbackPath, out var fallbackError))
+    {
+        return fallbackPath;
+    }
+
+    fallbackReason = string.IsNullOrWhiteSpace(fallbackReason)
+        ? $"File logging disabled: fallback path '{fallbackPath}' is not writable ({fallbackError})."
+        : $"{fallbackReason} File logging disabled because fallback path is also not writable ({fallbackError}).";
+
+    return null;
+}
+
+static bool TryEnsureWritableDirectory(string? path, out string? error)
+{
+    error = null;
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        error = "Path is empty.";
+        return false;
+    }
+
+    try
+    {
+        Directory.CreateDirectory(path);
+
+        var probeFile = Path.Combine(path, $".write-test-{Guid.NewGuid():N}");
+        File.WriteAllText(probeFile, "ok");
+        File.Delete(probeFile);
+
+        return true;
+    }
+    catch (Exception ex)
+    {
+        error = ex.Message;
+        return false;
+    }
+}
 
 
 
