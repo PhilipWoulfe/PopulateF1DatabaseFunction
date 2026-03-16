@@ -281,7 +281,7 @@ zfs create tank/f1/prod
 zfs create tank/f1/prod/logs
 zfs create tank/f1/prod/selenium
 
-chown -R 101000:101000 /tank/f1/test /tank/f1/prod
+chown -R 101654:101654 /tank/f1/test /tank/f1/prod
 chmod -R 0775 /tank/f1/test /tank/f1/prod
 
 pct set 101 -mp0 /tank/f1/test/logs,mp=/mnt/f1-logs
@@ -293,7 +293,7 @@ pct set 103 -mp1 /tank/f1/prod/selenium,mp=/mnt/f1-sel
 
 Notes:
 
-- `101000:101000` matches UID/GID `1000:1000` inside the current unprivileged LXCs (`f1-test` and `f1-prod`).
+- `101654:101654` matches the `app` user (UID/GID `1654:1654`) used by the `mcr.microsoft.com/dotnet/aspnet:8.0` runtime image inside the current unprivileged LXCs (`f1-test` and `f1-prod`). Confirm with `docker exec <container> id`.
 - Restart the containers after adding `mp` mounts.
 - Inside each LXC, set `HOST_LOG_PATH=/mnt/f1-logs` in the deployment `.env` before recreating the API container.
 - The `selenium` mount is reserved for manual or self-hosted test runs. GitHub Actions still uploads CI artifacts to the workflow run rather than writing them to Proxmox storage.
