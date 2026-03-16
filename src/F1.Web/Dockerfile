@@ -3,7 +3,8 @@ WORKDIR /src
 COPY ["F1.Web.csproj", "."]
 RUN dotnet restore "F1.Web.csproj"
 COPY . .
-RUN dotnet publish "F1.Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
+ARG CONFIGURATION=Release
+RUN dotnet publish "F1.Web.csproj" -c $CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Capture the build argument and write it to a static file
 ARG COMMIT_HASH

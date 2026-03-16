@@ -44,7 +44,7 @@ jobs:
       - name: Run API/Backend Unit Tests with Coverage
         run: |
           dotnet test tests/F1.Api.Tests/F1.Api.Tests.csproj \
-          --configuration Release \
+          --configuration Debug \
           --nologo \
           --verbosity minimal \
           --collect:"XPlat Code Coverage" \
@@ -54,7 +54,7 @@ jobs:
       - name: Run Web Unit Tests with Web-Only Coverage
         run: |
           dotnet test tests/F1.Web.Tests/F1.Web.Tests.csproj \
-          --configuration Release \
+          --configuration Debug \
           --nologo \
           --verbosity minimal \
           --collect:"XPlat Code Coverage" \
@@ -103,18 +103,41 @@ jobs:
         with:
           install: true
 
+      - name: Build and push API image (Debug)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/F1.Api/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.SHA_TAG }}-debug
+          build-args: |
+            CONFIGURATION=Debug
+
+      - name: Build and push Web image (Debug)
+        uses: docker/build-push-action@v7
+        with:
+          context: src/F1.Web
+          file: src/F1.Web/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:${{ env.SHA_TAG }}-debug
+          build-args: |
+            COMMIT_HASH=${{ github.sha }}
+            CONFIGURATION=Debug
+
       - name: Promote SHA images to :test tags
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           # Promote API image SHA tag to :test
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:test \
-            ${{ steps.image-metadata.outputs.api_sha_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ env.SHA_TAG }}-debug
 
           # Promote Web image SHA tag to :test
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:test \
-            ${{ steps.image-metadata.outputs.web_sha_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:${{ env.SHA_TAG }}-debug
 
   run-e2e-test:
     needs: build-and-push
@@ -171,7 +194,7 @@ jobs:
           CHROMEDRIVER_LOG: ${{ github.workspace }}/TestResults/e2e/chromedriver.log
         run: |
           dotnet test tests/F1.E2E.Tests/F1.E2E.Tests.csproj \
-            --configuration Release \
+            --configuration Debug \
             --nologo \
             --verbosity minimal \
             --logger "trx;LogFileName=e2e.trx" \
