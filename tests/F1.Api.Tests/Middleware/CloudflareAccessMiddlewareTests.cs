@@ -724,5 +724,65 @@ namespace F1.Api.Tests.Middleware
 
             Assert.DoesNotContain(logger.Entries, e => e.Level == LogLevel.Warning);
         }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldLogFallbackWarning_WithNon200DownstreamStatus()
+        {
+            var inMemorySettings = new Dictionary<string, string?>
+            {
+                ["CloudflareAccess:EnableTestServiceTokenFallback"] = "true",
+                ["CloudflareAccess:TestServiceTokenSubjectAllowlist:0"] = "token-sub-123"
+            };
+
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings).Build();
+            var logger = new CapturingLogger<CloudflareAccessMiddleware>();
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(new[] { new Claim("sub", "token-sub-123") }, "CloudflareJwt"));
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: ctx => { ctx.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; },
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment("Test"),
+                logger);
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await middleware.InvokeAsync(httpContext);
+
+            var warning = logger.Entries.FirstOrDefault(e => e.Level == LogLevel.Warning && e.Message.Contains("service_token_email_fallback"));
+            Assert.Contains("StatusCode=403", warning.Message);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldLogFallbackWarning_WithExceptionAndStatus500()
+        {
+            var inMemorySettings = new Dictionary<string, string?>
+            {
+                ["CloudflareAccess:EnableTestServiceTokenFallback"] = "true",
+                ["CloudflareAccess:TestServiceTokenSubjectAllowlist:0"] = "token-sub-123"
+            };
+
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings).Build();
+            var logger = new CapturingLogger<CloudflareAccessMiddleware>();
+            var principalWithoutEmail = new ClaimsPrincipal(
+                new ClaimsIdentity(new[] { new Claim("sub", "token-sub-123") }, "CloudflareJwt"));
+
+            var middleware = new CloudflareAccessMiddleware(
+                next: ctx => throw new InvalidOperationException("Downstream error!"),
+                configuration,
+                new FakeCloudflareJwtValidator(_ => CloudflareTokenValidationResult.Success(principalWithoutEmail)),
+                CreateHostEnvironment("Test"),
+                logger);
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers["Cf-Access-Jwt-Assertion"] = "header.payload.signature";
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => middleware.InvokeAsync(httpContext));
+
+            var warning = logger.Entries.FirstOrDefault(e => e.Level == LogLevel.Warning && e.Message.Contains("service_token_email_fallback"));
+            Assert.Contains("StatusCode=500", warning.Message);
+        }
     }
 }
