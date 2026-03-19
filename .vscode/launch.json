@@ -40,14 +40,7 @@
             }
         },
         {
-            "name": "Debug Blazor Web (Docker)",
-            "type": "blazorwasm",
-            "request": "launch",
-            "url": "http://localhost:5001",
-            "webRoot": "${workspaceFolder}/src/F1.Web"
-        },
-        {
-            "name": "Attach to Remote E2E Test",
+            "name": "Attach to .NET in Test Container (Remote)",
             "type": "coreclr",
             "request": "attach",
             "processId": "${command:pickRemoteProcess}",
@@ -55,14 +48,45 @@
                 "pipeCwd": "${workspaceFolder}",
                 "pipeProgram": "/usr/bin/ssh",
                 "pipeArgs": [
-                    "debugger@192.168.0.50"
+                    "debugger@192.168.0.50",
+                    "docker",
+                    "exec",
+                    "-i",
+                    "f1-test"
                 ],
-                "debuggerPath": "~/vsdbg/vsdbg",
+                "debuggerPath": "/vsdbg/vsdbg",
                 "quoteArgs": false
             },
             "sourceFileMap": {
-                "/home/pillphil/dev/F1Competition": "${workspaceFolder}"
+                "/app": "${workspaceFolder}"
             }
-        }
+        },
+        {
+            "name": "Debug Blazor Web (Docker)",
+            "type": "blazorwasm",
+            "request": "launch",
+            "url": "http://localhost:5001",
+            "webRoot": "${workspaceFolder}/src/F1.Web"
+        },
+        {
+                    "name": "Attach to Remote E2E Test",
+                    "type": "coreclr",
+                    "request": "attach",
+                    "processId": "${command:pickRemoteProcess}",
+                    "pipeTransport": {
+                        "pipeCwd": "${workspaceFolder}",
+                        "pipeProgram": "/usr/bin/ssh",
+                        "pipeArgs": [
+                            "debugger@192.168.0.50"
+                        ],
+                                "debuggerPath": "~/vsdbg/vsdbg",
+                                "quoteArgs": false,
+                                "env": {
+                                    "LD_DEBUG": "libs"
+                                }
+                            },
+                            "sourceFileMap": {
+                                "/home/pillphil/dev/F1Competition": "${workspaceFolder}"
+                            },        }
     ]
 }
