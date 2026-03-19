@@ -78,7 +78,9 @@ public class SelectionsControllerTests
             "TestAuth"));
 
         var service = BuildSelectionServiceWithMockCurrentSelections();
-        var controller = new SelectionsController(service);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
+        var controller = new SelectionsController(service, dateTimeProvider.Object);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = httpContext
@@ -116,7 +118,9 @@ public class SelectionsControllerTests
             "TestAuth"));
 
         var service = BuildSelectionServiceWithMockCurrentSelections();
-        var controller = new SelectionsController(service);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
+        var controller = new SelectionsController(service, dateTimeProvider.Object);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = httpContext
@@ -191,8 +195,10 @@ public class SelectionsControllerTests
 
         var hostEnvironment = new Mock<IHostEnvironment>();
         hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(environmentName);
-        
 
-        return new SelectionsController(serviceMock.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
+
+        return new SelectionsController(serviceMock.Object, dateTimeProvider.Object);
     }
 }

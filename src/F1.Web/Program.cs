@@ -49,6 +49,12 @@ builder.Services.AddScoped<IUserSession, UserSession>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
+
+
+// Register MockDateService and ITimeProvider
+builder.Services.AddScoped<IMockDateService, MockDateService>();
+builder.Services.AddScoped<ITimeProvider, MockableTimeProvider>();
+
 var host = builder.Build();
 
 // Load the authenticated user session once at startup so layout/pages can render immediately.
