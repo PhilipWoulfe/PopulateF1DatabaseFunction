@@ -76,6 +76,18 @@ internal class ApiVerificationClient : IDisposable
         throw new TimeoutException($"Metadata update for race '{raceId}' was not observed within {timeout.TotalSeconds} seconds.");
     }
 
+    public void SetMockDateHeader(string isoDate)
+    {
+        _httpClient.DefaultRequestHeaders.Remove("X-Mock-Date");
+        _httpClient.DefaultRequestHeaders.Add("X-Mock-Date", isoDate);
+    }
+
+    public async Task<HttpResponseMessage> PostSelectionAsync(string raceId, object submission)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"selections/{raceId}/mine", submission);
+        return response;
+    }
+
     public void Dispose()
     {
         _httpClient.Dispose();

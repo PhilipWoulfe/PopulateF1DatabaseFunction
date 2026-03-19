@@ -281,6 +281,41 @@ public class SelectionServiceTests
         _driverRepositoryMock.Verify(repo => repo.GetDriversAsync(), Times.Never);
     }
 
+     [Fact]
+    public async Task UpsertSelectionAsync_ShouldAllowPreQualyBet_BeforeDeadline()
+    {
+        var beforeDeadline = new DateTime(2026, 3, 7, 4, 29, 0, DateTimeKind.Utc);
+        var service = CreateServiceAt(beforeDeadline);
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.GetSelectionAsync("2026-australia", "user@example.com"))
+            .ReturnsAsync((Selection?)null);
+
+        _selectionRepositoryMock
+            .Setup(repo => repo.UpsertSelectionAsync(It.IsAny<Selection>()))
+            .ReturnsAsync((Selection selection) => selection);
+
+        var submission = new SelectionSubmissionDto
+        {
+            BetType = BetType.PreQualy,
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
+        };
+
+        var result = await service.UpsertSelectionAsync("2026-australia", "user@example.com", submission);
+
+        Assert.NotNull(result);
+        Assert.Equal(BetType.PreQualy, result.BetType);
+        Assert.Equal(beforeDeadline, result.SubmittedAtUtc);
+        Assert.Equal("norris", result.OrderedSelections[0].DriverId);
+    }
+
     private SelectionService CreateServiceAt(DateTime utcNow,
         bool mockCurrentSelections = false,
         string environmentName = "Production")

@@ -81,4 +81,28 @@ internal class SelectionPage
     {
         _wait.Until(driver => driver.PageSource.Contains("Selection saved successfully.", StringComparison.Ordinal));
     }
+
+    public bool IsAnyDropdownDisabled()
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            var dropdown = _driver.FindElement(By.Id($"driver-select-{i + 1}"));
+            if (dropdown.GetAttribute("disabled") != null)
+                return true;
+        }
+        return false;
+    }
+
+    public bool IsSubmitDisabled()
+    {
+        var submit = _driver.FindElement(By.Id("submit-selection"));
+        return !submit.Enabled || submit.GetAttribute("disabled") != null;
+    }
+
+    public bool IsLockedMessageVisible()
+    {
+        return _driver.PageSource.Contains("locked", StringComparison.OrdinalIgnoreCase) ||
+               _driver.PageSource.Contains("forbidden", StringComparison.OrdinalIgnoreCase) ||
+               _driver.PageSource.Contains("error", StringComparison.OrdinalIgnoreCase);
+    }
 }
