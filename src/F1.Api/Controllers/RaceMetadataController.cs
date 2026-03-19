@@ -19,15 +19,18 @@ public class RaceMetadataController : ControllerBase
     private readonly IRaceMetadataService _raceMetadataService;
     private readonly IConfiguration _configuration;
     private readonly IHostEnvironment _hostEnvironment;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public RaceMetadataController(
         IRaceMetadataService raceMetadataService,
         IConfiguration configuration,
-        IHostEnvironment hostEnvironment)
+        IHostEnvironment hostEnvironment,
+        IDateTimeProvider dateTimeProvider)
     {
         _raceMetadataService = raceMetadataService;
         _configuration = configuration;
         _hostEnvironment = hostEnvironment;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     [HttpGet]
@@ -70,7 +73,7 @@ public class RaceMetadataController : ControllerBase
                 H2HQuestion = request.H2HQuestion,
                 BonusQuestion = request.BonusQuestion,
                 IsPublished = request.IsPublished,
-                UpdatedAtUtc = DateTime.UtcNow,
+                UpdatedAtUtc = _dateTimeProvider.UtcNow,
                 ETag = Guid.NewGuid().ToString("N")
             };
 
@@ -112,7 +115,7 @@ public class RaceMetadataController : ControllerBase
                && _configuration.GetValue<bool>("DevSettings:MockRaceMetadata");
     }
 
-    private static RaceQuestionMetadata GetOrCreateMockMetadata(string raceId)
+    private RaceQuestionMetadata GetOrCreateMockMetadata(string raceId)
     {
         return MockMetadata.GetOrAdd(raceId, _ => new RaceQuestionMetadata
         {
@@ -120,7 +123,7 @@ public class RaceMetadataController : ControllerBase
             H2HQuestion = "Who finishes higher: Leclerc or Norris?",
             BonusQuestion = "How many safety-car laps will there be?",
             IsPublished = true,
-            UpdatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = _dateTimeProvider.UtcNow,
             ETag = Guid.NewGuid().ToString("N")
         });
     }

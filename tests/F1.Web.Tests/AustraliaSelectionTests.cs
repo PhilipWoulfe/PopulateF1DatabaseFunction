@@ -1,5 +1,6 @@
 using F1.Web.Models;
 using F1.Web.Pages;
+using F1.Web.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Text;
@@ -9,6 +10,12 @@ namespace F1.Web.Tests.Pages;
 
 public class AustraliaSelectionTests : BunitContext
 {
+    public AustraliaSelectionTests()
+    {
+        // Register a default ITimeProvider for all tests
+        Services.AddSingleton<ITimeProvider, DefaultTimeProvider>();
+    }
+
     private static readonly RaceConfig DefaultRaceConfig = new()
     {
         RaceId = "2026-australia",

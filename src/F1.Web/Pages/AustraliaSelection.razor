@@ -4,6 +4,7 @@
 @using System.Net.Http.Json
 @implements IAsyncDisposable
 @inject HttpClient Http
+@inject F1.Web.Services.ITimeProvider TimeProvider
 
 <h1>Australia GP 2026 Selection</h1>
 
@@ -319,7 +320,7 @@ else
             return string.Empty;
         }
 
-        var nowUtc = DateTime.UtcNow;
+        var nowUtc = TimeProvider.UtcNow;
         var nextDeadline = nowUtc < raceConfig.PreQualyDeadlineUtc ? raceConfig.PreQualyDeadlineUtc : raceConfig.FinalDeadlineUtc;
         var label = nowUtc < raceConfig.PreQualyDeadlineUtc ? "Pre-Qualy lock" : "Final submission";
 

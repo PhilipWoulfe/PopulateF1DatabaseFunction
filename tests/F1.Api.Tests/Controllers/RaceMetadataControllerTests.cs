@@ -83,7 +83,10 @@ public class RaceMetadataControllerTests
         var hostEnvironment = new Mock<IHostEnvironment>();
         hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(Environments.Production);
 
-        return new RaceMetadataController(serviceMock.Object, configuration, hostEnvironment.Object);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
+
+        return new RaceMetadataController(serviceMock.Object, configuration, hostEnvironment.Object, dateTimeProvider.Object);
     }
 
     private static HttpContext BuildAdminContext()

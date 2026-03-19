@@ -11,11 +11,14 @@ namespace F1.Api.Controllers;
 public class SelectionsController : ControllerBase
 {
     private readonly ISelectionService _selectionService;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public SelectionsController(
-        ISelectionService selectionService)
+        ISelectionService selectionService,
+        IDateTimeProvider dateTimeProvider)
     {
         _selectionService = selectionService;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     [HttpGet("{raceId}/config")]

@@ -45,7 +45,16 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceMetadataService, RaceMetadataService>();
 builder.Services.AddScoped<ISelectionService, SelectionService>();
-builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+    builder.Services.AddSingleton<IGlobalMockDateService, GlobalMockDateService>();
+    builder.Services.AddSingleton<IDateTimeProvider, MockableDateTimeProvider>();
+}
+else
+{
+    builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+}
 builder.Services.AddMemoryCache();
 builder.Services
     .AddOptions<CloudflareAccessOptions>()
