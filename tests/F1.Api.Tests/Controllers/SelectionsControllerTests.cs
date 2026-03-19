@@ -2,6 +2,7 @@ using F1.Api.Controllers;
 using F1.Core.Dtos;
 using F1.Core.Interfaces;
 using F1.Core.Models;
+using F1.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -70,19 +71,32 @@ public class SelectionsControllerTests
     [Fact]
     public async Task GetCurrent_ShouldReturnMockRows_InDevelopmentWhenEnabled()
     {
-        var serviceMock = new Mock<ISelectionService>();
         const string userId = "mock-current@example.com";
-
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
             [new Claim(ClaimTypes.Email, userId)],
             "TestAuth"));
 
-        var controller = CreateController(serviceMock, mockCurrentSelections: true, environmentName: Environments.Development);
+        var service = BuildSelectionServiceWithMockCurrentSelections();
+        var controller = new SelectionsController(service);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = httpContext
         };
+
+        // Upsert a mock selection for the same user as in the context
+        await controller.UpsertMine("2026-australia", new SelectionSubmissionDto
+        {
+            BetType = F1.Core.Models.BetType.Regular,
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "max_verstappen" },
+                new SelectionPosition { Position = 2, DriverId = "lando_norris" },
+                new SelectionPosition { Position = 3, DriverId = "charles_leclerc" },
+                new SelectionPosition { Position = 4, DriverId = "oscar_piastri" },
+                new SelectionPosition { Position = 5, DriverId = "lewis_hamilton" }
+            }
+        });
 
         var result = await controller.GetCurrent();
 
@@ -91,20 +105,18 @@ public class SelectionsControllerTests
         Assert.NotEmpty(payload);
         Assert.Equal(1, payload[0].Position);
         Assert.Equal("max_verstappen", payload[0].DriverId);
-
-        serviceMock.Verify(service => service.GetCurrentSelectionsAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
     public async Task GetMine_ShouldReturnPersistedMockSelection_InDevelopmentWhenEnabled()
     {
-        var serviceMock = new Mock<ISelectionService>();
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
             [new Claim(ClaimTypes.Email, "user@example.com")],
             "TestAuth"));
 
-        var controller = CreateController(serviceMock, mockCurrentSelections: true, environmentName: Environments.Development);
+        var service = BuildSelectionServiceWithMockCurrentSelections();
+        var controller = new SelectionsController(service);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = httpContext
@@ -131,6 +143,40 @@ public class SelectionsControllerTests
         Assert.Equal("norris", payload.OrderedSelections[0].DriverId);
     }
 
+    public ISelectionService BuildSelectionServiceWithMockCurrentSelections()
+    {
+        var mockRepo = new Mock<ISelectionRepository>();
+        var mockDriverRepo = new Mock<IDriverRepository>();
+        var mockDateTimeProvider = new Mock<IDateTimeProvider>();
+
+        // Mock driver repository to return drivers used in the test selections
+        mockDriverRepo.Setup(repo => repo.GetDriversAsync()).ReturnsAsync(new List<Driver>
+        {
+            new Driver { DriverId = "max_verstappen", FullName = "Max Verstappen" },
+            new Driver { DriverId = "lando_norris", FullName = "Lando Norris" },
+            new Driver { DriverId = "charles_leclerc", FullName = "Charles Leclerc" },
+            new Driver { DriverId = "oscar_piastri", FullName = "Oscar Piastri" },
+            new Driver { DriverId = "lewis_hamilton", FullName = "Lewis Hamilton" },
+            new Driver { DriverId = "norris", FullName = "Lando Norris" },
+            new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" },
+            new Driver { DriverId = "hamilton", FullName = "Lewis Hamilton" },
+            new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
+            new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
+        });
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "DevSettings:MockCurrentSelections", "true" }
+            })
+            .Build();
+
+        var hostEnvironment = new Mock<IHostEnvironment>();
+        hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(Environments.Development);
+
+        return new SelectionService(mockRepo.Object, mockDriverRepo.Object, mockDateTimeProvider.Object, configuration, hostEnvironment.Object);
+    }
+
     private static SelectionsController CreateController(
         Mock<ISelectionService> serviceMock,
         bool mockCurrentSelections = false,
@@ -145,7 +191,8 @@ public class SelectionsControllerTests
 
         var hostEnvironment = new Mock<IHostEnvironment>();
         hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(environmentName);
+        
 
-        return new SelectionsController(serviceMock.Object, configuration, hostEnvironment.Object);
+        return new SelectionsController(serviceMock.Object);
     }
 }
