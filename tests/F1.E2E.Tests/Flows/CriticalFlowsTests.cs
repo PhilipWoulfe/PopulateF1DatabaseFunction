@@ -48,8 +48,13 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);
         var testPassed = false;
+
         try
         {
+            using var api = new ApiVerificationClient(options);
+
+            await api.SetMockDate("2026-03-07T23:00:00Z", options.Timeout, CancellationToken.None);
+
             selectionPage.Navigate();
             selectionPage.WaitUntilReady();
 
@@ -61,7 +66,6 @@ public class CriticalFlowsTests(ITestOutputHelper output)
             selectionPage.ClickSubmit();
             selectionPage.WaitForSaveConfirmation();
 
-            using var api = new ApiVerificationClient(options);
             await api.WaitForSelectionPersistenceAsync(selected[0], options.Timeout, CancellationToken.None);
             testPassed = true;
         }

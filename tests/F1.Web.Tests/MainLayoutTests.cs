@@ -5,6 +5,7 @@ using F1.Web.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Moq.Protected;
 
 namespace F1.Web.Tests.Layout;
 
@@ -20,9 +21,10 @@ public class MainLayoutTests : BunitContext
         userSession.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         userSession.SetupGet(x => x.User).Returns(new User { Email = "dev@example.com" });
 
+
         Services.AddSingleton(userSession.Object);
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Development"));
-        Services.AddSingleton(new HttpClient(new HttpClientHandler()) { BaseAddress = new Uri("http://localhost") });
+        Services.AddSingleton(CreateMockHttpClient());
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
@@ -40,9 +42,10 @@ public class MainLayoutTests : BunitContext
         var userSession = new Mock<IUserSession>();
         userSession.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
+
         Services.AddSingleton(userSession.Object);
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Test"));
-        Services.AddSingleton(new HttpClient(new HttpClientHandler()) { BaseAddress = new Uri("http://localhost") });
+        Services.AddSingleton(CreateMockHttpClient());
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
@@ -59,14 +62,32 @@ public class MainLayoutTests : BunitContext
         var userSession = new Mock<IUserSession>();
         userSession.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
+
         Services.AddSingleton(userSession.Object);
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Production"));
-        Services.AddSingleton(new HttpClient(new HttpClientHandler()) { BaseAddress = new Uri("http://localhost") });
+        Services.AddSingleton(CreateMockHttpClient());
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
 
         cut.WaitForAssertion(() => Assert.Contains("v. ", cut.Markup));
+    }
+
+    private static HttpClient CreateMockHttpClient()
+    {
+        var handler = new Mock<HttpMessageHandler>();
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("admin/mock-date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StringContent("{\"mockDate\":null}", System.Text.Encoding.UTF8, "application/json")
+            });
+        return new HttpClient(handler.Object) { BaseAddress = new Uri("http://localhost") };
     }
 
     private sealed class TestHostEnvironment : IWebAssemblyHostEnvironment

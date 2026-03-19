@@ -50,8 +50,10 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
 
-// Register ITimeProvider
-builder.Services.AddScoped<ITimeProvider, DefaultTimeProvider>();
+
+// Register MockDateService and ITimeProvider
+builder.Services.AddScoped<IMockDateService, MockDateService>();
+builder.Services.AddScoped<ITimeProvider, MockableTimeProvider>();
 
 var host = builder.Build();
 

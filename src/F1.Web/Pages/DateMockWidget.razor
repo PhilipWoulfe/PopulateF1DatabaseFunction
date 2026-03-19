@@ -1,0 +1,70 @@
+@* DateMockWidget.razor: Appears for admin users when date mocking is enabled. Allows setting mock date/time. *@
+
+@if (ShowWidget)
+{
+    <div class="date-mock-widget" style="position:fixed;top:50px;right:0;z-index:2000;background:#fff;border:1px solid #ccc;padding:1rem;box-shadow:-2px 2px 8px #0002;min-width:260px;">
+        <h5>Date Mocking</h5>
+        <div>
+            <label for="mockDate">Mock Date/Time (UTC):</label>
+            <input id="mockDate" type="datetime-local" @bind-value="MockDate" @bind-value:event="oninput" />
+        </div>
+        <button class="btn btn-sm btn-secondary mt-2" @onclick="SetMockDate">Set</button>
+        <button class="btn btn-sm btn-secondary mt-2 ms-2" @onclick="ClearMockDate">Clear</button>
+    </div>
+}
+
+@code {
+    [Inject] public IUserSession UserSession { get; set; } = default!;
+    [Inject] public HttpClient Http { get; set; } = default!;
+    [Inject] public NavigationManager Nav { get; set; } = default!;
+
+
+    private DateTime? MockDate { get; set; }
+    private bool ShowWidget => (UserSession.User?.IsAdmin ?? false) && DateMockingEnabled;
+    private bool DateMockingEnabled => true; // TODO: Replace with config/env check
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resp = await Http.GetAsync("admin/mock-date");
+        if (resp.IsSuccessStatusCode)
+        {
+            var result = await resp.Content.ReadFromJsonAsync<MockDateResponse>();
+            if (result?.mockDate != null)
+            {
+                MockDate = result.mockDate;
+            }
+            else
+            {
+                // Default to current UTC time if no mock date is set
+                MockDate = DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            // If API call fails, still default to current UTC time
+            MockDate = DateTime.UtcNow;
+        }
+    }
+
+    private async Task SetMockDate()
+    {
+        if (MockDate.HasValue)
+        {
+            await Http.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = MockDate.Value.ToUniversalTime() });
+            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        }
+    }
+
+    private async Task ClearMockDate()
+    {
+        await Http.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = (DateTime?)null });
+        MockDate = null;
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+    private class MockDateResponse
+    {
+        public DateTime? mockDate { get; set; }
+    }
+}
