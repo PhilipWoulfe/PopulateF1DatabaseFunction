@@ -2,6 +2,8 @@ using F1.Core.Dtos;
 using F1.Core.Interfaces;
 using F1.Core.Models;
 using F1.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Moq;
 
 namespace F1.Api.Tests;
@@ -279,9 +281,23 @@ public class SelectionServiceTests
         _driverRepositoryMock.Verify(repo => repo.GetDriversAsync(), Times.Never);
     }
 
-    private SelectionService CreateServiceAt(DateTime utcNow)
+    private SelectionService CreateServiceAt(DateTime utcNow,
+        bool mockCurrentSelections = false,
+        string environmentName = "Production")
     {
+        
         _dateTimeProviderMock.Setup(clock => clock.UtcNow).Returns(utcNow);
-        return new SelectionService(_selectionRepositoryMock.Object, _driverRepositoryMock.Object, _dateTimeProviderMock.Object);
+        
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "DevSettings:MockCurrentSelections", mockCurrentSelections.ToString() }
+            })
+            .Build();
+
+        var hostEnvironment = new Mock<IHostEnvironment>();
+        hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(environmentName);
+
+        return new SelectionService(_selectionRepositoryMock.Object, _driverRepositoryMock.Object, _dateTimeProviderMock.Object, configuration, hostEnvironment.Object);
     }
 }
