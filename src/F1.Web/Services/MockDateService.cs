@@ -23,14 +23,48 @@ namespace F1.Web.Services
         public DateTime? GetMockDate()
         {
             if (_mockDate.HasValue) return _mockDate;
-            // In real impl, fetch from localStorage via JSInterop
+            // Synchronously calling async JSInterop is not supported; return null if not cached
             return null;
         }
 
-        public void SetMockDate(DateTime? date)
+        public async void SetMockDate(DateTime? date)
         {
             _mockDate = date;
-            // In real impl, set in localStorage via JSInterop
+            if (date.HasValue)
+            {
+                await SetInLocalStorageAsync(date.Value.ToString("o"));
+            }
+            else
+            {
+                await RemoveFromLocalStorageAsync();
+            }
+        }
+
+        public async Task<DateTime?> GetMockDateAsync()
+        {
+            if (_mockDate.HasValue) return _mockDate;
+            var dateStr = await GetFromLocalStorageAsync();
+            if (!string.IsNullOrWhiteSpace(dateStr) && DateTime.TryParse(dateStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var dt))
+            {
+                _mockDate = dt;
+                return dt;
+            }
+            return null;
+        }
+
+        private async Task<string?> GetFromLocalStorageAsync()
+        {
+            return await _js.InvokeAsync<string>("localStorage.getItem", Key);
+        }
+
+        private async Task SetInLocalStorageAsync(string value)
+        {
+            await _js.InvokeVoidAsync("localStorage.setItem", Key, value);
+        }
+
+        private async Task RemoveFromLocalStorageAsync()
+        {
+            await _js.InvokeVoidAsync("localStorage.removeItem", Key);
         }
     }
 }
