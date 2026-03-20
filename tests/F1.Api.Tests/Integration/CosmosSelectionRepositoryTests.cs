@@ -97,7 +97,9 @@ public class CosmosSelectionRepositoryTests
 
         Assert.NotNull(capturedQueryDefinition);
         Assert.Contains("c.RaceId", capturedQueryDefinition!.QueryText, StringComparison.Ordinal);
+        Assert.Contains("c.raceId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
         Assert.Contains("c.UserId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
+        Assert.Contains("c.userId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
         Assert.Contains("ORDER BY c._ts DESC", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
     }
 }
