@@ -1,3 +1,4 @@
+using F1.E2E.Tests.Infrastructure;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 
@@ -23,7 +24,10 @@ internal class AdminPage
 
     public void WaitUntilReady()
     {
-        _wait.Until(driver => driver.FindElements(By.Id("h2h-question")).Count > 0);
+        PageReadiness.WaitForAppReady(
+            _driver,
+            _wait.Timeout,
+            driver => driver.FindElements(By.Id("h2h-question")).Count > 0);
     }
 
     public void SetQuestions(string h2hQuestion, string bonusQuestion)

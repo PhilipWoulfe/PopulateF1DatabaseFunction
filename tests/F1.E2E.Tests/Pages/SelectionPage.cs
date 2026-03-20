@@ -1,3 +1,4 @@
+using F1.E2E.Tests.Infrastructure;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 
@@ -23,7 +24,10 @@ internal class SelectionPage
 
     public void WaitUntilReady()
     {
-        _wait.Until(driver => driver.FindElements(By.CssSelector("select[id^='driver-select-']")).Count == 5);
+        PageReadiness.WaitForAppReady(
+            _driver,
+            _wait.Timeout,
+            driver => driver.FindElements(By.CssSelector("select[id^='driver-select-']")).Count == 5);
     }
 
     public IReadOnlyList<string> GetSelectableDriverIds()

@@ -47,13 +47,12 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         using var driver = WebDriverFactory.Create(options);
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);
+        using var api = new ApiVerificationClient(options);
         var testPassed = false;
 
         try
         {
-            using var api = new ApiVerificationClient(options);
-
-            await api.SetMockDate("2026-03-07T23:00:00Z", options.Timeout, CancellationToken.None);
+            await api.SetMockDate("2026-03-07T23:00:00Z", CancellationToken.None);
 
             selectionPage.Navigate();
             selectionPage.WaitUntilReady();
@@ -71,6 +70,22 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         }
         finally
         {
+            if (testPassed)
+            {
+                await api.ClearMockDate(CancellationToken.None);
+            }
+            else
+            {
+                try
+                {
+                    await api.ClearMockDate(CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    output.WriteLine($"[E2E] Warning: failed to clear mock date in {nameof(SubmitSelection_ShouldPersistServerSide)} teardown: {ex.Message}");
+                }
+            }
+
             if (!testPassed) E2eArtifacts.CaptureOnFailure(driver, nameof(SubmitSelection_ShouldPersistServerSide), output);
             DebugHold.WaitIfEnabled("SubmitSelection_ShouldPersistServerSide teardown");
         }
@@ -154,7 +169,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void SubmitSelection_ShouldShowError_AfterDeadline_Ui()
+    public async Task SubmitSelection_ShouldShowError_AfterDeadline_Ui()
     {
         var options = E2eOptions.FromEnvironment();
         if (!options.Enabled)
@@ -166,21 +181,44 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         using var driver = WebDriverFactory.Create(options);
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);
-        selectionPage.Navigate();
-        selectionPage.WaitUntilReady();
+        using var api = new ApiVerificationClient(options);
+        var testPassed = false;
 
-        // Set mock date header via browser (if supported by app, e.g. via localStorage or JS)
-        // If not supported, this step may need to be adapted to your app's mechanism
-        ((IJavaScriptExecutor)driver).ExecuteScript($"window.localStorage.setItem('X-Mock-Date', '{afterDeadline}');");
-        driver.Navigate().Refresh();
-        selectionPage.WaitUntilReady();
+        try
+        {
+            await api.SetMockDate(afterDeadline, CancellationToken.None);
 
-        // Instead of trying to select, check if dropdowns or submit are disabled (locked state)
-        Assert.True(selectionPage.IsAnyDropdownDisabled() || selectionPage.IsSubmitDisabled(),
-            "Expected selection UI to be locked/disabled after deadline.");
-        Assert.True(selectionPage.IsLockedMessageVisible(),
-            "Expected a lock/error/forbidden message after deadline.");
-        // Do not attempt to select or submit
-        return;
+            selectionPage.Navigate();
+            selectionPage.WaitUntilReady();
+
+            // Instead of trying to select, check if dropdowns or submit are disabled (locked state)
+            Assert.True(selectionPage.IsAnyDropdownDisabled() || selectionPage.IsSubmitDisabled(),
+                "Expected selection UI to be locked/disabled after deadline.");
+            Assert.True(selectionPage.IsLockedMessageVisible(),
+                "Expected a lock/error/forbidden message after deadline.");
+
+            testPassed = true;
+        }
+        finally
+        {
+            if (testPassed)
+            {
+                await api.ClearMockDate(CancellationToken.None);
+            }
+            else
+            {
+                try
+                {
+                    await api.ClearMockDate(CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    output.WriteLine($"[E2E] Warning: failed to clear mock date in {nameof(SubmitSelection_ShouldShowError_AfterDeadline_Ui)} teardown: {ex.Message}");
+                }
+            }
+
+            if (!testPassed) E2eArtifacts.CaptureOnFailure(driver, nameof(SubmitSelection_ShouldShowError_AfterDeadline_Ui), output);
+            DebugHold.WaitIfEnabled("SubmitSelection_ShouldShowError_AfterDeadline_Ui teardown");
+        }
     }
 }
