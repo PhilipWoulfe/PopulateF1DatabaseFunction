@@ -19,9 +19,9 @@ public class AustraliaSelectionTests : BunitContext
 
     private static readonly RaceConfig DefaultRaceConfig = new()
     {
-        RaceId = "2026-australia",
-        PreQualyDeadlineUtc = new DateTime(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc),
-        FinalDeadlineUtc = new DateTime(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc)
+        RaceId = "2025-24-yas_marina",
+        PreQualyDeadlineUtc = new DateTime(2025, 12, 7, 4, 30, 0, DateTimeKind.Utc),
+        FinalDeadlineUtc = new DateTime(2025, 12, 8, 3, 30, 0, DateTimeKind.Utc)
     };
 
     [Fact]
@@ -62,7 +62,7 @@ public class AustraliaSelectionTests : BunitContext
         handler.EnqueueResponse(CreateJsonResponse(DefaultRaceConfig));
         handler.EnqueueResponse(CreateJsonResponse(new RaceQuestionMetadata
         {
-            RaceId = "2026-australia",
+            RaceId = "2025-24-yas_marina",
             H2HQuestion = "Who finishes higher: Leclerc or Norris?",
             BonusQuestion = "How many safety-car laps?",
             IsPublished = true,
@@ -97,7 +97,7 @@ public class AustraliaSelectionTests : BunitContext
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
             Id = Guid.NewGuid(),
-            RaceId = "2026-australia",
+            RaceId = "2025-24-yas_marina",
             UserId = "user@example.com",
             BetType = BetType.Regular,
             IsLocked = true,
@@ -113,7 +113,7 @@ public class AustraliaSelectionTests : BunitContext
                 DriverId = "norris",
                 DriverName = "Lando Norris",
                 SelectionType = "PreQualy",
-                Timestamp = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc)
+                Timestamp = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc)
             },
             new CurrentSelectionItem
             {
@@ -123,7 +123,7 @@ public class AustraliaSelectionTests : BunitContext
                 DriverId = "leclerc",
                 DriverName = "Charles Leclerc",
                 SelectionType = "PreQualy",
-                Timestamp = new DateTime(2026, 3, 6, 10, 1, 0, DateTimeKind.Utc)
+                Timestamp = new DateTime(2025, 12, 6, 10, 1, 0, DateTimeKind.Utc)
             }
         }));
 
@@ -157,7 +157,7 @@ public class AustraliaSelectionTests : BunitContext
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
             Id = Guid.NewGuid(),
-            RaceId = "2026-australia",
+            RaceId = "2025-24-yas_marina",
             UserId = "user@example.com",
             BetType = BetType.Regular,
             IsLocked = false,
@@ -173,7 +173,7 @@ public class AustraliaSelectionTests : BunitContext
                 DriverId = "norris",
                 DriverName = "Lando Norris",
                 SelectionType = "Regular",
-                Timestamp = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc)
+                Timestamp = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc)
             },
             new CurrentSelectionItem
             {
@@ -183,14 +183,14 @@ public class AustraliaSelectionTests : BunitContext
                 DriverId = "leclerc",
                 DriverName = "Charles Leclerc",
                 SelectionType = "Regular",
-                Timestamp = new DateTime(2026, 3, 6, 10, 1, 0, DateTimeKind.Utc)
+                Timestamp = new DateTime(2025, 12, 6, 10, 1, 0, DateTimeKind.Utc)
             }
         }));
         handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.OK));
         handler.EnqueueResponse(CreateJsonResponse(new Selection
         {
             Id = Guid.NewGuid(),
-            RaceId = "2026-australia",
+            RaceId = "2025-24-yas_marina",
             UserId = "user@example.com",
             BetType = BetType.Regular,
             IsLocked = false,
@@ -206,7 +206,7 @@ public class AustraliaSelectionTests : BunitContext
                 DriverId = "norris",
                 DriverName = "Lando Norris",
                 SelectionType = "Regular",
-                Timestamp = new DateTime(2026, 3, 6, 11, 0, 0, DateTimeKind.Utc)
+                Timestamp = new DateTime(2025, 12, 6, 11, 0, 0, DateTimeKind.Utc)
             }
         }));
 
@@ -224,7 +224,7 @@ public class AustraliaSelectionTests : BunitContext
         cut.Find("button[type='submit']").Click();
 
         cut.WaitForAssertion(() => Assert.Contains("Selection saved successfully.", cut.Markup));
-        Assert.Contains(handler.Requests, req => req.Method == HttpMethod.Put && req.RequestUri?.AbsolutePath.EndsWith("/selections/2026-australia/mine") == true);
+        Assert.Contains(handler.Requests, req => req.Method == HttpMethod.Put && req.RequestUri?.AbsolutePath.EndsWith("/selections/2025-24-yas_marina/mine") == true);
         Assert.Contains(handler.Requests, req => req.Method == HttpMethod.Get && req.RequestUri?.AbsolutePath.EndsWith("/selections/current") == true);
     }
 
@@ -302,7 +302,7 @@ public class AustraliaSelectionTests : BunitContext
                 DriverId = "norris",
                 DriverName = "Lando Norris",
                 SelectionType = "PreQualy",
-                Timestamp = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc)
+                Timestamp = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc)
             },
             new CurrentSelectionItem
             {
@@ -312,7 +312,7 @@ public class AustraliaSelectionTests : BunitContext
                 DriverId = "leclerc",
                 DriverName = "Charles Leclerc",
                 SelectionType = "PreQualy",
-                Timestamp = new DateTime(2026, 3, 6, 10, 1, 0, DateTimeKind.Utc)
+                Timestamp = new DateTime(2025, 12, 6, 10, 1, 0, DateTimeKind.Utc)
             }
         }));
 

@@ -12,7 +12,7 @@ public class CosmosSelectionRepositoryTests
     public async Task UpsertSelectionAsync_ShouldReuseExistingId_ForSameRaceAndUser()
     {
         var existingId = Guid.NewGuid();
-        var raceId = "2026-australia";
+        var raceId = "2025-24-yas_marina";
         var userId = "user@example.com";
 
         var mockConfiguration = new Mock<IConfiguration>();

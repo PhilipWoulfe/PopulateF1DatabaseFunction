@@ -28,7 +28,7 @@ namespace F1.Api.Tests.Integration
         public async Task Can_Set_And_Get_MockDate()
         {
             var client = _factory.CreateClient();
-            var setDate = new DateTime(2026, 3, 21, 15, 0, 0, DateTimeKind.Utc);
+            var setDate = new DateTime(2025, 12, 21, 15, 0, 0, DateTimeKind.Utc);
             var setResponse = await client.PostAsJsonAsync("/admin/mock-date", new { mockDateUtc = setDate });
             Assert.Equal(HttpStatusCode.NoContent, setResponse.StatusCode);
 

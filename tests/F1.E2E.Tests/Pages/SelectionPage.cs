@@ -19,7 +19,7 @@ internal class SelectionPage
 
     public void Navigate()
     {
-        _driver.Navigate().GoToUrl(_baseUrl + "/australia-selection");
+        _driver.Navigate().GoToUrl(_baseUrl + "/yas-marina-selection");
     }
 
     public void WaitUntilReady()

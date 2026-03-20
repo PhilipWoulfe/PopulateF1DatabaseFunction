@@ -44,7 +44,7 @@ public class SelectionsControllerTests
                     DriverId = "norris",
                     DriverName = "Lando Norris",
                     SelectionType = "Regular",
-                    Timestamp = new DateTime(2026, 3, 6, 9, 0, 0, DateTimeKind.Utc)
+                    Timestamp = new DateTime(2025, 12, 6, 9, 0, 0, DateTimeKind.Utc)
                 }
             ]);
 
@@ -87,7 +87,7 @@ public class SelectionsControllerTests
         };
 
         // Upsert a mock selection for the same user as in the context
-        await controller.UpsertMine("2026-australia", new SelectionSubmissionDto
+        await controller.UpsertMine("2025-24-yas_marina", new SelectionSubmissionDto
         {
             BetType = F1.Core.Models.BetType.Regular,
             OrderedSelections = new List<SelectionPosition>
@@ -126,7 +126,7 @@ public class SelectionsControllerTests
             HttpContext = httpContext
         };
 
-        await controller.UpsertMine("2026-australia", new SelectionSubmissionDto
+        await controller.UpsertMine("2025-24-yas_marina", new SelectionSubmissionDto
         {
             BetType = F1.Core.Models.BetType.PreQualy,
             OrderedSelections = new List<SelectionPosition>
@@ -139,7 +139,7 @@ public class SelectionsControllerTests
             }
         });
 
-        var result = await controller.GetMine("2026-australia");
+        var result = await controller.GetMine("2025-24-yas_marina");
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var payload = Assert.IsType<F1.Core.Models.Selection>(ok.Value);

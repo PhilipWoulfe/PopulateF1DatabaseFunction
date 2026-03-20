@@ -9,7 +9,7 @@ public class GlobalMockDateServiceTests
     {
         var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
         var service = new GlobalMockDateService(cache);
-        var now = new DateTime(2026, 3, 19, 10, 0, 0, DateTimeKind.Utc);
+        var now = new DateTime(2025, 12, 19, 10, 0, 0, DateTimeKind.Utc);
         service.SetMockDateUtc(now);
         Assert.Equal(now, service.GetMockDateUtc());
     }
@@ -19,7 +19,7 @@ public class GlobalMockDateServiceTests
     {
         var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
         var service = new GlobalMockDateService(cache);
-        service.SetMockDateUtc(new DateTime(2026, 3, 19, 10, 0, 0, DateTimeKind.Utc));
+        service.SetMockDateUtc(new DateTime(2025, 12, 19, 10, 0, 0, DateTimeKind.Utc));
         service.SetMockDateUtc(null);
         Assert.Null(service.GetMockDateUtc());
     }

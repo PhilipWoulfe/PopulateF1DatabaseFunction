@@ -12,7 +12,7 @@ public class CosmosRaceMetadataRepositoryTests
     [Fact]
     public async Task GetMetadataAsync_ShouldReturnMappedMetadata_WhenDocumentContainsAdminMetadata()
     {
-        var raceId = "2026-australia";
+        var raceId = "2025-24-yas_marina";
 
         var mockCosmosClient = new Mock<CosmosClient>();
         var mockContainer = new Mock<Container>();
@@ -28,7 +28,7 @@ public class CosmosRaceMetadataRepositoryTests
                 H2HQuestion = "Who finishes higher: Leclerc or Norris?",
                 BonusQuestion = "How many safety-car laps?",
                 IsPublished = true,
-                UpdatedAtUtc = new DateTime(2026, 3, 7, 11, 0, 0, DateTimeKind.Utc)
+                UpdatedAtUtc = new DateTime(2025, 12, 7, 11, 0, 0, DateTimeKind.Utc)
             }
         };
 
@@ -63,7 +63,7 @@ public class CosmosRaceMetadataRepositoryTests
     [Fact]
     public async Task GetMetadataAsync_ShouldReturnNull_WhenAdminMetadataIsMissing()
     {
-        var raceId = "2026-australia";
+        var raceId = "2025-24-yas_marina";
 
         var mockCosmosClient = new Mock<CosmosClient>();
         var mockContainer = new Mock<Container>();
@@ -98,7 +98,7 @@ public class CosmosRaceMetadataRepositoryTests
     [Fact]
     public async Task UpsertMetadataAsync_ShouldPatchWithExpectedEtag_AndReturnUpdatedMetadata()
     {
-        var raceId = "2026-australia";
+        var raceId = "2025-24-yas_marina";
         var expectedEtag = "etag-from-client";
 
         var mockCosmosClient = new Mock<CosmosClient>();
@@ -107,7 +107,7 @@ public class CosmosRaceMetadataRepositoryTests
 
         var queriedDocument = new CosmosRaceMetadataRepository.RaceDocument
         {
-            Id = "2026-australia-document-id",
+            Id = "2025-24-yas_marina-document-id",
             RaceId = raceId,
             ETag = "etag-from-query",
             AdminQuestionMetadata = new CosmosRaceMetadataRepository.AdminQuestionMetadataDocument
@@ -115,7 +115,7 @@ public class CosmosRaceMetadataRepositoryTests
                 H2HQuestion = "Old H2H",
                 BonusQuestion = "Old bonus",
                 IsPublished = false,
-                UpdatedAtUtc = new DateTime(2026, 3, 6, 10, 0, 0, DateTimeKind.Utc)
+                UpdatedAtUtc = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc)
             }
         };
 
@@ -129,7 +129,7 @@ public class CosmosRaceMetadataRepositoryTests
                 H2HQuestion = "Who finishes higher: Leclerc or Norris?",
                 BonusQuestion = "How many safety-car laps?",
                 IsPublished = true,
-                UpdatedAtUtc = new DateTime(2026, 3, 7, 12, 0, 0, DateTimeKind.Utc)
+                UpdatedAtUtc = new DateTime(2025, 12, 7, 12, 0, 0, DateTimeKind.Utc)
             }
         };
 
@@ -176,7 +176,7 @@ public class CosmosRaceMetadataRepositoryTests
             H2HQuestion = "Who finishes higher: Leclerc or Norris?",
             BonusQuestion = "How many safety-car laps?",
             IsPublished = true,
-            UpdatedAtUtc = new DateTime(2026, 3, 7, 12, 0, 0, DateTimeKind.Utc)
+            UpdatedAtUtc = new DateTime(2025, 12, 7, 12, 0, 0, DateTimeKind.Utc)
         }, expectedEtag);
 
         Assert.NotNull(result);
@@ -198,7 +198,7 @@ public class CosmosRaceMetadataRepositoryTests
     [Fact]
     public async Task UpsertMetadataAsync_ShouldThrowRaceMetadataConcurrencyException_WhenCosmosReturnsPreconditionFailed()
     {
-        var raceId = "2026-australia";
+        var raceId = "2025-24-yas_marina";
 
         var mockCosmosClient = new Mock<CosmosClient>();
         var mockContainer = new Mock<Container>();

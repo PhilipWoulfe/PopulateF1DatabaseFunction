@@ -1,4 +1,4 @@
-@page "/australia-selection"
+@page "/yas-marina-selection"
 @using F1.Web.Models
 @using System.Net
 @using System.Net.Http.Json
@@ -7,7 +7,7 @@
 @inject F1.Web.Services.ITimeProvider TimeProvider
 @inject F1.Web.Services.IMockDateService MockDateService
 
-<h1>Australia GP 2026 Selection</h1>
+<h1>Yas Marina GP 2025 Selection</h1>
 
 @if (!string.IsNullOrWhiteSpace(errorMessage))
 {
@@ -39,7 +39,7 @@ else
     </div>
 
     <div class="alert alert-warning">
-        Locking for Pre-Qualy gives +50% points but prevents changes after Saturday 04:30!
+        Locking for Pre-Qualy gives +50% points but prevents changes after Sunday 13:00 UTC!
     </div>
 
     <EditForm Model="this" OnValidSubmit="SaveSelectionAsync">
@@ -85,7 +85,7 @@ else
 }
 
 @code {
-    private const string RaceId = "2026-australia";
+    private const string RaceId = "2025-24-yas_marina";
 
     private Driver[]? drivers;
     private RaceConfig? raceConfig;

@@ -34,7 +34,7 @@ public class CurrentSelectionsEndpointTests : IClassFixture<WebApplicationFactor
                     DriverId = "norris",
                     DriverName = "Lando Norris",
                     SelectionType = "Regular",
-                    Timestamp = new DateTime(2026, 3, 6, 9, 0, 0, DateTimeKind.Utc)
+                    Timestamp = new DateTime(2025, 12, 6, 9, 0, 0, DateTimeKind.Utc)
                 }
             ]);
 
