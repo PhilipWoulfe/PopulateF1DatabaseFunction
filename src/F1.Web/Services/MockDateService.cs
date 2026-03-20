@@ -30,7 +30,7 @@ namespace F1.Web.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync("admin/mock-date");
+                using var response = await _httpClient.GetAsync("admin/mock-date");
                 if (!response.IsSuccessStatusCode)
                 {
                     _mockDateUtc = null;
@@ -58,14 +58,14 @@ namespace F1.Web.Services
                 ? DateTime.SpecifyKind(dateUtc.Value, DateTimeKind.Utc)
                 : (DateTime?)null;
 
-            var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = normalizedUtc });
+            using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = normalizedUtc });
             response.EnsureSuccessStatusCode();
             _mockDateUtc = normalizedUtc;
         }
 
         private sealed class MockDateResponse
         {
-            public DateTime? mockDate { get; set; }
+            public DateTime? MockDate { get; set; }
         }
     }
 }
