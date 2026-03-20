@@ -180,6 +180,76 @@ jobs:
           "$CHROME_BIN_PATH" --version || true
           chromedriver --version || true
 
+      - name: Wait for test deployment to serve current SHA
+        env:
+          E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
+          E2E_API_BASE_URL: ${{ vars.E2E_API_BASE_URL }}
+          E2E_CF_CLIENT_ID: ${{ secrets.E2E_CF_CLIENT_ID }}
+          E2E_CF_CLIENT_SECRET: ${{ secrets.E2E_CF_CLIENT_SECRET }}
+          E2E_RACE_ID: ${{ vars.E2E_RACE_ID }}
+        run: |
+          set -euo pipefail
+
+          EXPECTED_SHA="${GITHUB_SHA}"
+          BASE_URL="${E2E_BASE_URL%/}"
+          API_URL="${E2E_API_BASE_URL%/}"
+          RACE_ID="${E2E_RACE_ID:-2025-24-yas_marina}"
+
+          if [ -z "$BASE_URL" ]; then
+            echo "E2E_BASE_URL is required"
+            exit 1
+          fi
+
+          if [ -z "$API_URL" ]; then
+            API_URL="$BASE_URL/api"
+          fi
+
+          headers=()
+          if [ -n "${E2E_CF_CLIENT_ID:-}" ] && [ -n "${E2E_CF_CLIENT_SECRET:-}" ]; then
+            headers+=( -H "CF-Access-Client-Id: ${E2E_CF_CLIENT_ID}" )
+            headers+=( -H "CF-Access-Client-Secret: ${E2E_CF_CLIENT_SECRET}" )
+          fi
+
+          max_attempts=60
+          stable_required=3
+          stable_count=0
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            web_version="$(curl -fsS "${headers[@]}" "$BASE_URL/version.json" 2>/dev/null || true)"
+            api_config="$(curl -fsS "${headers[@]}" "$API_URL/selections/$RACE_ID/config" 2>/dev/null || true)"
+
+            web_ok=false
+            api_ok=false
+
+            if echo "$web_version" | grep -q "$EXPECTED_SHA"; then
+              web_ok=true
+            fi
+
+            if echo "$api_config" | grep -Eq "\"raceId\"[[:space:]]*:[[:space:]]*\"$RACE_ID\""; then
+              api_ok=true
+            fi
+
+            if $web_ok && $api_ok; then
+              stable_count=$((stable_count + 1))
+            else
+              stable_count=0
+            fi
+
+            echo "Attempt $attempt/$max_attempts: web_ok=$web_ok api_ok=$api_ok stable_count=$stable_count"
+
+            if [ "$stable_count" -ge "$stable_required" ]; then
+              echo "Deployment is stable on expected SHA and race config."
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Timed out waiting for deployment to become stable on SHA ${EXPECTED_SHA}."
+          echo "Last web version response: $web_version"
+          echo "Last API config response: $api_config"
+          exit 1
+
       - name: Run Selenium E2E suite against test
         env:
           E2E_REQUIRED: "true"
