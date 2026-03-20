@@ -21,11 +21,7 @@ public class MainLayoutTests : BunitContext
         userSession.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         userSession.SetupGet(x => x.User).Returns(new User { Email = "dev@example.com" });
 
-
-        Services.AddSingleton(userSession.Object);
-        Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Development"));
-        Services.AddSingleton(CreateMockHttpClient());
-        Services.AddSingleton<IMockDateService, MockDateService>();
+        ConfigureCommonServices("Development", userSession.Object);
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
@@ -43,11 +39,7 @@ public class MainLayoutTests : BunitContext
         var userSession = new Mock<IUserSession>();
         userSession.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
-
-        Services.AddSingleton(userSession.Object);
-        Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Test"));
-        Services.AddSingleton(CreateMockHttpClient());
-        Services.AddSingleton<IMockDateService, MockDateService>();
+        ConfigureCommonServices("Test", userSession.Object);
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
@@ -64,16 +56,20 @@ public class MainLayoutTests : BunitContext
         var userSession = new Mock<IUserSession>();
         userSession.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
-
-        Services.AddSingleton(userSession.Object);
-        Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Production"));
-        Services.AddSingleton(CreateMockHttpClient());
-        Services.AddSingleton<IMockDateService, MockDateService>();
+        ConfigureCommonServices("Production", userSession.Object);
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
 
         cut.WaitForAssertion(() => Assert.Contains("v. ", cut.Markup));
+    }
+
+    private void ConfigureCommonServices(string environment, IUserSession userSession)
+    {
+        Services.AddSingleton(userSession);
+        Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment(environment));
+        Services.AddSingleton(CreateMockHttpClient());
+        Services.AddSingleton<IMockDateService, MockDateService>();
     }
 
     private static HttpClient CreateMockHttpClient()
