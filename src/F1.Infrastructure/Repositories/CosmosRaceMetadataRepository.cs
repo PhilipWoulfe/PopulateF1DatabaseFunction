@@ -47,26 +47,50 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
             IfMatchEtag = expectedEtag ?? document.ETag
         };
 
+        var operations = new[] { PatchOperation.Set("/adminQuestionMetadata", metadataDocument) };
+
         try
         {
             var response = await _container.PatchItemAsync<RaceDocument>(
                 document.Id,
                 ResolvePartitionKey(document),
-                [PatchOperation.Set("/adminQuestionMetadata", metadataDocument)],
+                operations,
                 options);
 
-            var updated = MapToMetadata(response.Resource);
-            if (updated is null)
-            {
-                throw new InvalidOperationException("Race metadata was not returned after patch operation.");
-            }
-
-            return updated;
+            return EnsurePatchedMetadata(response.Resource);
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PreconditionFailed)
         {
             throw new RaceMetadataConcurrencyException("Race metadata update conflict detected. Refresh and retry.", ex);
         }
+        catch (CosmosException ex) when (ShouldRetryWithUndefinedPartitionKey(document, ex))
+        {
+            var retryResponse = await _container.PatchItemAsync<RaceDocument>(
+                document.Id,
+                PartitionKey.None,
+                operations,
+                options);
+
+            return EnsurePatchedMetadata(retryResponse.Resource);
+        }
+    }
+
+    private static bool ShouldRetryWithUndefinedPartitionKey(RaceDocument document, CosmosException ex)
+    {
+        return string.IsNullOrWhiteSpace(document.RaceId)
+               && (ex.StatusCode == System.Net.HttpStatusCode.NotFound
+                   || ex.StatusCode == System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private static RaceQuestionMetadata EnsurePatchedMetadata(RaceDocument? document)
+    {
+        var updated = MapToMetadata(document);
+        if (updated is null)
+        {
+            throw new InvalidOperationException("Race metadata was not returned after patch operation.");
+        }
+
+        return updated;
     }
 
     private async Task<RaceDocument?> GetRaceDocumentAsync(string raceId)
