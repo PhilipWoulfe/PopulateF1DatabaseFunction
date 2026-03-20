@@ -109,7 +109,7 @@ internal class ApiVerificationClient : IDisposable
 
     public async Task<HttpResponseMessage> SetMockDate(string beforeDeadline, TimeSpan timeout, CancellationToken none)
     {
-        var response = await _httpClient.PostAsJsonAsync("/admin/mock-date", new { mockDateUtc = DateTime.Parse(beforeDeadline) }, none);
+        var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = DateTime.Parse(beforeDeadline) }, none);
         response.EnsureSuccessStatusCode();
         return response;
     }
