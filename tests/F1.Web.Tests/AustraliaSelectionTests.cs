@@ -14,6 +14,7 @@ public class AustraliaSelectionTests : BunitContext
     {
         // Register a default ITimeProvider for all tests
         Services.AddSingleton<ITimeProvider, DefaultTimeProvider>();
+        Services.AddSingleton<IMockDateService, TestMockDateService>();
     }
 
     private static readonly RaceConfig DefaultRaceConfig = new()
@@ -356,6 +357,24 @@ public class AustraliaSelectionTests : BunitContext
             }
 
             return Task.FromResult(_responses.Dequeue());
+        }
+    }
+
+    private sealed class TestMockDateService : IMockDateService
+    {
+        public DateTime? GetMockDate()
+        {
+            return null;
+        }
+
+        public Task RefreshAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SetMockDateAsync(DateTime? dateUtc)
+        {
+            return Task.CompletedTask;
         }
     }
 }

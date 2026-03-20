@@ -25,6 +25,7 @@ public class MainLayoutTests : BunitContext
         Services.AddSingleton(userSession.Object);
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Development"));
         Services.AddSingleton(CreateMockHttpClient());
+        Services.AddSingleton<IMockDateService, MockDateService>();
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
@@ -46,6 +47,7 @@ public class MainLayoutTests : BunitContext
         Services.AddSingleton(userSession.Object);
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Test"));
         Services.AddSingleton(CreateMockHttpClient());
+        Services.AddSingleton<IMockDateService, MockDateService>();
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));
@@ -66,6 +68,7 @@ public class MainLayoutTests : BunitContext
         Services.AddSingleton(userSession.Object);
         Services.AddSingleton<IWebAssemblyHostEnvironment>(new TestHostEnvironment("Production"));
         Services.AddSingleton(CreateMockHttpClient());
+        Services.AddSingleton<IMockDateService, MockDateService>();
 
         var cut = Render<MainLayout>(parameters =>
             parameters.Add(p => p.Body, (builder) => builder.AddMarkupContent(0, "<p>Body</p>")));

@@ -1,70 +1,71 @@
 using System;
-using Microsoft.JSInterop;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace F1.Web.Services
 {
     public interface IMockDateService
     {
         DateTime? GetMockDate();
-        void SetMockDate(DateTime? date);
+        Task RefreshAsync();
+        Task SetMockDateAsync(DateTime? dateUtc);
     }
 
     public class MockDateService : IMockDateService
     {
-        private readonly IJSRuntime _js;
-        private DateTime? _mockDate;
-        private const string Key = "X-Mock-Date";
+        private readonly HttpClient _httpClient;
+        private DateTime? _mockDateUtc;
 
-        public MockDateService(IJSRuntime js)
+        public MockDateService(HttpClient httpClient)
         {
-            _js = js;
+            _httpClient = httpClient;
         }
 
         public DateTime? GetMockDate()
         {
-            if (_mockDate.HasValue) return _mockDate;
-            // Synchronously calling async JSInterop is not supported; return null if not cached
-            return null;
+            return _mockDateUtc;
         }
 
-        public async void SetMockDate(DateTime? date)
+        public async Task RefreshAsync()
         {
-            _mockDate = date;
-            if (date.HasValue)
+            try
             {
-                await SetInLocalStorageAsync(date.Value.ToString("o"));
+                var response = await _httpClient.GetAsync("admin/mock-date");
+                if (!response.IsSuccessStatusCode)
+                {
+                    _mockDateUtc = null;
+                    return;
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<MockDateResponse>();
+                _mockDateUtc = result?.mockDate is DateTime mockDate
+                    ? DateTime.SpecifyKind(mockDate, DateTimeKind.Utc)
+                    : null;
             }
-            else
+            catch (HttpRequestException)
             {
-                await RemoveFromLocalStorageAsync();
+                _mockDateUtc = null;
             }
-        }
-
-        public async Task<DateTime?> GetMockDateAsync()
-        {
-            if (_mockDate.HasValue) return _mockDate;
-            var dateStr = await GetFromLocalStorageAsync();
-            if (!string.IsNullOrWhiteSpace(dateStr) && DateTime.TryParse(dateStr, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var dt))
+            catch (JsonException)
             {
-                _mockDate = dt;
-                return dt;
+                _mockDateUtc = null;
             }
-            return null;
         }
 
-        private async Task<string?> GetFromLocalStorageAsync()
+        public async Task SetMockDateAsync(DateTime? dateUtc)
         {
-            return await _js.InvokeAsync<string>("localStorage.getItem", Key);
+            var normalizedUtc = dateUtc.HasValue
+                ? DateTime.SpecifyKind(dateUtc.Value, DateTimeKind.Utc)
+                : (DateTime?)null;
+
+            var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = normalizedUtc });
+            response.EnsureSuccessStatusCode();
+            _mockDateUtc = normalizedUtc;
         }
 
-        private async Task SetInLocalStorageAsync(string value)
+        private sealed class MockDateResponse
         {
-            await _js.InvokeVoidAsync("localStorage.setItem", Key, value);
-        }
-
-        private async Task RemoveFromLocalStorageAsync()
-        {
-            await _js.InvokeVoidAsync("localStorage.removeItem", Key);
+            public DateTime? mockDate { get; set; }
         }
     }
 }
