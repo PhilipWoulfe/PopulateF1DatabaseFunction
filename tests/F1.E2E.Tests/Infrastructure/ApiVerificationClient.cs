@@ -107,9 +107,9 @@ internal class ApiVerificationClient : IDisposable
         _httpClient.Dispose();
     }
 
-    public async Task SetMockDate(string beforeDeadline, TimeSpan timeout, CancellationToken none)
+    public async Task SetMockDate(string mockDateUtcIso, CancellationToken cancellationToken)
     {
-        using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = DateTime.Parse(beforeDeadline) }, none);
+        using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = DateTime.Parse(mockDateUtcIso) }, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

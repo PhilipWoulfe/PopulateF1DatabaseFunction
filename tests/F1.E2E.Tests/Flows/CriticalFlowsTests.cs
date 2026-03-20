@@ -53,7 +53,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         {
             using var api = new ApiVerificationClient(options);
 
-            await api.SetMockDate("2026-03-07T23:00:00Z", options.Timeout, CancellationToken.None);
+            await api.SetMockDate("2026-03-07T23:00:00Z", CancellationToken.None);
 
             selectionPage.Navigate();
             selectionPage.WaitUntilReady();
@@ -172,7 +172,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         {
             using (var api = new ApiVerificationClient(options))
             {
-                await api.SetMockDate(afterDeadline, options.Timeout, CancellationToken.None);
+                await api.SetMockDate(afterDeadline, CancellationToken.None);
             }
 
             selectionPage.Navigate();
