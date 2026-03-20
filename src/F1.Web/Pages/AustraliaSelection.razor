@@ -5,6 +5,7 @@
 @implements IAsyncDisposable
 @inject HttpClient Http
 @inject F1.Web.Services.ITimeProvider TimeProvider
+@inject F1.Web.Services.IMockDateService MockDateService
 
 <h1>Australia GP 2026 Selection</h1>
 
@@ -100,6 +101,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await MockDateService.RefreshAsync();
         await LoadDataAsync();
         StartCountdownTimer();
     }

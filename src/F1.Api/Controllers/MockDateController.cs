@@ -7,7 +7,7 @@ namespace F1.Api.Controllers
 {
     [ApiController]
     [Route("admin/mock-date")]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class MockDateController : ControllerBase
     {
         private readonly IGlobalMockDateService _globalMockDateService;
@@ -25,6 +25,7 @@ namespace F1.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public IActionResult Set([FromBody] SetMockDateRequest request)
         {
             if (request.MockDateUtc.HasValue)

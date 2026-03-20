@@ -5,66 +5,85 @@
     <div class="date-mock-widget" style="position:fixed;top:50px;right:0;z-index:2000;background:#fff;border:1px solid #ccc;padding:1rem;box-shadow:-2px 2px 8px #0002;min-width:260px;">
         <h5>Date Mocking</h5>
         <div>
-            <label for="mockDate">Mock Date/Time (UTC):</label>
-            <input id="mockDate" type="datetime-local" @bind-value="MockDate" @bind-value:event="oninput" />
+            <label for="mockDate">Mock Date/Time (local browser time):</label>
+            <input id="mockDate" type="datetime-local" @bind-value="LocalMockDate" @bind-value:event="oninput" />
         </div>
         <button class="btn btn-sm btn-secondary mt-2" @onclick="SetMockDate">Set</button>
         <button class="btn btn-sm btn-secondary mt-2 ms-2" @onclick="ClearMockDate">Clear</button>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="text-danger mt-2" role="alert">@ErrorMessage</div>
+        }
     </div>
 }
 
 @code {
     [Inject] public IUserSession UserSession { get; set; } = default!;
-    [Inject] public HttpClient Http { get; set; } = default!;
+    [Inject] public IMockDateService MockDateService { get; set; } = default!;
     [Inject] public NavigationManager Nav { get; set; } = default!;
 
 
-    private DateTime? MockDate { get; set; }
+    // The value bound to the input, always in local time
+    private DateTime? LocalMockDate { get; set; }
+    // The value in UTC, used for API
+    private DateTime? MockDateUtc { get; set; }
+    private string? ErrorMessage { get; set; }
     private bool ShowWidget => (UserSession.User?.IsAdmin ?? false) && DateMockingEnabled;
     private bool DateMockingEnabled => true; // TODO: Replace with config/env check
 
-
     protected override async Task OnInitializedAsync()
     {
-        var resp = await Http.GetAsync("admin/mock-date");
-        if (resp.IsSuccessStatusCode)
+        if (!ShowWidget)
         {
-            var result = await resp.Content.ReadFromJsonAsync<MockDateResponse>();
-            if (result?.mockDate != null)
-            {
-                MockDate = result.mockDate;
-            }
-            else
-            {
-                // Default to current UTC time if no mock date is set
-                MockDate = DateTime.UtcNow;
-            }
+            return;
+        }
+
+        await MockDateService.RefreshAsync();
+
+        var mockDateUtc = MockDateService.GetMockDate();
+        if (mockDateUtc.HasValue)
+        {
+            MockDateUtc = DateTime.SpecifyKind(mockDateUtc.Value, DateTimeKind.Utc);
+            LocalMockDate = MockDateUtc.Value.ToLocalTime();
         }
         else
         {
-            // If API call fails, still default to current UTC time
-            MockDate = DateTime.UtcNow;
+            MockDateUtc = DateTime.UtcNow;
+            LocalMockDate = MockDateUtc.Value.ToLocalTime();
         }
     }
 
     private async Task SetMockDate()
     {
-        if (MockDate.HasValue)
+        if (LocalMockDate.HasValue)
         {
-            await Http.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = MockDate.Value.ToUniversalTime() });
-            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            try
+            {
+                MockDateUtc = DateTime.SpecifyKind(LocalMockDate.Value, DateTimeKind.Local).ToUniversalTime();
+                await MockDateService.SetMockDateAsync(MockDateUtc);
+                ErrorMessage = null;
+                Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            }
+            catch (Exception)
+            {
+                ErrorMessage = "Unable to set mock date right now. Please try again.";
+            }
         }
     }
 
     private async Task ClearMockDate()
     {
-        await Http.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = (DateTime?)null });
-        MockDate = null;
-        Nav.NavigateTo(Nav.Uri, forceLoad: true);
-    }
-
-    private class MockDateResponse
-    {
-        public DateTime? mockDate { get; set; }
+        try
+        {
+            await MockDateService.SetMockDateAsync(null);
+            MockDateUtc = null;
+            LocalMockDate = null;
+            ErrorMessage = null;
+            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "Unable to clear mock date right now. Please try again.";
+        }
     }
 }
