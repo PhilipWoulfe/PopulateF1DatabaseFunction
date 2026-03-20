@@ -253,7 +253,7 @@ public class CosmosRaceMetadataRepositoryTests
     }
 
     [Fact]
-    public async Task UpsertMetadataAsync_ShouldRetryWithPartitionKeyNone_WhenRaceIdMissingAndInitialPatchFails()
+    public async Task UpsertMetadataAsync_ShouldUsePartitionKeyNoneUpFront_WhenRaceIdMissing()
     {
         var raceId = "2025-24-yas_marina";
 
@@ -304,13 +304,12 @@ public class CosmosRaceMetadataRepositoryTests
         patchResponse.SetupGet(r => r.Resource).Returns(updatedDocument);
 
         mockContainer
-            .SetupSequence(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
-                It.IsAny<string>(),
-                It.IsAny<PartitionKey>(),
+            .Setup(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
+                queriedDocument.Id,
+                PartitionKey.None,
                 It.IsAny<IReadOnlyList<PatchOperation>>(),
                 It.IsAny<PatchItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new CosmosException("pk mismatch", System.Net.HttpStatusCode.NotFound, 0, string.Empty, 0))
             .ReturnsAsync(patchResponse.Object);
 
         var repository = CreateRepository(mockCosmosClient.Object, "/raceId");
@@ -333,6 +332,13 @@ public class CosmosRaceMetadataRepositoryTests
             It.IsAny<IReadOnlyList<PatchOperation>>(),
             It.IsAny<PatchItemRequestOptions>(),
             It.IsAny<CancellationToken>()), Times.Once);
+
+        mockContainer.Verify(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
+            queriedDocument.Id,
+            It.Is<PartitionKey>(pk => !pk.Equals(PartitionKey.None)),
+            It.IsAny<IReadOnlyList<PatchOperation>>(),
+            It.IsAny<PatchItemRequestOptions>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

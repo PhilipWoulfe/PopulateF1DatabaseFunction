@@ -48,12 +48,14 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
         };
 
         var operations = new[] { PatchOperation.Set("/adminQuestionMetadata", metadataDocument) };
+        var useNonePartitionKey = ShouldUseNonePartitionKey(document);
+        var initialPartitionKey = useNonePartitionKey ? PartitionKey.None : ResolvePartitionKey(document);
 
         try
         {
             var response = await _container.PatchItemAsync<RaceDocument>(
                 document.Id,
-                ResolvePartitionKey(document),
+                initialPartitionKey,
                 operations,
                 options);
 
@@ -63,7 +65,7 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
         {
             throw new RaceMetadataConcurrencyException("Race metadata update conflict detected. Refresh and retry.", ex);
         }
-        catch (CosmosException ex) when (ShouldRetryWithUndefinedPartitionKey(document, ex))
+        catch (CosmosException ex) when (!useNonePartitionKey && ShouldRetryWithUndefinedPartitionKey(document, ex))
         {
             var retryResponse = await _container.PatchItemAsync<RaceDocument>(
                 document.Id,
@@ -80,6 +82,11 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
         return document.RaceId is null
                && (ex.StatusCode == System.Net.HttpStatusCode.NotFound
                    || ex.StatusCode == System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private bool ShouldUseNonePartitionKey(RaceDocument document)
+    {
+        return _partitionKeyPath == "/raceId" && document.RaceId is null;
     }
 
     private static RaceQuestionMetadata EnsurePatchedMetadata(RaceDocument? document)
