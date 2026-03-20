@@ -215,8 +215,8 @@ jobs:
           stable_count=0
 
           for attempt in $(seq 1 "$max_attempts"); do
-            web_version="$(curl -fsS "${headers[@]}" "$BASE_URL/version.json" 2>/dev/null || true)"
-            api_config="$(curl -fsS "${headers[@]}" "$API_URL/selections/$RACE_ID/config" 2>/dev/null || true)"
+            web_version="$(curl -fsS --connect-timeout 5 --max-time 15 "${headers[@]}" "$BASE_URL/version.json" 2>/dev/null || true)"
+            api_config="$(curl -fsS --connect-timeout 5 --max-time 15 "${headers[@]}" "$API_URL/selections/$RACE_ID/config" 2>/dev/null || true)"
 
             web_ok=false
             api_ok=false
