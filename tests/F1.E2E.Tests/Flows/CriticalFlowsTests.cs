@@ -154,7 +154,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void SubmitSelection_ShouldShowError_AfterDeadline_Ui()
+    public async Task SubmitSelection_ShouldShowError_AfterDeadline_Ui()
     {
         var options = E2eOptions.FromEnvironment();
         if (!options.Enabled)
@@ -166,13 +166,13 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         using var driver = WebDriverFactory.Create(options);
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);
-        selectionPage.Navigate();
-        selectionPage.WaitUntilReady();
 
-        // Set mock date header via browser (if supported by app, e.g. via localStorage or JS)
-        // If not supported, this step may need to be adapted to your app's mechanism
-        ((IJavaScriptExecutor)driver).ExecuteScript($"window.localStorage.setItem('X-Mock-Date', '{afterDeadline}');");
-        driver.Navigate().Refresh();
+        using (var api = new ApiVerificationClient(options))
+        {
+            await api.SetMockDate(afterDeadline, options.Timeout, CancellationToken.None);
+        }
+
+        selectionPage.Navigate();
         selectionPage.WaitUntilReady();
 
         // Instead of trying to select, check if dropdowns or submit are disabled (locked state)

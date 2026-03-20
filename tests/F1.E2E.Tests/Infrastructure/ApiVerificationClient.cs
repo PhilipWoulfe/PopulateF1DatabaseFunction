@@ -47,10 +47,17 @@ internal class ApiVerificationClient : IDisposable
         var deadline = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < deadline)
         {
-            var rows = await GetCurrentSelectionsAsync(cancellationToken);
-            if (rows.Any(row => string.Equals(row.DriverId, expectedDriverId, StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                return;
+                var rows = await GetCurrentSelectionsAsync(cancellationToken);
+                if (rows.Any(row => string.Equals(row.DriverId, expectedDriverId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return;
+                }
+            }
+            catch (HttpRequestException ex) when (IsTransientStatus(ex.StatusCode))
+            {
+                // Transient proxy/API failures happen in CI; keep polling until timeout.
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
@@ -64,10 +71,17 @@ internal class ApiVerificationClient : IDisposable
         var deadline = DateTime.UtcNow + timeout;
         while (DateTime.UtcNow < deadline)
         {
-            var metadata = await GetRaceMetadataAsync(raceId, includeDraft: true, cancellationToken);
-            if (metadata is not null && string.Equals(metadata.H2HQuestion, expectedH2hQuestion, StringComparison.Ordinal))
+            try
             {
-                return metadata;
+                var metadata = await GetRaceMetadataAsync(raceId, includeDraft: true, cancellationToken);
+                if (metadata is not null && string.Equals(metadata.H2HQuestion, expectedH2hQuestion, StringComparison.Ordinal))
+                {
+                    return metadata;
+                }
+            }
+            catch (HttpRequestException ex) when (IsTransientStatus(ex.StatusCode))
+            {
+                // Transient proxy/API failures happen in CI; keep polling until timeout.
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
@@ -95,8 +109,14 @@ internal class ApiVerificationClient : IDisposable
 
     public async Task<HttpResponseMessage> SetMockDate(string beforeDeadline, TimeSpan timeout, CancellationToken none)
     {
-        var response = await _httpClient.PostAsJsonAsync("/admin/mock-date", new { mockDateUtc = DateTime.Parse(beforeDeadline) });
+        var response = await _httpClient.PostAsJsonAsync("/admin/mock-date", new { mockDateUtc = DateTime.Parse(beforeDeadline) }, none);
+        response.EnsureSuccessStatusCode();
         return response;
+    }
+
+    private static bool IsTransientStatus(HttpStatusCode? statusCode)
+    {
+        return statusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout;
     }
 }
 

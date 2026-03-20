@@ -51,6 +51,14 @@ namespace F1.Web.Services
             {
                 _mockDateUtc = null;
             }
+            catch (NotSupportedException)
+            {
+                _mockDateUtc = null;
+            }
+            catch (Exception)
+            {
+                _mockDateUtc = null;
+            }
         }
 
         public async Task SetMockDateAsync(DateTime? dateUtc)
