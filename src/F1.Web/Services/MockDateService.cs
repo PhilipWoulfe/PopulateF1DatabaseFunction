@@ -38,7 +38,7 @@ namespace F1.Web.Services
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<MockDateResponse>();
-                _mockDateUtc = result?.mockDate is DateTime mockDate
+                _mockDateUtc = result?.MockDate is DateTime mockDate
                     ? DateTime.SpecifyKind(mockDate, DateTimeKind.Utc)
                     : null;
             }
