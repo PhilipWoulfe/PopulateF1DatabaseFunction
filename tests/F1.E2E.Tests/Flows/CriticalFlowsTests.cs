@@ -47,12 +47,11 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         using var driver = WebDriverFactory.Create(options);
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);
+        using var api = new ApiVerificationClient(options);
         var testPassed = false;
 
         try
         {
-            using var api = new ApiVerificationClient(options);
-
             await api.SetMockDate("2026-03-07T23:00:00Z", CancellationToken.None);
 
             selectionPage.Navigate();
@@ -71,6 +70,22 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         }
         finally
         {
+            if (testPassed)
+            {
+                await api.ClearMockDate(CancellationToken.None);
+            }
+            else
+            {
+                try
+                {
+                    await api.ClearMockDate(CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    output.WriteLine($"[E2E] Warning: failed to clear mock date in {nameof(SubmitSelection_ShouldPersistServerSide)} teardown: {ex.Message}");
+                }
+            }
+
             if (!testPassed) E2eArtifacts.CaptureOnFailure(driver, nameof(SubmitSelection_ShouldPersistServerSide), output);
             DebugHold.WaitIfEnabled("SubmitSelection_ShouldPersistServerSide teardown");
         }
@@ -166,14 +181,12 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         using var driver = WebDriverFactory.Create(options);
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);
+        using var api = new ApiVerificationClient(options);
         var testPassed = false;
 
         try
         {
-            using (var api = new ApiVerificationClient(options))
-            {
-                await api.SetMockDate(afterDeadline, CancellationToken.None);
-            }
+            await api.SetMockDate(afterDeadline, CancellationToken.None);
 
             selectionPage.Navigate();
             selectionPage.WaitUntilReady();
@@ -188,6 +201,22 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         }
         finally
         {
+            if (testPassed)
+            {
+                await api.ClearMockDate(CancellationToken.None);
+            }
+            else
+            {
+                try
+                {
+                    await api.ClearMockDate(CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    output.WriteLine($"[E2E] Warning: failed to clear mock date in {nameof(SubmitSelection_ShouldShowError_AfterDeadline_Ui)} teardown: {ex.Message}");
+                }
+            }
+
             if (!testPassed) E2eArtifacts.CaptureOnFailure(driver, nameof(SubmitSelection_ShouldShowError_AfterDeadline_Ui), output);
             DebugHold.WaitIfEnabled("SubmitSelection_ShouldShowError_AfterDeadline_Ui teardown");
         }

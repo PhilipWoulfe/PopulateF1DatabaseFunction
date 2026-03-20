@@ -113,6 +113,12 @@ internal class ApiVerificationClient : IDisposable
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task ClearMockDate(CancellationToken cancellationToken)
+    {
+        using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = (DateTime?)null }, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     private static bool IsTransientStatus(HttpStatusCode? statusCode)
     {
         return statusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout;
