@@ -77,7 +77,7 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
 
     private static bool ShouldRetryWithUndefinedPartitionKey(RaceDocument document, CosmosException ex)
     {
-        return string.IsNullOrWhiteSpace(document.RaceId)
+        return document.RaceId is null
                && (ex.StatusCode == System.Net.HttpStatusCode.NotFound
                    || ex.StatusCode == System.Net.HttpStatusCode.BadRequest);
     }
