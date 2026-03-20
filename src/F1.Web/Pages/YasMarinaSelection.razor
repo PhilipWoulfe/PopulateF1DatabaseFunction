@@ -141,6 +141,11 @@ else
             raceMetadata = await LoadPublishedRaceMetadataAsync();
             await LoadExistingSelectionAsync();
             await LoadCurrentSelectionsAsync();
+
+            if (!isReadOnly && raceConfig is not null && TimeProvider.UtcNow >= raceConfig.FinalDeadlineUtc)
+            {
+                isReadOnly = true;
+            }
         }
         catch (Exception ex)
         {

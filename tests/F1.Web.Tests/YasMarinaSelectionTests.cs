@@ -8,9 +8,9 @@ using System.Text.Json;
 
 namespace F1.Web.Tests.Pages;
 
-public class AustraliaSelectionTests : BunitContext
+public class YasMarinaSelectionTests : BunitContext
 {
-    public AustraliaSelectionTests()
+    public YasMarinaSelectionTests()
     {
         // Register a default ITimeProvider for all tests
         Services.AddSingleton<ITimeProvider, DefaultTimeProvider>();
@@ -25,7 +25,7 @@ public class AustraliaSelectionTests : BunitContext
     };
 
     [Fact]
-    public void AustraliaSelection_ShouldRenderWarningAndCountdown_WhenLoadedWithNoExistingSelection()
+    public void YasMarinaSelection_ShouldRenderWarningAndCountdown_WhenLoadedWithNoExistingSelection()
     {
         var handler = new QueueHttpMessageHandler();
         handler.EnqueueResponse(CreateJsonResponse(new[]
@@ -43,7 +43,7 @@ public class AustraliaSelectionTests : BunitContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = Render<AustraliaSelection>();
+        var cut = Render<YasMarinaSelection>();
 
         cut.WaitForAssertion(() => Assert.Contains("Locking for Pre-Qualy gives +50% points", cut.Markup));
         Assert.Contains("Countdown:", cut.Markup);
@@ -51,7 +51,7 @@ public class AustraliaSelectionTests : BunitContext
     }
 
     [Fact]
-    public void AustraliaSelection_ShouldRenderPublishedRaceQuestions_WhenMetadataExists()
+    public void YasMarinaSelection_ShouldRenderPublishedRaceQuestions_WhenMetadataExists()
     {
         var handler = new QueueHttpMessageHandler();
         handler.EnqueueResponse(CreateJsonResponse(new[]
@@ -73,7 +73,7 @@ public class AustraliaSelectionTests : BunitContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = Render<AustraliaSelection>();
+        var cut = Render<YasMarinaSelection>();
 
         cut.WaitForAssertion(() => Assert.Contains("Race Questions", cut.Markup));
         Assert.Contains("Who finishes higher: Leclerc or Norris?", cut.Markup);
@@ -81,7 +81,7 @@ public class AustraliaSelectionTests : BunitContext
     }
 
     [Fact]
-    public void AustraliaSelection_ShouldRenderLockedState_WhenExistingSelectionIsLocked()
+    public void YasMarinaSelection_ShouldRenderLockedState_WhenExistingSelectionIsLocked()
     {
         var handler = new QueueHttpMessageHandler();
         handler.EnqueueResponse(CreateJsonResponse(new[]
@@ -129,7 +129,7 @@ public class AustraliaSelectionTests : BunitContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = Render<AustraliaSelection>();
+        var cut = Render<YasMarinaSelection>();
 
         cut.WaitForAssertion(() => Assert.Contains("This pre-qualy selection is locked.", cut.Markup));
         Assert.True(cut.Find("button[type='submit']").HasAttribute("disabled"));
@@ -139,7 +139,7 @@ public class AustraliaSelectionTests : BunitContext
     }
 
     [Fact]
-    public void AustraliaSelection_ShouldSaveSelection_WhenSubmitSucceeds()
+    public void YasMarinaSelection_ShouldSaveSelection_WhenSubmitSucceeds()
     {
         var handler = new QueueHttpMessageHandler();
         handler.EnqueueResponse(CreateJsonResponse(new[]
@@ -212,7 +212,7 @@ public class AustraliaSelectionTests : BunitContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = Render<AustraliaSelection>();
+        var cut = Render<YasMarinaSelection>();
         cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll("select").Count));
 
         ChangeSelect(cut, 0, "norris");
@@ -229,7 +229,7 @@ public class AustraliaSelectionTests : BunitContext
     }
 
     [Fact]
-    public void AustraliaSelection_ShouldShowApiErrorMessage_WhenSaveFails()
+    public void YasMarinaSelection_ShouldShowApiErrorMessage_WhenSaveFails()
     {
         var handler = new QueueHttpMessageHandler();
         handler.EnqueueResponse(CreateJsonResponse(new[]
@@ -248,7 +248,7 @@ public class AustraliaSelectionTests : BunitContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = Render<AustraliaSelection>();
+        var cut = Render<YasMarinaSelection>();
         cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll("select").Count));
 
         cut.Find("button[type='submit']").Click();
@@ -257,7 +257,7 @@ public class AustraliaSelectionTests : BunitContext
     }
 
     [Fact]
-    public async Task AustraliaSelection_DisposeAsync_ShouldBeIdempotent()
+    public async Task YasMarinaSelection_DisposeAsync_ShouldBeIdempotent()
     {
         var handler = new QueueHttpMessageHandler();
         handler.EnqueueResponse(CreateJsonResponse(new[]
@@ -271,7 +271,7 @@ public class AustraliaSelectionTests : BunitContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = Render<AustraliaSelection>();
+        var cut = Render<YasMarinaSelection>();
         cut.WaitForAssertion(() => Assert.Contains("Countdown:", cut.Markup));
 
         var component = (IAsyncDisposable)cut.Instance;
@@ -281,7 +281,7 @@ public class AustraliaSelectionTests : BunitContext
     }
 
     [Fact]
-    public void AustraliaSelection_ShouldPopulateControls_FromCurrentSelectionsSnapshot()
+    public void YasMarinaSelection_ShouldPopulateControls_FromCurrentSelectionsSnapshot()
     {
         var handler = new QueueHttpMessageHandler();
         handler.EnqueueResponse(CreateJsonResponse(new[]
@@ -318,11 +318,47 @@ public class AustraliaSelectionTests : BunitContext
 
         Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
 
-        var cut = Render<AustraliaSelection>();
+        var cut = Render<YasMarinaSelection>();
 
         cut.WaitForAssertion(() => Assert.Equal("norris", cut.FindAll("select")[0].GetAttribute("value")));
         Assert.Equal("leclerc", cut.FindAll("select")[1].GetAttribute("value"));
         Assert.True(cut.Find("#strategy-prequaly").HasAttribute("checked"));
+    }
+
+    [Fact]
+    public void YasMarinaSelection_ShouldRenderLockedState_WhenPastFinalDeadline()
+    {
+        var finalDeadline = new DateTime(2025, 12, 8, 12, 0, 0, DateTimeKind.Utc);
+        var pastDeadlineConfig = new RaceConfig
+        {
+            RaceId = "2025-24-yas_marina",
+            PreQualyDeadlineUtc = new DateTime(2025, 12, 7, 13, 0, 0, DateTimeKind.Utc),
+            FinalDeadlineUtc = finalDeadline
+        };
+
+        Services.AddSingleton<ITimeProvider>(new FrozenTimeProvider(new DateTime(2025, 12, 8, 12, 1, 0, DateTimeKind.Utc)));
+
+        var handler = new QueueHttpMessageHandler();
+        handler.EnqueueResponse(CreateJsonResponse(new[]
+        {
+            new Driver { DriverId = "norris", FullName = "Lando Norris" },
+            new Driver { DriverId = "leclerc", FullName = "Charles Leclerc" },
+            new Driver { DriverId = "hamilton", FullName = "Lewis Hamilton" },
+            new Driver { DriverId = "piastri", FullName = "Oscar Piastri" },
+            new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
+        }));
+        handler.EnqueueResponse(CreateJsonResponse(pastDeadlineConfig));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.NotFound));
+        handler.EnqueueResponse(CreateJsonResponse(Array.Empty<CurrentSelectionItem>()));
+
+        Services.AddSingleton(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") });
+
+        var cut = Render<YasMarinaSelection>();
+
+        cut.WaitForAssertion(() => Assert.Contains("All deadlines have passed.", cut.Markup));
+        Assert.True(cut.Find("button[type='submit']").HasAttribute("disabled"));
+        Assert.True(cut.FindAll("select").All(s => s.HasAttribute("disabled")));
     }
 
     private static HttpResponseMessage CreateJsonResponse<T>(T payload, HttpStatusCode statusCode = HttpStatusCode.OK)
@@ -333,7 +369,7 @@ public class AustraliaSelectionTests : BunitContext
         };
     }
 
-    private static void ChangeSelect(IRenderedComponent<AustraliaSelection> cut, int index, string value)
+    private static void ChangeSelect(IRenderedComponent<YasMarinaSelection> cut, int index, string value)
     {
         cut.FindAll("select")[index].Change(value);
     }
@@ -358,6 +394,11 @@ public class AustraliaSelectionTests : BunitContext
 
             return Task.FromResult(_responses.Dequeue());
         }
+    }
+
+    private sealed class FrozenTimeProvider(DateTime frozenUtc) : ITimeProvider
+    {
+        public DateTime UtcNow => frozenUtc;
     }
 
     private sealed class TestMockDateService : IMockDateService
