@@ -166,21 +166,30 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         using var driver = WebDriverFactory.Create(options);
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);
+        var testPassed = false;
 
-        using (var api = new ApiVerificationClient(options))
+        try
         {
-            await api.SetMockDate(afterDeadline, options.Timeout, CancellationToken.None);
+            using (var api = new ApiVerificationClient(options))
+            {
+                await api.SetMockDate(afterDeadline, options.Timeout, CancellationToken.None);
+            }
+
+            selectionPage.Navigate();
+            selectionPage.WaitUntilReady();
+
+            // Instead of trying to select, check if dropdowns or submit are disabled (locked state)
+            Assert.True(selectionPage.IsAnyDropdownDisabled() || selectionPage.IsSubmitDisabled(),
+                "Expected selection UI to be locked/disabled after deadline.");
+            Assert.True(selectionPage.IsLockedMessageVisible(),
+                "Expected a lock/error/forbidden message after deadline.");
+
+            testPassed = true;
         }
-
-        selectionPage.Navigate();
-        selectionPage.WaitUntilReady();
-
-        // Instead of trying to select, check if dropdowns or submit are disabled (locked state)
-        Assert.True(selectionPage.IsAnyDropdownDisabled() || selectionPage.IsSubmitDisabled(),
-            "Expected selection UI to be locked/disabled after deadline.");
-        Assert.True(selectionPage.IsLockedMessageVisible(),
-            "Expected a lock/error/forbidden message after deadline.");
-        // Do not attempt to select or submit
-        return;
+        finally
+        {
+            if (!testPassed) E2eArtifacts.CaptureOnFailure(driver, nameof(SubmitSelection_ShouldShowError_AfterDeadline_Ui), output);
+            DebugHold.WaitIfEnabled("SubmitSelection_ShouldShowError_AfterDeadline_Ui teardown");
+        }
     }
 }
