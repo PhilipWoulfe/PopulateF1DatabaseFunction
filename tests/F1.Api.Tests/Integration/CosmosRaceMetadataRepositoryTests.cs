@@ -252,6 +252,157 @@ public class CosmosRaceMetadataRepositoryTests
         Assert.Contains("update conflict", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task UpsertMetadataAsync_ShouldUsePartitionKeyNoneUpFront_WhenRaceIdMissing()
+    {
+        var raceId = "2025-24-yas_marina";
+
+        var mockCosmosClient = new Mock<CosmosClient>();
+        var mockContainer = new Mock<Container>();
+        mockCosmosClient.Setup(c => c.GetContainer("F12025", "Results")).Returns(mockContainer.Object);
+
+        var queriedDocument = new CosmosRaceMetadataRepository.RaceDocument
+        {
+            Id = raceId,
+            RaceId = null,
+            ETag = "etag-from-query",
+            AdminQuestionMetadata = new CosmosRaceMetadataRepository.AdminQuestionMetadataDocument
+            {
+                H2HQuestion = "Old",
+                BonusQuestion = "Old",
+                IsPublished = false,
+                UpdatedAtUtc = DateTime.UtcNow
+            }
+        };
+
+        var feedResponse = new Mock<FeedResponse<CosmosRaceMetadataRepository.RaceDocument>>();
+        feedResponse.Setup(x => x.GetEnumerator()).Returns(new List<CosmosRaceMetadataRepository.RaceDocument> { queriedDocument }.GetEnumerator());
+
+        var feedIterator = new Mock<FeedIterator<CosmosRaceMetadataRepository.RaceDocument>>();
+        feedIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
+        feedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(feedResponse.Object);
+
+        mockContainer
+            .Setup(c => c.GetItemQueryIterator<CosmosRaceMetadataRepository.RaceDocument>(It.IsAny<QueryDefinition>(), null, It.IsAny<QueryRequestOptions>()))
+            .Returns(feedIterator.Object);
+
+        var updatedDocument = new CosmosRaceMetadataRepository.RaceDocument
+        {
+            Id = queriedDocument.Id,
+            RaceId = queriedDocument.RaceId,
+            ETag = "etag-after-patch",
+            AdminQuestionMetadata = new CosmosRaceMetadataRepository.AdminQuestionMetadataDocument
+            {
+                H2HQuestion = "Who finishes higher?",
+                BonusQuestion = "How many DNFs?",
+                IsPublished = true,
+                UpdatedAtUtc = new DateTime(2025, 12, 7, 12, 0, 0, DateTimeKind.Utc)
+            }
+        };
+
+        var patchResponse = new Mock<ItemResponse<CosmosRaceMetadataRepository.RaceDocument>>();
+        patchResponse.SetupGet(r => r.Resource).Returns(updatedDocument);
+
+        mockContainer
+            .Setup(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
+                queriedDocument.Id,
+                PartitionKey.None,
+                It.IsAny<IReadOnlyList<PatchOperation>>(),
+                It.IsAny<PatchItemRequestOptions>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(patchResponse.Object);
+
+        var repository = CreateRepository(mockCosmosClient.Object, "/raceId");
+
+        var result = await repository.UpsertMetadataAsync(raceId, new RaceQuestionMetadata
+        {
+            RaceId = raceId,
+            H2HQuestion = "Who finishes higher?",
+            BonusQuestion = "How many DNFs?",
+            IsPublished = true,
+            UpdatedAtUtc = new DateTime(2025, 12, 7, 12, 0, 0, DateTimeKind.Utc)
+        }, null);
+
+        Assert.NotNull(result);
+        Assert.Equal("etag-after-patch", result.ETag);
+
+        mockContainer.Verify(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
+            queriedDocument.Id,
+            PartitionKey.None,
+            It.IsAny<IReadOnlyList<PatchOperation>>(),
+            It.IsAny<PatchItemRequestOptions>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        mockContainer.Verify(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
+            queriedDocument.Id,
+            It.Is<PartitionKey>(pk => !pk.Equals(PartitionKey.None)),
+            It.IsAny<IReadOnlyList<PatchOperation>>(),
+            It.IsAny<PatchItemRequestOptions>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpsertMetadataAsync_ShouldNotRetryWithPartitionKeyNone_WhenRaceIdIsEmptyString()
+    {
+        var raceId = "2025-24-yas_marina";
+
+        var mockCosmosClient = new Mock<CosmosClient>();
+        var mockContainer = new Mock<Container>();
+        mockCosmosClient.Setup(c => c.GetContainer("F12025", "Results")).Returns(mockContainer.Object);
+
+        var queriedDocument = new CosmosRaceMetadataRepository.RaceDocument
+        {
+            Id = raceId,
+            RaceId = string.Empty,
+            ETag = "etag-from-query",
+            AdminQuestionMetadata = new CosmosRaceMetadataRepository.AdminQuestionMetadataDocument
+            {
+                H2HQuestion = "Old",
+                BonusQuestion = "Old",
+                IsPublished = false,
+                UpdatedAtUtc = DateTime.UtcNow
+            }
+        };
+
+        var feedResponse = new Mock<FeedResponse<CosmosRaceMetadataRepository.RaceDocument>>();
+        feedResponse.Setup(x => x.GetEnumerator()).Returns(new List<CosmosRaceMetadataRepository.RaceDocument> { queriedDocument }.GetEnumerator());
+
+        var feedIterator = new Mock<FeedIterator<CosmosRaceMetadataRepository.RaceDocument>>();
+        feedIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
+        feedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(feedResponse.Object);
+
+        mockContainer
+            .Setup(c => c.GetItemQueryIterator<CosmosRaceMetadataRepository.RaceDocument>(It.IsAny<QueryDefinition>(), null, It.IsAny<QueryRequestOptions>()))
+            .Returns(feedIterator.Object);
+
+        mockContainer
+            .Setup(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<IReadOnlyList<PatchOperation>>(),
+                It.IsAny<PatchItemRequestOptions>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new CosmosException("pk mismatch", System.Net.HttpStatusCode.NotFound, 0, string.Empty, 0));
+
+        var repository = CreateRepository(mockCosmosClient.Object, "/raceId");
+
+        await Assert.ThrowsAsync<CosmosException>(() => repository.UpsertMetadataAsync(raceId, new RaceQuestionMetadata
+        {
+            RaceId = raceId,
+            H2HQuestion = "Who finishes higher?",
+            BonusQuestion = "How many DNFs?",
+            IsPublished = true,
+            UpdatedAtUtc = new DateTime(2025, 12, 7, 12, 0, 0, DateTimeKind.Utc)
+        }, null));
+
+        mockContainer.Verify(c => c.PatchItemAsync<CosmosRaceMetadataRepository.RaceDocument>(
+            queriedDocument.Id,
+            PartitionKey.None,
+            It.IsAny<IReadOnlyList<PatchOperation>>(),
+            It.IsAny<PatchItemRequestOptions>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static CosmosRaceMetadataRepository CreateRepository(CosmosClient cosmosClient, string partitionKeyPath)
     {
         var mockConfiguration = new Mock<IConfiguration>();
