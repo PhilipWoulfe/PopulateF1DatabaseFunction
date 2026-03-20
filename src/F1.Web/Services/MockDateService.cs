@@ -2,6 +2,8 @@ using System;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace F1.Web.Services
 {
@@ -15,11 +17,13 @@ namespace F1.Web.Services
     public class MockDateService : IMockDateService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<MockDateService> _logger;
         private DateTime? _mockDateUtc;
 
-        public MockDateService(HttpClient httpClient)
+        public MockDateService(HttpClient httpClient, ILogger<MockDateService>? logger = null)
         {
             _httpClient = httpClient;
+            _logger = logger ?? NullLogger<MockDateService>.Instance;
         }
 
         public DateTime? GetMockDate()
@@ -34,6 +38,7 @@ namespace F1.Web.Services
                 using var response = await _httpClient.GetAsync("admin/mock-date");
                 if (!response.IsSuccessStatusCode)
                 {
+                    _logger.LogWarning("Mock date refresh returned non-success status code {StatusCode}.", (int)response.StatusCode);
                     _mockDateUtc = null;
                     return;
                 }
@@ -43,20 +48,24 @@ namespace F1.Web.Services
                     ? DateTime.SpecifyKind(mockDate, DateTimeKind.Utc)
                     : null;
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
+                _logger.LogWarning(ex, "Mock date refresh failed due to HTTP request error.");
                 _mockDateUtc = null;
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
+                _logger.LogWarning(ex, "Mock date refresh failed due to JSON parse error.");
                 _mockDateUtc = null;
             }
-            catch (NotSupportedException)
+            catch (NotSupportedException ex)
             {
+                _logger.LogWarning(ex, "Mock date refresh failed due to unsupported response content type.");
                 _mockDateUtc = null;
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                _logger.LogError(ex, "Mock date refresh failed due to unexpected error.");
                 _mockDateUtc = null;
             }
         }
