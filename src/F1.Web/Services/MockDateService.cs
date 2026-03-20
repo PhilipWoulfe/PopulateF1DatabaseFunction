@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace F1.Web.Services
 {
@@ -62,9 +63,10 @@ namespace F1.Web.Services
             response.EnsureSuccessStatusCode();
             _mockDateUtc = normalizedUtc;
         }
-
+        
         private sealed class MockDateResponse
         {
+            [JsonPropertyName("mockDate")]
             public DateTime? MockDate { get; set; }
         }
     }
