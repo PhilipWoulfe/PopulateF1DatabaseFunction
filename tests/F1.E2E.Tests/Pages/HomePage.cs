@@ -1,3 +1,4 @@
+using F1.E2E.Tests.Infrastructure;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 
@@ -23,7 +24,10 @@ internal class HomePage
 
     public void WaitForAuthenticatedNavigation()
     {
-        _wait.Until(driver => driver.FindElements(By.CssSelector("a[href='australia-selection']")).Count > 0);
+        PageReadiness.WaitForAppReady(
+            _driver,
+            _wait.Timeout,
+            driver => driver.FindElements(By.CssSelector("a[href='australia-selection']")).Count > 0);
     }
 
     public bool IsAccessDeniedVisible()

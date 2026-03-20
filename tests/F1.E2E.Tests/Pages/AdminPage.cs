@@ -1,3 +1,4 @@
+using F1.E2E.Tests.Infrastructure;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 
@@ -23,38 +24,10 @@ internal class AdminPage
 
     public void WaitUntilReady()
     {
-        const int maxAttempts = 3;
-        var attemptTimeout = TimeSpan.FromSeconds(10);
-
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
-        {
-            try
-            {
-                var attemptWait = new WebDriverWait(_driver, attemptTimeout);
-                attemptWait.Until(driver =>
-                {
-                    if (IsBlazorErrorVisible(driver))
-                    {
-                        return false;
-                    }
-
-                    return driver.FindElements(By.Id("h2h-question")).Count > 0;
-                });
-                return;
-            }
-            catch (WebDriverTimeoutException) when (attempt < maxAttempts)
-            {
-                _driver.Navigate().Refresh();
-            }
-        }
-
-        _wait.Until(driver => driver.FindElements(By.Id("h2h-question")).Count > 0);
-    }
-
-    private static bool IsBlazorErrorVisible(IWebDriver driver)
-    {
-        var elements = driver.FindElements(By.Id("blazor-error-ui"));
-        return elements.Count > 0 && elements[0].Displayed;
+        PageReadiness.WaitForAppReady(
+            _driver,
+            _wait.Timeout,
+            driver => driver.FindElements(By.Id("h2h-question")).Count > 0);
     }
 
     public void SetQuestions(string h2hQuestion, string bonusQuestion)
