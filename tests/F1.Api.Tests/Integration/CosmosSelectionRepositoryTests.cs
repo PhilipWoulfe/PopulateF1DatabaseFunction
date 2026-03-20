@@ -12,7 +12,7 @@ public class CosmosSelectionRepositoryTests
     public async Task UpsertSelectionAsync_ShouldReuseExistingId_ForSameRaceAndUser()
     {
         var existingId = Guid.NewGuid();
-        var raceId = "2026-australia";
+        var raceId = "2025-24-yas_marina";
         var userId = "user@example.com";
 
         var mockConfiguration = new Mock<IConfiguration>();
@@ -96,7 +96,9 @@ public class CosmosSelectionRepositoryTests
             It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.NotNull(capturedQueryDefinition);
-        Assert.Contains("c.raceId", capturedQueryDefinition!.QueryText, StringComparison.Ordinal);
+        Assert.Contains("c.RaceId", capturedQueryDefinition!.QueryText, StringComparison.Ordinal);
+        Assert.Contains("c.raceId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
+        Assert.Contains("c.UserId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
         Assert.Contains("c.userId", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
         Assert.Contains("ORDER BY c._ts DESC", capturedQueryDefinition.QueryText, StringComparison.Ordinal);
     }

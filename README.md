@@ -205,7 +205,7 @@ Optional E2E tuning:
 
 - `E2E_TIMEOUT_SECONDS`: defaults to 20 locally and 30 in CI.
 - `E2E_HEADLESS`: defaults to true.
-- `E2E_RACE_ID`: defaults to `2026-australia`.
+- `E2E_RACE_ID`: defaults to `2025-24-yas_marina`.
 
 Test-only service-token fallback controls (use only when Cloudflare service-token JWTs omit email claims):
 

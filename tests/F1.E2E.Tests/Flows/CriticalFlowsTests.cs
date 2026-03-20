@@ -52,7 +52,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
 
         try
         {
-            await api.SetMockDate("2026-03-07T23:00:00Z", CancellationToken.None);
+            await api.SetMockDate("2025-12-07T23:00:00Z", CancellationToken.None);
 
             selectionPage.Navigate();
             selectionPage.WaitUntilReady();
@@ -143,7 +143,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
         }
 
         // Set mock date header to after the final deadline
-        var afterDeadline = "2026-03-08T03:31:00Z";
+        var afterDeadline = "2025-12-08T12:01:00Z";
         using var api = new ApiVerificationClient(options);
         api.SetMockDateHeader(afterDeadline);
 
@@ -160,7 +160,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
             }
         };
 
-        var response = await api.PostSelectionAsync("2026-australia", submission);
+        var response = await api.PostSelectionAsync("2025-24-yas_marina", submission);
         Assert.True(
             response.StatusCode == System.Net.HttpStatusCode.Forbidden ||
             response.StatusCode == System.Net.HttpStatusCode.BadRequest ||
@@ -177,7 +177,7 @@ public class CriticalFlowsTests(ITestOutputHelper output)
             return;
         }
 
-        var afterDeadline = "2026-03-08T03:31:00Z";
+        var afterDeadline = "2025-12-08T12:01:00Z";
         using var driver = WebDriverFactory.Create(options);
         var wait = WebDriverFactory.CreateWait(driver, options.Timeout);
         var selectionPage = new SelectionPage(driver, wait, options.BaseUrl);

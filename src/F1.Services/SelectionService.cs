@@ -11,9 +11,9 @@ namespace F1.Services;
 public class SelectionService : ISelectionService
 {
     private static readonly ConcurrentDictionary<string, Selection> MockSelections = new(StringComparer.OrdinalIgnoreCase);
-    public static readonly DateTime PreQualyDeadlineUtc = new(2026, 3, 7, 4, 30, 0, DateTimeKind.Utc);
-    public static readonly DateTime FinalSubmissionDeadlineUtc = new(2026, 3, 8, 3, 30, 0, DateTimeKind.Utc);
-    public const string AustraliaRaceId2026 = "2026-australia";
+    public static readonly DateTime PreQualyDeadlineUtc = new(2025, 12, 7, 13, 0, 0, DateTimeKind.Utc);
+    public static readonly DateTime FinalSubmissionDeadlineUtc = new(2025, 12, 8, 12, 0, 0, DateTimeKind.Utc);
+    public const string CurrentRaceId = "2025-24-yas_marina";
 
     private readonly ISelectionRepository _selectionRepository;
     private readonly IDriverRepository _driverRepository;
@@ -67,17 +67,17 @@ public class SelectionService : ISelectionService
 
         if (existingSelection is not null && IsPreQualyLocked(existingSelection, nowUtc))
         {
-            throw new SelectionForbiddenException("Pre-Qualy locked selections cannot be edited after Saturday 04:30 UTC.");
+            throw new SelectionForbiddenException("Pre-Qualy locked selections cannot be edited after Sunday 13:00 UTC.");
         }
 
         if (submission.BetType == BetType.PreQualy && nowUtc > PreQualyDeadlineUtc)
         {
-            throw new SelectionValidationException("Pre-Qualy strategy is no longer available after Saturday 04:30 UTC.");
+            throw new SelectionValidationException("Pre-Qualy strategy is no longer available after Sunday 13:00 UTC.");
         }
 
         if (nowUtc > FinalSubmissionDeadlineUtc)
         {
-            throw new SelectionForbiddenException("Selections are locked after Sunday 03:30 UTC.");
+            throw new SelectionForbiddenException("Selections are locked after Monday 12:00 UTC.");
         }
 
         var selection = existingSelection ?? new Selection();
@@ -102,11 +102,11 @@ public class SelectionService : ISelectionService
         Selection? selection;
         if (ShouldUseMockCurrentSelections())
         {
-            selection = GetOrCreateMockSelection(AustraliaRaceId2026, userId);
+            selection = GetOrCreateMockSelection(CurrentRaceId, userId);
         }
         else
         {
-            selection = await _selectionRepository.GetSelectionAsync(AustraliaRaceId2026, userId);
+            selection = await _selectionRepository.GetSelectionAsync(CurrentRaceId, userId);
         }
         if (selection is null)
         {
@@ -147,11 +147,11 @@ public class SelectionService : ISelectionService
 
     public RaceConfigDto? GetRaceConfig(string raceId)
     {
-        if (raceId == AustraliaRaceId2026)
+        if (raceId == CurrentRaceId)
         {
             return new RaceConfigDto
             {
-                RaceId = AustraliaRaceId2026,
+                RaceId = CurrentRaceId,
                 PreQualyDeadlineUtc = PreQualyDeadlineUtc,
                 FinalDeadlineUtc = FinalSubmissionDeadlineUtc
             };
@@ -235,7 +235,7 @@ public class SelectionService : ISelectionService
             RaceId = raceId,
             UserId = userId,
             BetType = BetType.Regular,
-            SubmittedAtUtc = new DateTime(2026, 3, 6, 9, 0, 0, DateTimeKind.Utc),
+            SubmittedAtUtc = new DateTime(2025, 12, 6, 9, 0, 0, DateTimeKind.Utc),
             IsLocked = false,
             OrderedSelections =
             [

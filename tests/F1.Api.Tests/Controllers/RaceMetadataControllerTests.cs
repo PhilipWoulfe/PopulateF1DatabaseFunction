@@ -18,11 +18,11 @@ public class RaceMetadataControllerTests
     public async Task GetMetadata_ShouldReturnNotFound_WhenNoPublishedMetadataExists()
     {
         var serviceMock = new Mock<IRaceMetadataService>();
-        serviceMock.Setup(service => service.GetMetadataAsync("2026-australia", true)).ReturnsAsync((RaceQuestionMetadata?)null);
+        serviceMock.Setup(service => service.GetMetadataAsync("2025-24-yas_marina", true)).ReturnsAsync((RaceQuestionMetadata?)null);
 
         var controller = CreateController(serviceMock);
 
-        var result = await controller.GetMetadata("2026-australia");
+        var result = await controller.GetMetadata("2025-24-yas_marina");
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -40,7 +40,7 @@ public class RaceMetadataControllerTests
             }
         };
 
-        var result = await controller.GetMetadata("2026-australia", includeDraft: true);
+        var result = await controller.GetMetadata("2025-24-yas_marina", includeDraft: true);
 
         Assert.IsType<ForbidResult>(result);
     }
@@ -50,7 +50,7 @@ public class RaceMetadataControllerTests
     {
         var serviceMock = new Mock<IRaceMetadataService>();
         serviceMock
-            .Setup(service => service.UpsertMetadataAsync("2026-australia", It.IsAny<RaceQuestionMetadata>(), "etag-1"))
+            .Setup(service => service.UpsertMetadataAsync("2025-24-yas_marina", It.IsAny<RaceQuestionMetadata>(), "etag-1"))
             .ThrowsAsync(new RaceMetadataConcurrencyException("conflict"));
 
         var controller = CreateController(serviceMock);
@@ -59,7 +59,7 @@ public class RaceMetadataControllerTests
             HttpContext = BuildAdminContext()
         };
 
-        var result = await controller.UpsertMetadata("2026-australia", new UpsertRaceQuestionMetadataDto
+        var result = await controller.UpsertMetadata("2025-24-yas_marina", new UpsertRaceQuestionMetadataDto
         {
             H2HQuestion = "Who finishes higher: Leclerc or Norris?",
             BonusQuestion = "How many safety-car laps?",

@@ -13,7 +13,7 @@ public class MockableDateTimeProviderTests
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Mock-Date"] = "2026-03-19T12:34:56Z";
+        httpContext.Request.Headers["X-Mock-Date"] = "2025-12-19T12:34:56Z";
         var accessor = new Mock<IHttpContextAccessor>();
         accessor.Setup(a => a.HttpContext).Returns(httpContext);
         var config = new Mock<IConfiguration>();
@@ -24,7 +24,7 @@ public class MockableDateTimeProviderTests
         var result = provider.UtcNow;
 
         // Assert
-        Assert.Equal(new DateTime(2026, 3, 19, 12, 34, 56, DateTimeKind.Utc), result);
+        Assert.Equal(new DateTime(2025, 12, 19, 12, 34, 56, DateTimeKind.Utc), result);
     }
 
     [Fact]
@@ -35,14 +35,14 @@ public class MockableDateTimeProviderTests
         accessor.Setup(a => a.HttpContext).Returns((HttpContext?)null);
         var config = new Mock<IConfiguration>();
         var globalMock = new Mock<IGlobalMockDateService>();
-        globalMock.Setup(g => g.GetMockDateUtc()).Returns(new DateTime(2026, 3, 20, 1, 2, 3, DateTimeKind.Utc));
+        globalMock.Setup(g => g.GetMockDateUtc()).Returns(new DateTime(2025, 12, 20, 1, 2, 3, DateTimeKind.Utc));
         var provider = new MockableDateTimeProvider(accessor.Object, config.Object, globalMock.Object);
 
         // Act
         var result = provider.UtcNow;
 
         // Assert
-        Assert.Equal(new DateTime(2026, 3, 20, 1, 2, 3, DateTimeKind.Utc), result);
+        Assert.Equal(new DateTime(2025, 12, 20, 1, 2, 3, DateTimeKind.Utc), result);
     }
 
     [Fact]

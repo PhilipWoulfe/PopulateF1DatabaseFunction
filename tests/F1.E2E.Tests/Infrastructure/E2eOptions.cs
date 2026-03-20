@@ -5,7 +5,7 @@ internal class E2eOptions
     public bool Enabled { get; init; }
     public string BaseUrl { get; init; } = string.Empty;
     public string ApiBaseUrl { get; init; } = string.Empty;
-    public string RaceId { get; init; } = "2026-australia";
+    public string RaceId { get; init; } = "2025-24-yas_marina";
     public bool Headless { get; init; } = true;
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(20);
     public string? CfClientId { get; init; }
@@ -32,7 +32,7 @@ internal class E2eOptions
         }
 
         var timeoutSeconds = ParseInt(Environment.GetEnvironmentVariable("E2E_TIMEOUT_SECONDS"), 20);
-        var raceId = Environment.GetEnvironmentVariable("E2E_RACE_ID") ?? "2026-australia";
+        var raceId = Environment.GetEnvironmentVariable("E2E_RACE_ID") ?? "2025-24-yas_marina";
         var headless = ParseBool(Environment.GetEnvironmentVariable("E2E_HEADLESS"), true);
 
         return new E2eOptions

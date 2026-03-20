@@ -27,7 +27,7 @@ internal class HomePage
         PageReadiness.WaitForAppReady(
             _driver,
             _wait.Timeout,
-            driver => driver.FindElements(By.CssSelector("a[href='australia-selection']")).Count > 0);
+            driver => driver.FindElements(By.CssSelector("a[href='yas-marina-selection']")).Count > 0);
     }
 
     public bool IsAccessDeniedVisible()
