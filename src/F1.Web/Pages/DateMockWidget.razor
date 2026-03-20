@@ -10,6 +10,10 @@
         </div>
         <button class="btn btn-sm btn-secondary mt-2" @onclick="SetMockDate">Set</button>
         <button class="btn btn-sm btn-secondary mt-2 ms-2" @onclick="ClearMockDate">Clear</button>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="text-danger mt-2" role="alert">@ErrorMessage</div>
+        }
     </div>
 }
 
@@ -23,11 +27,17 @@
     private DateTime? LocalMockDate { get; set; }
     // The value in UTC, used for API
     private DateTime? MockDateUtc { get; set; }
+    private string? ErrorMessage { get; set; }
     private bool ShowWidget => (UserSession.User?.IsAdmin ?? false) && DateMockingEnabled;
     private bool DateMockingEnabled => true; // TODO: Replace with config/env check
 
     protected override async Task OnInitializedAsync()
     {
+        if (!ShowWidget)
+        {
+            return;
+        }
+
         await MockDateService.RefreshAsync();
 
         var mockDateUtc = MockDateService.GetMockDate();
@@ -47,17 +57,33 @@
     {
         if (LocalMockDate.HasValue)
         {
-            MockDateUtc = DateTime.SpecifyKind(LocalMockDate.Value, DateTimeKind.Local).ToUniversalTime();
-            await MockDateService.SetMockDateAsync(MockDateUtc);
-            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            try
+            {
+                MockDateUtc = DateTime.SpecifyKind(LocalMockDate.Value, DateTimeKind.Local).ToUniversalTime();
+                await MockDateService.SetMockDateAsync(MockDateUtc);
+                ErrorMessage = null;
+                Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            }
+            catch (Exception)
+            {
+                ErrorMessage = "Unable to set mock date right now. Please try again.";
+            }
         }
     }
 
     private async Task ClearMockDate()
     {
-        await MockDateService.SetMockDateAsync(null);
-        MockDateUtc = null;
-        LocalMockDate = null;
-        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        try
+        {
+            await MockDateService.SetMockDateAsync(null);
+            MockDateUtc = null;
+            LocalMockDate = null;
+            ErrorMessage = null;
+            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "Unable to clear mock date right now. Please try again.";
+        }
     }
 }
