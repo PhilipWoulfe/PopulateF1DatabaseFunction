@@ -107,11 +107,10 @@ internal class ApiVerificationClient : IDisposable
         _httpClient.Dispose();
     }
 
-    public async Task<HttpResponseMessage> SetMockDate(string beforeDeadline, TimeSpan timeout, CancellationToken none)
+    public async Task SetMockDate(string beforeDeadline, TimeSpan timeout, CancellationToken none)
     {
-        var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = DateTime.Parse(beforeDeadline) }, none);
+        using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = DateTime.Parse(beforeDeadline) }, none);
         response.EnsureSuccessStatusCode();
-        return response;
     }
 
     private static bool IsTransientStatus(HttpStatusCode? statusCode)
