@@ -26,7 +26,14 @@ internal static class PageReadiness
                         return false;
                     }
 
-                    return readyCondition(d);
+                    try
+                    {
+                        return readyCondition(d);
+                    }
+                    catch (StaleElementReferenceException)
+                    {
+                        return false;
+                    }
                 });
                 return;
             }
@@ -48,12 +55,44 @@ internal static class PageReadiness
     private static bool IsBlazorErrorVisible(IWebDriver driver)
     {
         var elements = driver.FindElements(By.Id("blazor-error-ui"));
-        return elements.Count > 0 && elements[0].Displayed;
+        foreach (var element in elements)
+        {
+            try
+            {
+                if (element.Displayed)
+                {
+                    return true;
+                }
+            }
+            catch (StaleElementReferenceException)
+            {
+                // DOM is still settling; treat as not-ready and keep waiting.
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsLoadingScreenVisible(IWebDriver driver)
     {
-        return driver.FindElements(By.CssSelector("#app .loading-progress, #app .loading-progress-text"))
-            .Any(el => el.Displayed);
+        var loadingElements = driver.FindElements(By.CssSelector("#app .loading-progress, #app .loading-progress-text"));
+        foreach (var element in loadingElements)
+        {
+            try
+            {
+                if (element.Displayed)
+                {
+                    return true;
+                }
+            }
+            catch (StaleElementReferenceException)
+            {
+                // A stale loading node usually means hydration/re-render in progress.
+                return true;
+            }
+        }
+
+        return false;
     }
 }
