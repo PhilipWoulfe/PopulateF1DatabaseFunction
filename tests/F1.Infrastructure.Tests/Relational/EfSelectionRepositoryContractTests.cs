@@ -7,12 +7,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace F1.Infrastructure.Tests.Relational;
 
+[Collection(PostgresContractCollection.Name)]
 public class EfSelectionRepositoryContractTests : SelectionRepositoryContractTests
 {
+    private readonly PostgresTestContainerFixture _fixture;
+
+    public EfSelectionRepositoryContractTests(PostgresTestContainerFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     protected override ISelectionRepository CreateEmptyRepository()
     {
         var context = CreateContext();
-        SeedCompetitionAndRace(context, "no-such-race");
+        SeedCompetitionAndRace(context, "no-such-race", 24);
+        SeedCompetitionAndRace(context, "2026-02-test", 25);
         SeedDrivers(context);
         return new EfSelectionRepository(context);
     }
@@ -57,31 +66,43 @@ public class EfSelectionRepositoryContractTests : SelectionRepositoryContractTes
         return Task.FromResult(((ISelectionRepository)repository, seeded));
     }
 
-    private static F1DbContext CreateContext()
+    private F1DbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<F1DbContext>()
-            .UseInMemoryDatabase($"selection-contract-{Guid.NewGuid():N}")
+            .UseNpgsql(_fixture.ConnectionString)
             .Options;
 
-        return new F1DbContext(options);
+        var context = new F1DbContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        return context;
     }
 
-    private static void SeedCompetitionAndRace(F1DbContext context, string raceId)
+    private static void SeedCompetitionAndRace(F1DbContext context, string raceId, int round = 24)
     {
-        context.Competitions.Add(new Competition
+        if (!context.Competitions.Any(x => x.Id == 1))
         {
-            Id = 1,
-            Name = "Main Competition",
-            Year = 2025,
-            Description = "Contract test competition"
-        });
+            context.Competitions.Add(new Competition
+            {
+                Id = 1,
+                Name = "Main Competition",
+                Year = 2025,
+                Description = "Contract test competition"
+            });
+        }
+
+        if (context.Races.Any(x => x.Id == raceId))
+        {
+            context.SaveChanges();
+            return;
+        }
 
         context.Races.Add(new Race
         {
             Id = raceId,
             CompetitionId = 1,
             Season = 2025,
-            Round = 24,
+            Round = round,
             RaceName = "Yas Marina",
             CircuitName = "Yas Marina",
             StartTimeUtc = new DateTime(2025, 12, 8, 12, 0, 0, DateTimeKind.Utc),

@@ -7,8 +7,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace F1.Infrastructure.Tests.Relational;
 
+[Collection(PostgresContractCollection.Name)]
 public class EfRaceMetadataRepositoryContractTests : RaceMetadataRepositoryContractTests
 {
+    private readonly PostgresTestContainerFixture _fixture;
+
+    public EfRaceMetadataRepositoryContractTests(PostgresTestContainerFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     protected override IMetadataTestRepository CreateEmptyRepository()
     {
         var context = CreateContext();
@@ -44,13 +52,16 @@ public class EfRaceMetadataRepositoryContractTests : RaceMetadataRepositoryContr
         return new MetadataTestRepository(repository);
     }
 
-    private static F1DbContext CreateContext()
+    private F1DbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<F1DbContext>()
-            .UseInMemoryDatabase($"metadata-contract-{Guid.NewGuid():N}")
+            .UseNpgsql(_fixture.ConnectionString)
             .Options;
 
-        return new F1DbContext(options);
+        var context = new F1DbContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        return context;
     }
 
     private static void SeedCompetitionAndRace(F1DbContext context, string raceId)

@@ -7,8 +7,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace F1.Infrastructure.Tests.Relational;
 
+[Collection(PostgresContractCollection.Name)]
 public class EfDriverRepositoryContractTests : DriverRepositoryContractTests
 {
+    private readonly PostgresTestContainerFixture _fixture;
+
+    public EfDriverRepositoryContractTests(PostgresTestContainerFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     protected override IDriverRepository CreateRepositoryWithDrivers(IEnumerable<Driver> drivers)
     {
         var context = CreateContext();
@@ -18,12 +26,16 @@ public class EfDriverRepositoryContractTests : DriverRepositoryContractTests
         return new EfDriverRepository(context);
     }
 
-    private static F1DbContext CreateContext()
+    private F1DbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<F1DbContext>()
-            .UseInMemoryDatabase($"driver-contract-{Guid.NewGuid():N}")
+            .UseNpgsql(_fixture.ConnectionString)
             .Options;
 
-        return new F1DbContext(options);
+        var context = new F1DbContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+
+        return context;
     }
 }
