@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Globalization;
 
 namespace F1.E2E.Tests.Infrastructure;
 
@@ -109,7 +110,12 @@ internal class ApiVerificationClient : IDisposable
 
     public async Task SetMockDate(string mockDateUtcIso, CancellationToken cancellationToken)
     {
-        using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = DateTime.Parse(mockDateUtcIso) }, cancellationToken);
+        var parsed = DateTime.Parse(
+            mockDateUtcIso,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+
+        using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = parsed }, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

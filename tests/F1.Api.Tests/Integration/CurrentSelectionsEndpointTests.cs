@@ -12,10 +12,13 @@ namespace F1.Api.Tests.Integration;
 
 public class CurrentSelectionsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 {
+    private const string TestConnectionString = "Host=localhost;Port=5432;Database=f1_tests;Username=f1;Password=f1";
+
     private readonly WebApplicationFactory<Program> _factory;
 
     public CurrentSelectionsEndpointTests(WebApplicationFactory<Program> factory)
     {
+        Environment.SetEnvironmentVariable("ConnectionStrings__Postgres", TestConnectionString);
         _factory = factory;
     }
 
@@ -44,6 +47,7 @@ public class CurrentSelectionsEndpointTests : IClassFixture<WebApplicationFactor
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
+                    { "ConnectionStrings:Postgres", TestConnectionString },
                     { "DevSettings:SimulateCloudflare", "true" },
                     { "DevSettings:MockEmail", "user@example.com" },
                     { "DevSettings:MockCurrentSelections", "false" }

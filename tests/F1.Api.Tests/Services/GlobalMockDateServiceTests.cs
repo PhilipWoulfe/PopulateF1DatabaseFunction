@@ -23,4 +23,34 @@ public class GlobalMockDateServiceTests
         service.SetMockDateUtc(null);
         Assert.Null(service.GetMockDateUtc());
     }
+
+    [Fact]
+    public void Set_MockDate_Local_Normalizes_To_Utc()
+    {
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var service = new GlobalMockDateService(cache);
+        var localDate = DateTime.SpecifyKind(new DateTime(2025, 12, 19, 10, 0, 0), DateTimeKind.Local);
+
+        service.SetMockDateUtc(localDate);
+
+        var stored = service.GetMockDateUtc();
+        Assert.NotNull(stored);
+        Assert.Equal(DateTimeKind.Utc, stored!.Value.Kind);
+        Assert.Equal(localDate.ToUniversalTime(), stored.Value);
+    }
+
+    [Fact]
+    public void Set_MockDate_Unspecified_Assumes_Utc()
+    {
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var service = new GlobalMockDateService(cache);
+        var unspecified = new DateTime(2025, 12, 19, 10, 0, 0, DateTimeKind.Unspecified);
+
+        service.SetMockDateUtc(unspecified);
+
+        var stored = service.GetMockDateUtc();
+        Assert.NotNull(stored);
+        Assert.Equal(DateTimeKind.Utc, stored!.Value.Kind);
+        Assert.Equal(DateTime.SpecifyKind(unspecified, DateTimeKind.Utc), stored.Value);
+    }
 }

@@ -6,10 +6,13 @@ namespace F1.Api.Tests.Integration
 {
     public class RacesEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     {
+        private const string TestConnectionString = "Host=localhost;Port=5432;Database=f1_tests;Username=f1;Password=f1";
+
         private readonly WebApplicationFactory<Program> _factory;
 
         public RacesEndpointTests(WebApplicationFactory<Program> factory)
         {
+            Environment.SetEnvironmentVariable("ConnectionStrings__Postgres", TestConnectionString);
             _factory = factory;
         }
 
@@ -23,6 +26,7 @@ namespace F1.Api.Tests.Integration
                 {
                     config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
+                        { "ConnectionStrings:Postgres", TestConnectionString },
                         { "DevSettings:SimulateCloudflare", "false" }
                     });
                 });
@@ -45,6 +49,7 @@ namespace F1.Api.Tests.Integration
                 {
                     config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
+                        { "ConnectionStrings:Postgres", TestConnectionString },
                         { "DevSettings:SimulateCloudflare", "true" }
                     });
                 });

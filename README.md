@@ -111,6 +111,18 @@ Required API values in `.env`:
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: used to build `ConnectionStrings__Postgres` for `f1-api`.
 - `CLOUDFLARE_AUDIENCE`: mapped to `CloudflareAccess__Audience` for `f1-api`.
 
+For non-Docker local API runs (`dotnet run`), configure `ConnectionStrings:Postgres` via environment variable or user-secrets instead of committing credentials in appsettings files:
+
+```bash
+# Option A: environment variable
+export ConnectionStrings__Postgres='Host=localhost;Port=5432;Database=f1competition;Username=<user>;Password=<password>'
+
+# Option B: user secrets (from src/F1.Api)
+dotnet user-secrets set "ConnectionStrings:Postgres" "Host=localhost;Port=5432;Database=f1competition;Username=<user>;Password=<password>"
+```
+
+Note: `src/F1.Api/appsettings.json` and `src/F1.Api/appsettings.Development.json` intentionally keep `ConnectionStrings:Postgres` empty so missing configuration fails fast with a clear startup error.
+
 Optional Postgres bootstrap value in `.env`:
 
 - `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations and seeds baseline race/driver/metadata rows on startup.
