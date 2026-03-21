@@ -65,10 +65,15 @@ builder.Services
     .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "CloudflareAccess:Audience must be configured.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<ICloudflareJwtValidator, CloudflareJwtValidator>();
+var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres");
+if (string.IsNullOrWhiteSpace(postgresConnectionString))
+{
+    throw new InvalidOperationException("ConnectionStrings:Postgres must be configured.");
+}
+
 builder.Services.AddDbContext<F1DbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("Postgres");
-    options.UseNpgsql(connectionString);
+    options.UseNpgsql(postgresConnectionString);
 });
 builder.Services.AddScoped<IDriverRepository, EfDriverRepository>();
 builder.Services.AddScoped<IRaceMetadataRepository, EfRaceMetadataRepository>();
