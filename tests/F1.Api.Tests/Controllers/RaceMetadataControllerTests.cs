@@ -1,6 +1,5 @@
 using F1.Api.Controllers;
 using F1.Core.Dtos;
-using F1.Core.Exceptions;
 using F1.Core.Interfaces;
 using F1.Core.Models;
 using Microsoft.AspNetCore.Http;
@@ -43,32 +42,6 @@ public class RaceMetadataControllerTests
         var result = await controller.GetMetadata("2025-24-yas_marina", includeDraft: true);
 
         Assert.IsType<ForbidResult>(result);
-    }
-
-    [Fact]
-    public async Task UpsertMetadata_ShouldReturnPreconditionFailed_WhenConcurrencyConflictOccurs()
-    {
-        var serviceMock = new Mock<IRaceMetadataService>();
-        serviceMock
-            .Setup(service => service.UpsertMetadataAsync("2025-24-yas_marina", It.IsAny<RaceQuestionMetadata>(), "etag-1"))
-            .ThrowsAsync(new RaceMetadataConcurrencyException("conflict"));
-
-        var controller = CreateController(serviceMock);
-        controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = BuildAdminContext()
-        };
-
-        var result = await controller.UpsertMetadata("2025-24-yas_marina", new UpsertRaceQuestionMetadataDto
-        {
-            H2HQuestion = "Who finishes higher: Leclerc or Norris?",
-            BonusQuestion = "How many safety-car laps?",
-            IsPublished = true,
-            ExpectedEtag = "etag-1"
-        });
-
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status412PreconditionFailed, objectResult.StatusCode);
     }
 
     private static RaceMetadataController CreateController(Mock<IRaceMetadataService> serviceMock)

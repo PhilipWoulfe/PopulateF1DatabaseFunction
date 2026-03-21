@@ -31,7 +31,7 @@ public class RaceMetadataService : IRaceMetadataService
         return metadata;
     }
 
-    public async Task<RaceQuestionMetadata> UpsertMetadataAsync(string raceId, RaceQuestionMetadata metadata, string? expectedEtag)
+    public async Task<RaceQuestionMetadata> UpsertMetadataAsync(string raceId, RaceQuestionMetadata metadata)
     {
         if (string.IsNullOrWhiteSpace(raceId))
         {
@@ -51,6 +51,6 @@ public class RaceMetadataService : IRaceMetadataService
         metadata.RaceId = raceId;
         metadata.UpdatedAtUtc = _dateTimeProvider.UtcNow;
 
-        return await _raceMetadataRepository.UpsertMetadataAsync(raceId, metadata, expectedEtag);
+        return await _raceMetadataRepository.UpsertMetadataAsync(raceId, metadata);
     }
 }
