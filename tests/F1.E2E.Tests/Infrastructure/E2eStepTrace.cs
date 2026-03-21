@@ -56,9 +56,11 @@ internal sealed class E2eStepTrace : IDisposable
 
     private static string ResolveArtifactsDir()
     {
-        var configuredPath = Environment.GetEnvironmentVariable("E2E_ARTIFACT_PATH");
-        return string.IsNullOrWhiteSpace(configuredPath)
-            ? Path.Combine("TestResults", "e2e", "failure-artifacts")
-            : Path.GetFullPath(configuredPath);
+        var configuredPath = Environment.GetEnvironmentVariable("E2E_STEP_TRACE_PATH");
+        return E2ePathResolver.ResolveArtifactsDir(
+            configuredPath,
+            "TestResults",
+            "e2e",
+            "step-traces");
     }
 }
