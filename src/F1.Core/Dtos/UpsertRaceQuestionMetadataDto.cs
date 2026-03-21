@@ -7,6 +7,4 @@ public class UpsertRaceQuestionMetadataDto
     public string BonusQuestion { get; set; } = string.Empty;
 
     public bool IsPublished { get; set; }
-
-    public string? ExpectedEtag { get; set; }
 }

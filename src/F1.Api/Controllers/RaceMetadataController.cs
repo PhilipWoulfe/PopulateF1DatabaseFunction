@@ -90,18 +90,13 @@ public class RaceMetadataController : ControllerBase
                     H2HQuestion = request.H2HQuestion,
                     BonusQuestion = request.BonusQuestion,
                     IsPublished = request.IsPublished
-                },
-                request.ExpectedEtag);
+                });
 
             return Ok(MapToDto(metadata));
         }
         catch (MetadataValidationException ex)
         {
             return BadRequest(new { message = ex.Message });
-        }
-        catch (RaceMetadataConcurrencyException ex)
-        {
-            return StatusCode(StatusCodes.Status412PreconditionFailed, new { message = ex.Message });
         }
         catch (KeyNotFoundException)
         {

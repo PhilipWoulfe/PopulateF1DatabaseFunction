@@ -6,5 +6,5 @@ public interface IRaceMetadataRepository
 {
     Task<RaceQuestionMetadata?> GetMetadataAsync(string raceId);
 
-    Task<RaceQuestionMetadata> UpsertMetadataAsync(string raceId, RaceQuestionMetadata metadata, string? expectedEtag);
+    Task<RaceQuestionMetadata> UpsertMetadataAsync(string raceId, RaceQuestionMetadata metadata);
 }

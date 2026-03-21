@@ -41,8 +41,10 @@ internal static class E2eArtifacts
     private static string ResolveArtifactsDir()
     {
         var configuredPath = Environment.GetEnvironmentVariable("E2E_ARTIFACT_PATH");
-        return string.IsNullOrWhiteSpace(configuredPath)
-            ? Path.Combine("TestResults", "e2e", "failure-artifacts")
-            : Path.GetFullPath(configuredPath);
+        return E2ePathResolver.ResolveArtifactsDir(
+            configuredPath,
+            "TestResults",
+            "e2e",
+            "failure-artifacts");
     }
 }

@@ -9,38 +9,48 @@ internal class SelectionPage
     private readonly IWebDriver _driver;
     private readonly WebDriverWait _wait;
     private readonly string _baseUrl;
+    private readonly Action<string> _trace;
 
-    public SelectionPage(IWebDriver driver, WebDriverWait wait, string baseUrl)
+    public SelectionPage(IWebDriver driver, WebDriverWait wait, string baseUrl, Action<string>? trace = null)
     {
         _driver = driver;
         _wait = wait;
         _baseUrl = baseUrl.TrimEnd('/');
+        _trace = trace ?? (_ => { });
     }
 
     public void Navigate()
     {
+        _trace($"Navigate -> {_baseUrl}/yas-marina-selection");
         _driver.Navigate().GoToUrl(_baseUrl + "/yas-marina-selection");
+        _trace($"Navigation complete. Current URL: {_driver.Url}");
     }
 
     public void WaitUntilReady()
     {
+        _trace("Waiting for selection form (5 dropdowns) to render...");
         PageReadiness.WaitForAppReady(
             _driver,
             _wait.Timeout,
             driver => driver.FindElements(By.CssSelector("select[id^='driver-select-']")).Count == 5);
+        _trace("Selection form rendered.");
     }
 
     public IReadOnlyList<string> GetSelectableDriverIds()
     {
+        _trace("Reading selectable driver ids from dropdown...");
         var firstDropdown = _driver.FindElement(By.Id("driver-select-1"));
         var select = new SelectElement(firstDropdown);
 
-        return select.Options
+        var result = select.Options
             .Select(option => option.GetAttribute("value"))
             .Where(value => !string.IsNullOrWhiteSpace(value))
             .Select(value => value!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        _trace($"Found {result.Count} selectable driver ids.");
+        return result;
     }
 
     public void SelectTopFive(IReadOnlyList<string> driverIds)
@@ -53,12 +63,14 @@ internal class SelectionPage
         for (var i = 0; i < 5; i++)
         {
             var dropdown = new SelectElement(_driver.FindElement(By.Id($"driver-select-{i + 1}")));
+            _trace($"Selecting position {i + 1} -> {driverIds[i]}");
             dropdown.SelectByValue(driverIds[i]);
         }
     }
 
     public void ClickSubmit()
     {
+        _trace("Waiting for submit button to become interactable...");
         var submit = _wait.Until(driver =>
         {
             var element = driver.FindElement(By.Id("submit-selection"));
@@ -73,17 +85,21 @@ internal class SelectionPage
 
         try
         {
+            _trace("Clicking submit button (native click).");
             submit.Click();
         }
         catch (ElementClickInterceptedException)
         {
+            _trace("Native click intercepted; retrying submit with JavaScript click.");
             ((IJavaScriptExecutor)_driver).ExecuteScript("arguments[0].click();", submit);
         }
     }
 
     public void WaitForSaveConfirmation()
     {
+        _trace("Waiting for 'Selection saved successfully.' confirmation...");
         _wait.Until(driver => driver.PageSource.Contains("Selection saved successfully.", StringComparison.Ordinal));
+        _trace("Selection save confirmation displayed.");
     }
 
     public bool IsAnyDropdownDisabled()

@@ -1,5 +1,4 @@
 using F1.Core.Interfaces;
-using F1.Core.Exceptions;
 using F1.Core.Models;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
@@ -26,7 +25,7 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
         return MapToMetadata(document);
     }
 
-    public async Task<RaceQuestionMetadata> UpsertMetadataAsync(string raceId, RaceQuestionMetadata metadata, string? expectedEtag)
+    public async Task<RaceQuestionMetadata> UpsertMetadataAsync(string raceId, RaceQuestionMetadata metadata)
     {
         var document = await GetRaceDocumentAsync(raceId);
         if (document is null)
@@ -42,11 +41,6 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
             UpdatedAtUtc = metadata.UpdatedAtUtc
         };
 
-        var options = new PatchItemRequestOptions
-        {
-            IfMatchEtag = expectedEtag ?? document.ETag
-        };
-
         var operations = new[] { PatchOperation.Set("/adminQuestionMetadata", metadataDocument) };
         var useNonePartitionKey = ShouldUseNonePartitionKey(document);
         var initialPartitionKey = useNonePartitionKey ? PartitionKey.None : ResolvePartitionKey(document);
@@ -57,13 +51,9 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
                 document.Id,
                 initialPartitionKey,
                 operations,
-                options);
+                null);
 
             return EnsurePatchedMetadata(response.Resource);
-        }
-        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PreconditionFailed)
-        {
-            throw new RaceMetadataConcurrencyException("Race metadata update conflict detected. Refresh and retry.", ex);
         }
         catch (CosmosException ex) when (!useNonePartitionKey && ShouldRetryWithUndefinedPartitionKey(document, ex))
         {
@@ -71,7 +61,7 @@ public class CosmosRaceMetadataRepository : IRaceMetadataRepository
                 document.Id,
                 PartitionKey.None,
                 operations,
-                options);
+                null);
 
             return EnsurePatchedMetadata(retryResponse.Resource);
         }

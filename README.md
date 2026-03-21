@@ -206,6 +206,7 @@ Optional E2E tuning:
 - `E2E_TIMEOUT_SECONDS`: defaults to 20 locally and 30 in CI.
 - `E2E_HEADLESS`: defaults to true.
 - `E2E_RACE_ID`: defaults to `2025-24-yas_marina`.
+- `E2E_STEP_TRACE_PATH`: optional override for always-on Selenium step logs. Defaults to `TestResults/e2e/step-traces`.
 
 Test-only service-token fallback controls (use only when Cloudflare service-token JWTs omit email claims):
 
@@ -217,6 +218,7 @@ Test-only service-token fallback controls (use only when Cloudflare service-toke
 GitHub Actions artifact behavior:
 
 - CI writes E2E output to `TestResults/e2e` on the runner.
+- Selenium step traces are always written to `TestResults/e2e/step-traces` (or `E2E_STEP_TRACE_PATH` if set).
 - Failure screenshots and HTML are written to `TestResults/e2e/failure-artifacts` when capture runs.
 - The workflow uploads `TestResults/e2e/**` and `chromedriver.log` as the `e2e-results` artifact.
 - Runner-local files are discarded after the job completes, so GitHub Actions artifacts are the persisted copy for CI runs.
