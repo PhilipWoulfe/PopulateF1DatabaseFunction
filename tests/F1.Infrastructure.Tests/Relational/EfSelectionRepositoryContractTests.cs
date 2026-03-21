@@ -5,16 +5,16 @@ using F1.Infrastructure.Repositories;
 using F1.Infrastructure.Tests.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace F1.Infrastructure.Tests.Postgres;
+namespace F1.Infrastructure.Tests.Relational;
 
-public class PostgresSelectionRepositoryContractTests : SelectionRepositoryContractTests
+public class EfSelectionRepositoryContractTests : SelectionRepositoryContractTests
 {
     protected override ISelectionRepository CreateEmptyRepository()
     {
         var context = CreateContext();
         SeedCompetitionAndRace(context, "no-such-race");
         SeedDrivers(context);
-        return new PostgresSelectionRepository(context);
+        return new EfSelectionRepository(context);
     }
 
     protected override Task<(ISelectionRepository Repo, Selection Existing)> ArrangeRepositoryWithSelection(
@@ -24,7 +24,7 @@ public class PostgresSelectionRepositoryContractTests : SelectionRepositoryContr
         SeedCompetitionAndRace(context, raceId);
         SeedDrivers(context);
 
-        var repository = new PostgresSelectionRepository(context);
+        var repository = new EfSelectionRepository(context);
 
         var seeded = new Selection
         {

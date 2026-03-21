@@ -70,10 +70,10 @@ builder.Services.AddDbContext<F1DbContext>(options =>
     var connectionString = builder.Configuration.GetConnectionString("Postgres");
     options.UseNpgsql(connectionString);
 });
-builder.Services.AddScoped<IDriverRepository, PostgresDriverRepository>();
-builder.Services.AddScoped<IRaceMetadataRepository, PostgresRaceMetadataRepository>();
-builder.Services.AddScoped<ISelectionRepository, PostgresSelectionRepository>();
-builder.Services.AddScoped<IRaceRepository, PostgresRaceRepository>();
+builder.Services.AddScoped<IDriverRepository, EfDriverRepository>();
+builder.Services.AddScoped<IRaceMetadataRepository, EfRaceMetadataRepository>();
+builder.Services.AddScoped<ISelectionRepository, EfSelectionRepository>();
+builder.Services.AddScoped<IRaceRepository, EfRaceRepository>();
 
 builder.Services.AddCors(options =>
 {
@@ -101,7 +101,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-await PostgresStartupInitializer.InitializeAsync(app.Services, app.Configuration);
+await DatabaseStartupInitializer.InitializeAsync(app.Services, app.Configuration);
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
 {

@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace F1.Infrastructure.Repositories;
 
-public class PostgresSelectionRepository : ISelectionRepository
+public class EfSelectionRepository : ISelectionRepository
 {
     private readonly F1DbContext _dbContext;
 
-    public PostgresSelectionRepository(F1DbContext dbContext)
+    public EfSelectionRepository(F1DbContext dbContext)
     {
         _dbContext = dbContext;
     }

@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace F1.Infrastructure.Repositories;
 
-public class PostgresRaceRepository : IRaceRepository
+public class EfRaceRepository : IRaceRepository
 {
     private readonly F1DbContext _dbContext;
 
-    public PostgresRaceRepository(F1DbContext dbContext)
+    public EfRaceRepository(F1DbContext dbContext)
     {
         _dbContext = dbContext;
     }

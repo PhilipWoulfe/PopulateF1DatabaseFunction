@@ -5,14 +5,14 @@ using F1.Infrastructure.Repositories;
 using F1.Infrastructure.Tests.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace F1.Infrastructure.Tests.Postgres;
+namespace F1.Infrastructure.Tests.Relational;
 
-public class PostgresRaceMetadataRepositoryContractTests : RaceMetadataRepositoryContractTests
+public class EfRaceMetadataRepositoryContractTests : RaceMetadataRepositoryContractTests
 {
     protected override IMetadataTestRepository CreateEmptyRepository()
     {
         var context = CreateContext();
-        var repository = new PostgresRaceMetadataRepository(context);
+        var repository = new EfRaceMetadataRepository(context);
         return new MetadataTestRepository(repository);
     }
 
@@ -31,7 +31,7 @@ public class PostgresRaceMetadataRepositoryContractTests : RaceMetadataRepositor
         });
         context.SaveChanges();
 
-        var repository = new PostgresRaceMetadataRepository(context);
+        var repository = new EfRaceMetadataRepository(context);
         return new MetadataTestRepository(repository);
     }
 
@@ -40,7 +40,7 @@ public class PostgresRaceMetadataRepositoryContractTests : RaceMetadataRepositor
         var context = CreateContext();
         SeedCompetitionAndRace(context, raceId);
 
-        var repository = new PostgresRaceMetadataRepository(context);
+        var repository = new EfRaceMetadataRepository(context);
         return new MetadataTestRepository(repository);
     }
 
@@ -81,7 +81,7 @@ public class PostgresRaceMetadataRepositoryContractTests : RaceMetadataRepositor
 
     private sealed class MetadataTestRepository : IMetadataTestRepository
     {
-        public MetadataTestRepository(PostgresRaceMetadataRepository repository)
+        public MetadataTestRepository(EfRaceMetadataRepository repository)
         {
             Repository = repository;
         }

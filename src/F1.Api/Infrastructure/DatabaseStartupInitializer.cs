@@ -6,7 +6,7 @@ using Serilog;
 
 namespace F1.Api.Infrastructure;
 
-public static class PostgresStartupInitializer
+public static class DatabaseStartupInitializer
 {
     public static async Task InitializeAsync(IServiceProvider serviceProvider, IConfiguration configuration)
     {
@@ -22,7 +22,7 @@ public static class PostgresStartupInitializer
         await dbContext.Database.MigrateAsync();
         await SeedAsync(dbContext);
 
-        Log.Information("Postgres migration and seed completed.");
+        Log.Information("Database migration and seed completed.");
     }
 
     private static async Task SeedAsync(F1DbContext dbContext)

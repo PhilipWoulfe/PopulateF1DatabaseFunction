@@ -5,9 +5,9 @@ using F1.Infrastructure.Repositories;
 using F1.Infrastructure.Tests.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace F1.Infrastructure.Tests.Postgres;
+namespace F1.Infrastructure.Tests.Relational;
 
-public class PostgresDriverRepositoryContractTests : DriverRepositoryContractTests
+public class EfDriverRepositoryContractTests : DriverRepositoryContractTests
 {
     protected override IDriverRepository CreateRepositoryWithDrivers(IEnumerable<Driver> drivers)
     {
@@ -15,7 +15,7 @@ public class PostgresDriverRepositoryContractTests : DriverRepositoryContractTes
         context.Drivers.AddRange(drivers);
         context.SaveChanges();
 
-        return new PostgresDriverRepository(context);
+        return new EfDriverRepository(context);
     }
 
     private static F1DbContext CreateContext()

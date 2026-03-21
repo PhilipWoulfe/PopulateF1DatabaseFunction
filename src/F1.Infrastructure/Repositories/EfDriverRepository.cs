@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace F1.Infrastructure.Repositories;
 
-public class PostgresDriverRepository : IDriverRepository
+public class EfDriverRepository : IDriverRepository
 {
     private readonly F1DbContext _dbContext;
 
-    public PostgresDriverRepository(F1DbContext dbContext)
+    public EfDriverRepository(F1DbContext dbContext)
     {
         _dbContext = dbContext;
     }
