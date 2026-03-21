@@ -83,11 +83,13 @@ elif [[ "$MODE" == "CI" ]]; then
     fi
 
     echo "🏎️  Running API/Backend Unit Tests with Coverage (CI Mode)..."
+    # Keep API coverage scoped to API/Core/Services; infrastructure coverage is validated
+    # in the dedicated F1.Infrastructure.Tests project.
     if ! CI=true dotnet test "$API_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
         /p:CollectCoverage=true \
         /p:CoverletOutputFormat=cobertura \
         /p:CoverletOutput=./TestResults/api-coverage/ \
-        /p:Include="[F1.Api]*%2c[F1.Core]*%2c[F1.Services]*%2c[F1.Infrastructure]*" \
+        /p:Include="[F1.Api]*%2c[F1.Core]*%2c[F1.Services]*" \
         /p:Threshold=30; then
         printf "\033[0;31m❌ API/Backend tests failed in CI mode.\033[0m\n"
         exit 1
@@ -108,11 +110,13 @@ elif [[ "$MODE" == "CI" ]]; then
     exit 0
 else
     echo "🏎️  Running API/Backend Unit Tests with Coverage ($CONFIG Mode)..."
+    # Keep API coverage scoped to API/Core/Services; infrastructure coverage is validated
+    # in the dedicated F1.Infrastructure.Tests project.
     if ! dotnet test "$API_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
         /p:CollectCoverage=true \
         /p:CoverletOutputFormat=cobertura \
         /p:CoverletOutput=./TestResults/api-coverage/ \
-        /p:Include="[F1.Api]*%2c[F1.Core]*%2c[F1.Services]*%2c[F1.Infrastructure]*" \
+        /p:Include="[F1.Api]*%2c[F1.Core]*%2c[F1.Services]*" \
         /p:Threshold=30; then
         printf "\033[0;31m❌ API/Backend tests failed! Aborting build.\033[0m\n"
         printf "\a"

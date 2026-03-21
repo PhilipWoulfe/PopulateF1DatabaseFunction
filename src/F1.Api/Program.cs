@@ -1,4 +1,5 @@
 using F1.Api.Middleware;
+using F1.Api.Infrastructure;
 using Serilog;
 using Serilog.Formatting.Compact;
 using F1.Api.Services;
@@ -99,6 +100,8 @@ builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+await PostgresStartupInitializer.InitializeAsync(app.Services, app.Configuration);
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
 {

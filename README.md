@@ -111,6 +111,10 @@ Required API values in `.env`:
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: used to build `ConnectionStrings__Postgres` for `f1-api`.
 - `CLOUDFLARE_AUDIENCE`: mapped to `CloudflareAccess__Audience` for `f1-api`.
 
+Optional Postgres bootstrap value in `.env`:
+
+- `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations and seeds baseline race/driver/metadata rows on startup.
+
 Optional API values in `.env`:
 
 - `ADMIN_GROUP_CLAIM_TYPE`: mapped to `CloudflareAccess__AdminGroupClaimType` for `f1-api`. Sets the primary/custom claim used to read Cloudflare group membership; the middleware also falls back to common group claims (`groups`, `group`, and `ClaimTypes.GroupSid`) when present.

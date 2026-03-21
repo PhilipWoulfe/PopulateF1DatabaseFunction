@@ -26,6 +26,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}
       # Map .env variables to ASP.NET Core configuration format
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=${POSTGRES_DB:-f1competition};Username=${POSTGRES_USER:-f1};Password=${POSTGRES_PASSWORD:-f1}
+      - Database__AutoMigrate=${DB_AUTO_MIGRATE:-true}
       - CloudflareAccess__Audience=${CLOUDFLARE_AUDIENCE:-CloudflareAccessAudienceNotSet}
       - CloudflareAccess__Issuer=https://f1-team.cloudflareaccess.com
       - CloudflareAccess__AdminGroupClaimType=${ADMIN_GROUP_CLAIM_TYPE:-groups}
