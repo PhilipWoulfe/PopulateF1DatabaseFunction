@@ -14,6 +14,7 @@ API_PROJECT="src/F1.Api/F1.Api.csproj"
 WEB_PROJECT="src/F1.Web/F1.Web.csproj"
 API_TEST_PROJECT="tests/F1.Api.Tests/F1.Api.Tests.csproj"
 WEB_TEST_PROJECT="tests/F1.Web.Tests/F1.Web.Tests.csproj"
+INFRA_TEST_PROJECT="tests/F1.Infrastructure.Tests/F1.Infrastructure.Tests.csproj"
 
 FORMAT_INCLUDE_PATHS=(
   "src/F1.Api"
@@ -55,6 +56,7 @@ run_quality_gate() {
     if ! dotnet restore "$WEB_PROJECT"; then return 1; fi
     if ! dotnet restore "$API_TEST_PROJECT"; then return 1; fi
     if ! dotnet restore "$WEB_TEST_PROJECT"; then return 1; fi
+    if ! dotnet restore "$INFRA_TEST_PROJECT"; then return 1; fi
 
     if ! dotnet format whitespace F1Competition.sln --verify-no-changes --no-restore --include "${FORMAT_INCLUDE_PATHS[@]}"; then return 1; fi
 
@@ -62,6 +64,7 @@ run_quality_gate() {
     if ! CI=true dotnet build "$WEB_PROJECT" --configuration Release --no-restore; then return 1; fi
     if ! CI=true dotnet build "$API_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
     if ! CI=true dotnet build "$WEB_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
+    if ! CI=true dotnet build "$INFRA_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
 
     echo "✅ Quality gate passed."
 }
@@ -106,6 +109,17 @@ elif [[ "$MODE" == "CI" ]]; then
         exit 1
     fi
 
+    echo "🏎️  Running Infrastructure Unit Tests with Coverage (CI Mode)..."
+    if ! CI=true dotnet test "$INFRA_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
+        /p:CollectCoverage=true \
+        /p:CoverletOutputFormat=cobertura \
+        /p:CoverletOutput=./TestResults/infra-coverage/ \
+        /p:Include="[F1.Infrastructure]*" \
+        /p:Threshold=20; then
+        printf "\033[0;31m❌ Infrastructure tests failed in CI mode.\033[0m\n"
+        exit 1
+    fi
+
     echo "✅ CI mode complete (quality + tests)."
     exit 0
 else
@@ -135,7 +149,19 @@ else
         exit 1
     fi
 
-    echo "✅ API and Web tests passed!"
+    echo "🏎️  Running Infrastructure Unit Tests with Coverage ($CONFIG Mode)..."
+    if ! dotnet test "$INFRA_TEST_PROJECT" -c "$CONFIG" --nologo --verbosity minimal \
+        /p:CollectCoverage=true \
+        /p:CoverletOutputFormat=cobertura \
+        /p:CoverletOutput=./TestResults/infra-coverage/ \
+        /p:Include="[F1.Infrastructure]*" \
+        /p:Threshold=20; then
+        printf "\033[0;31m❌ Infrastructure tests failed! Aborting build.\033[0m\n"
+        printf "\a"
+        exit 1
+    fi
+
+    echo "✅ API, Web, and Infrastructure tests passed!"
 fi
 
 # 4. Fire up the containers
