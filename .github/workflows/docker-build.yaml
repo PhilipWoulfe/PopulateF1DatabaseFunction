@@ -204,11 +204,13 @@ jobs:
             API_URL="$BASE_URL/api"
           fi
 
-          headers=()
-          if [ -n "${E2E_CF_CLIENT_ID:-}" ] && [ -n "${E2E_CF_CLIENT_SECRET:-}" ]; then
-            headers+=( -H "CF-Access-Client-Id: ${E2E_CF_CLIENT_ID}" )
-            headers+=( -H "CF-Access-Client-Secret: ${E2E_CF_CLIENT_SECRET}" )
+          if [ -z "${E2E_CF_CLIENT_ID:-}" ] || [ -z "${E2E_CF_CLIENT_SECRET:-}" ]; then
+            echo "E2E_CF_CLIENT_ID and E2E_CF_CLIENT_SECRET are required to access the API behind Cloudflare Access."
+            exit 1
           fi
+          headers=()
+          headers+=( -H "CF-Access-Client-Id: ${E2E_CF_CLIENT_ID}" )
+          headers+=( -H "CF-Access-Client-Secret: ${E2E_CF_CLIENT_SECRET}" )
 
           max_attempts=60
           stable_required=3
