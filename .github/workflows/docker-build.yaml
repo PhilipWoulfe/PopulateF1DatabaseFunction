@@ -257,6 +257,7 @@ jobs:
           E2E_API_BASE_URL: ${{ vars.E2E_API_BASE_URL }}
           E2E_CF_CLIENT_ID: ${{ secrets.E2E_CF_CLIENT_ID }}
           E2E_CF_CLIENT_SECRET: ${{ secrets.E2E_CF_CLIENT_SECRET }}
+          E2E_RACE_ID: ${{ vars.E2E_RACE_ID }}
           E2E_HEADLESS: "true"
           E2E_TIMEOUT_SECONDS: "30"
           E2E_ARTIFACT_PATH: ${{ github.workspace }}/TestResults/e2e/failure-artifacts
