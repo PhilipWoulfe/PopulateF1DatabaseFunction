@@ -1,0 +1,109 @@
+using F1.Core.Models;
+using F1.Infrastructure.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace F1.Infrastructure.Data;
+
+public class F1DbContext : DbContext
+{
+    public F1DbContext(DbContextOptions<F1DbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Competition> Competitions => Set<Competition>();
+    public DbSet<Race> Races => Set<Race>();
+    public DbSet<Driver> Drivers => Set<Driver>();
+    public DbSet<Selection> Selections => Set<Selection>();
+    public DbSet<SelectionPositionEntity> SelectionPositions => Set<SelectionPositionEntity>();
+    public DbSet<RaceMetadataEntity> RaceMetadata => Set<RaceMetadataEntity>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Competition>(entity =>
+        {
+            entity.ToTable("Competitions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Race>(entity =>
+        {
+            entity.ToTable("Races");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(128);
+            entity.Property(x => x.RaceName).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.CircuitName).HasMaxLength(200).IsRequired();
+
+            entity.HasOne<Competition>()
+                .WithMany()
+                .HasForeignKey(x => x.CompetitionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => new { x.CompetitionId, x.Season, x.Round }).IsUnique();
+        });
+
+        modelBuilder.Entity<Driver>(entity =>
+        {
+            entity.ToTable("Drivers");
+            entity.HasKey(x => x.DriverId);
+            entity.Property(x => x.DriverId).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.FullName).HasMaxLength(200);
+            entity.Property(x => x.Code).HasMaxLength(8);
+            entity.Property(x => x.Nationality).HasMaxLength(100);
+            entity.Ignore(x => x.Id);
+        });
+
+        modelBuilder.Entity<Selection>(entity =>
+        {
+            entity.ToTable("Selections");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.UserId).HasMaxLength(256).IsRequired();
+            entity.Property(x => x.RaceId).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.BetType).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entity.Ignore(x => x.OrderedSelections);
+            entity.Ignore(x => x.IsLocked);
+            entity.HasIndex(x => new { x.RaceId, x.UserId }).IsUnique();
+
+            entity.HasOne<Race>()
+                .WithMany()
+                .HasForeignKey(x => x.RaceId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SelectionPositionEntity>(entity =>
+        {
+            entity.ToTable("SelectionPositions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.DriverId).HasMaxLength(64).IsRequired();
+
+            entity.HasOne<Selection>()
+                .WithMany()
+                .HasForeignKey(x => x.SelectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<Driver>()
+                .WithMany()
+                .HasForeignKey(x => x.DriverId)
+                .HasPrincipalKey(x => x.DriverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => new { x.SelectionId, x.Position }).IsUnique();
+        });
+
+        modelBuilder.Entity<RaceMetadataEntity>(entity =>
+        {
+            entity.ToTable("RaceMetadata");
+            entity.HasKey(x => x.RaceId);
+            entity.Property(x => x.RaceId).HasMaxLength(128);
+            entity.Property(x => x.H2HQuestion).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.BonusQuestion).HasMaxLength(500).IsRequired();
+
+            entity.HasOne<Race>()
+                .WithMany()
+                .HasForeignKey(x => x.RaceId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+}

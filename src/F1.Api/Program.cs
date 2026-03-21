@@ -3,9 +3,10 @@ using Serilog;
 using Serilog.Formatting.Compact;
 using F1.Api.Services;
 using F1.Core.Interfaces;
+using F1.Infrastructure.Data;
 using F1.Infrastructure.Repositories;
 using F1.Services;
-using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,16 +64,15 @@ builder.Services
     .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "CloudflareAccess:Audience must be configured.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<ICloudflareJwtValidator, CloudflareJwtValidator>();
-
-builder.Services.AddSingleton((provider) =>
+builder.Services.AddDbContext<F1DbContext>(options =>
 {
-    var configuration = provider.GetRequiredService<IConfiguration>();
-    var connectionString = configuration["CosmosDb:ConnectionString"];
-    return new CosmosClient(connectionString);
+    var connectionString = builder.Configuration.GetConnectionString("Postgres");
+    options.UseNpgsql(connectionString);
 });
-builder.Services.AddScoped<IDriverRepository, CosmosDriverRepository>();
-builder.Services.AddScoped<IRaceMetadataRepository, CosmosRaceMetadataRepository>();
-builder.Services.AddScoped<ISelectionRepository, CosmosSelectionRepository>();
+builder.Services.AddScoped<IDriverRepository, PostgresDriverRepository>();
+builder.Services.AddScoped<IRaceMetadataRepository, PostgresRaceMetadataRepository>();
+builder.Services.AddScoped<ISelectionRepository, PostgresSelectionRepository>();
+builder.Services.AddScoped<IRaceRepository, PostgresRaceRepository>();
 
 builder.Services.AddCors(options =>
 {

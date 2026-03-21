@@ -2,15 +2,10 @@ using F1.Core.Dtos;
 using F1.Core.Interfaces;
 using F1.Core.Models;
 
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using System.Collections.Concurrent;
-
 namespace F1.Services;
 
 public class SelectionService : ISelectionService
 {
-    private static readonly ConcurrentDictionary<string, Selection> MockSelections = new(StringComparer.OrdinalIgnoreCase);
     public static readonly DateTime PreQualyDeadlineUtc = new(2025, 12, 7, 13, 0, 0, DateTimeKind.Utc);
     public static readonly DateTime FinalSubmissionDeadlineUtc = new(2025, 12, 8, 12, 0, 0, DateTimeKind.Utc);
     public const string CurrentRaceId = "2025-24-yas_marina";
@@ -18,34 +13,20 @@ public class SelectionService : ISelectionService
     private readonly ISelectionRepository _selectionRepository;
     private readonly IDriverRepository _driverRepository;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly IConfiguration _configuration;
-    private readonly IHostEnvironment _hostEnvironment;
 
     public SelectionService(
         ISelectionRepository selectionRepository,
         IDriverRepository driverRepository,
-        IDateTimeProvider dateTimeProvider,
-        IConfiguration configuration,
-        IHostEnvironment hostEnvironment)
+        IDateTimeProvider dateTimeProvider)
     {
         _selectionRepository = selectionRepository;
         _driverRepository = driverRepository;
         _dateTimeProvider = dateTimeProvider;
-        _configuration = configuration;
-        _hostEnvironment = hostEnvironment;
     }
 
     public async Task<Selection?> GetSelectionAsync(string raceId, string userId)
     {
-        Selection? selection;
-        if (ShouldUseMockCurrentSelections())
-        {
-            selection = GetOrCreateMockSelection(raceId, userId);
-        }
-        else 
-        {
-            selection = await _selectionRepository.GetSelectionAsync(raceId, userId);
-        }
+        var selection = await _selectionRepository.GetSelectionAsync(raceId, userId);
 
         if (selection is null)
         {
@@ -89,25 +70,12 @@ public class SelectionService : ISelectionService
         selection.SubmittedAtUtc = nowUtc;
         selection.IsLocked = false;
 
-        if (ShouldUseMockCurrentSelections())
-        {
-            return UpsertMockSelection(raceId, userId, submission);
-        }
-
         return await _selectionRepository.UpsertSelectionAsync(selection);
     }
 
     public async Task<IReadOnlyList<CurrentSelectionDto>> GetCurrentSelectionsAsync(string userId)
     {
-        Selection? selection;
-        if (ShouldUseMockCurrentSelections())
-        {
-            selection = GetOrCreateMockSelection(CurrentRaceId, userId);
-        }
-        else
-        {
-            selection = await _selectionRepository.GetSelectionAsync(CurrentRaceId, userId);
-        }
+        var selection = await _selectionRepository.GetSelectionAsync(CurrentRaceId, userId);
         if (selection is null)
         {
             return [];
@@ -208,63 +176,4 @@ public class SelectionService : ISelectionService
     {
         return selection.BetType == BetType.PreQualy && nowUtc > PreQualyDeadlineUtc;
     }
-
-        private bool ShouldUseMockCurrentSelections()
-    {
-        return _hostEnvironment.IsDevelopment()
-               && _configuration.GetValue<bool>("DevSettings:MockCurrentSelections");
-    }
-
-    private static Selection GetOrCreateMockSelection(string raceId, string userId)
-    {
-        var key = BuildMockSelectionKey(raceId, userId);
-        var existing = MockSelections.GetOrAdd(key, _ => BuildDefaultMockSelection(raceId, userId));
-        return existing;
-    }
-
-    private static string BuildMockSelectionKey(string raceId, string userId)
-    {
-        return $"{raceId}::{userId}";
-    }
-
-    private static Selection BuildDefaultMockSelection(string raceId, string userId)
-    {
-        return new Selection
-        {
-            Id = Guid.NewGuid(),
-            RaceId = raceId,
-            UserId = userId,
-            BetType = BetType.Regular,
-            SubmittedAtUtc = new DateTime(2025, 12, 6, 9, 0, 0, DateTimeKind.Utc),
-            IsLocked = false,
-            OrderedSelections =
-            [
-                new SelectionPosition { Position = 1, DriverId = "max_verstappen" },
-                new SelectionPosition { Position = 2, DriverId = "lando_norris" },
-                new SelectionPosition { Position = 3, DriverId = "charles_leclerc" },
-                new SelectionPosition { Position = 4, DriverId = "oscar_piastri" },
-                new SelectionPosition { Position = 5, DriverId = "lewis_hamilton" }
-            ]
-        };
-    }
-
-    private static Selection UpsertMockSelection(string raceId, string userId, SelectionSubmissionDto submission)
-    {
-        var orderedSelections = submission.OrderedSelections;
-        var key = BuildMockSelectionKey(raceId, userId);
-        var updated = new Selection
-        {
-            Id = MockSelections.TryGetValue(key, out var existing) ? existing.Id : Guid.NewGuid(),
-            RaceId = raceId,
-            UserId = userId,
-            OrderedSelections = orderedSelections,
-            BetType = submission.BetType,
-            SubmittedAtUtc = DateTime.UtcNow,
-            IsLocked = false
-        };
-
-        MockSelections[key] = updated;
-        return updated;
-    }
-
 }

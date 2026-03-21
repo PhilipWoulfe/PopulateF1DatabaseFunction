@@ -5,8 +5,6 @@ using F1.Core.Models;
 using F1.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Moq;
 using System.Security.Claims;
 
@@ -152,6 +150,28 @@ public class SelectionsControllerTests
         var mockRepo = new Mock<ISelectionRepository>();
         var mockDriverRepo = new Mock<IDriverRepository>();
         var mockDateTimeProvider = new Mock<IDateTimeProvider>();
+        var store = new Dictionary<string, Selection>(StringComparer.OrdinalIgnoreCase);
+
+        mockRepo
+            .Setup(repo => repo.GetSelectionAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((string raceId, string userId) =>
+            {
+                store.TryGetValue($"{raceId}::{userId}", out var selection);
+                return selection;
+            });
+
+        mockRepo
+            .Setup(repo => repo.UpsertSelectionAsync(It.IsAny<Selection>()))
+            .ReturnsAsync((Selection selection) =>
+            {
+                if (selection.Id == Guid.Empty)
+                {
+                    selection.Id = Guid.NewGuid();
+                }
+
+                store[$"{selection.RaceId}::{selection.UserId}"] = selection;
+                return selection;
+            });
 
         // Mock driver repository to return drivers used in the test selections
         mockDriverRepo.Setup(repo => repo.GetDriversAsync()).ReturnsAsync(new List<Driver>
@@ -168,34 +188,12 @@ public class SelectionsControllerTests
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         });
 
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "DevSettings:MockCurrentSelections", "true" }
-            })
-            .Build();
-
-        var hostEnvironment = new Mock<IHostEnvironment>();
-        hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(Environments.Development);
-
-        return new SelectionService(mockRepo.Object, mockDriverRepo.Object, mockDateTimeProvider.Object, configuration, hostEnvironment.Object);
+        return new SelectionService(mockRepo.Object, mockDriverRepo.Object, mockDateTimeProvider.Object);
     }
 
     private static SelectionsController CreateController(
-        Mock<ISelectionService> serviceMock,
-        bool mockCurrentSelections = false,
-        string environmentName = "Production")
+        Mock<ISelectionService> serviceMock)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "DevSettings:MockCurrentSelections", mockCurrentSelections.ToString() }
-            })
-            .Build();
-
-        var hostEnvironment = new Mock<IHostEnvironment>();
-        hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(environmentName);
-
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
 

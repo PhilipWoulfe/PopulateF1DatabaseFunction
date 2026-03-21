@@ -4,9 +4,6 @@ using F1.Core.Interfaces;
 using F1.Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using System.Collections.Concurrent;
 
 namespace F1.Api.Controllers;
 
@@ -14,23 +11,12 @@ namespace F1.Api.Controllers;
 [Route("races/{raceId}/metadata")]
 public class RaceMetadataController : ControllerBase
 {
-    private static readonly ConcurrentDictionary<string, RaceQuestionMetadata> MockMetadata = new(StringComparer.OrdinalIgnoreCase);
-
     private readonly IRaceMetadataService _raceMetadataService;
-    private readonly IConfiguration _configuration;
-    private readonly IHostEnvironment _hostEnvironment;
-    private readonly IDateTimeProvider _dateTimeProvider;
 
     public RaceMetadataController(
-        IRaceMetadataService raceMetadataService,
-        IConfiguration configuration,
-        IHostEnvironment hostEnvironment,
-        IDateTimeProvider dateTimeProvider)
+        IRaceMetadataService raceMetadataService)
     {
         _raceMetadataService = raceMetadataService;
-        _configuration = configuration;
-        _hostEnvironment = hostEnvironment;
-        _dateTimeProvider = dateTimeProvider;
     }
 
     [HttpGet]
@@ -39,17 +25,6 @@ public class RaceMetadataController : ControllerBase
         if (includeDraft && !User.IsInRole("Admin"))
         {
             return Forbid();
-        }
-
-        if (ShouldUseMockRaceMetadata())
-        {
-            var mock = GetOrCreateMockMetadata(raceId);
-            if (!includeDraft && !mock.IsPublished)
-            {
-                return NotFound();
-            }
-
-            return Ok(MapToDto(mock));
         }
 
         var metadata = await _raceMetadataService.GetMetadataAsync(raceId, publishedOnly: !includeDraft);
@@ -65,22 +40,6 @@ public class RaceMetadataController : ControllerBase
     [HttpPut]
     public async Task<IActionResult> UpsertMetadata(string raceId, [FromBody] UpsertRaceQuestionMetadataDto request)
     {
-        if (ShouldUseMockRaceMetadata())
-        {
-            var mock = new RaceQuestionMetadata
-            {
-                RaceId = raceId,
-                H2HQuestion = request.H2HQuestion,
-                BonusQuestion = request.BonusQuestion,
-                IsPublished = request.IsPublished,
-                UpdatedAtUtc = _dateTimeProvider.UtcNow,
-                ETag = Guid.NewGuid().ToString("N")
-            };
-
-            MockMetadata[raceId] = mock;
-            return Ok(MapToDto(mock));
-        }
-
         try
         {
             var metadata = await _raceMetadataService.UpsertMetadataAsync(
@@ -102,25 +61,6 @@ public class RaceMetadataController : ControllerBase
         {
             return NotFound();
         }
-    }
-
-    private bool ShouldUseMockRaceMetadata()
-    {
-        return _hostEnvironment.IsDevelopment()
-               && _configuration.GetValue<bool>("DevSettings:MockRaceMetadata");
-    }
-
-    private RaceQuestionMetadata GetOrCreateMockMetadata(string raceId)
-    {
-        return MockMetadata.GetOrAdd(raceId, _ => new RaceQuestionMetadata
-        {
-            RaceId = raceId,
-            H2HQuestion = "Who finishes higher: Leclerc or Norris?",
-            BonusQuestion = "How many safety-car laps will there be?",
-            IsPublished = true,
-            UpdatedAtUtc = _dateTimeProvider.UtcNow,
-            ETag = Guid.NewGuid().ToString("N")
-        });
     }
 
     private static RaceQuestionMetadataDto MapToDto(RaceQuestionMetadata metadata)
