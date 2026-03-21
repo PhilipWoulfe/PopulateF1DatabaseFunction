@@ -13,3 +13,10 @@ public class SelectionForbiddenException : Exception
     {
     }
 }
+
+public class SelectionRaceNotFoundException : Exception
+{
+    public SelectionRaceNotFoundException(string message) : base(message)
+    {
+    }
+}

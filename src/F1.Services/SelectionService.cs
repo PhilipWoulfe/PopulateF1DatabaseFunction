@@ -12,15 +12,18 @@ public class SelectionService : ISelectionService
 
     private readonly ISelectionRepository _selectionRepository;
     private readonly IDriverRepository _driverRepository;
+    private readonly IRaceRepository _raceRepository;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public SelectionService(
         ISelectionRepository selectionRepository,
         IDriverRepository driverRepository,
+        IRaceRepository raceRepository,
         IDateTimeProvider dateTimeProvider)
     {
         _selectionRepository = selectionRepository;
         _driverRepository = driverRepository;
+        _raceRepository = raceRepository;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -42,6 +45,12 @@ public class SelectionService : ISelectionService
     {
         var orderedSelections = submission.OrderedSelections;
         ValidateSelections(orderedSelections);
+
+        var race = await _raceRepository.GetRaceAsync(raceId);
+        if (race is null)
+        {
+            throw new SelectionRaceNotFoundException($"Race '{raceId}' not found.");
+        }
 
         var nowUtc = _dateTimeProvider.UtcNow;
         var existingSelection = await _selectionRepository.GetSelectionAsync(raceId, userId);

@@ -145,10 +145,47 @@ public class SelectionsControllerTests
         Assert.Equal("norris", payload.OrderedSelections[0].DriverId);
     }
 
+    [Fact]
+    public async Task UpsertMine_ShouldReturnNotFound_WhenRaceDoesNotExist()
+    {
+        var serviceMock = new Mock<ISelectionService>();
+        serviceMock
+            .Setup(service => service.UpsertSelectionAsync("no-such-race", "user@example.com", It.IsAny<SelectionSubmissionDto>()))
+            .ThrowsAsync(new SelectionRaceNotFoundException("Race 'no-such-race' not found."));
+
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Email, "user@example.com")],
+            "TestAuth"));
+
+        var controller = CreateController(serviceMock);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+
+        var result = await controller.UpsertMine("no-such-race", new SelectionSubmissionDto
+        {
+            BetType = F1.Core.Models.BetType.Regular,
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
+        });
+
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal(404, notFound.StatusCode);
+    }
+
     public ISelectionService BuildSelectionServiceWithMockCurrentSelections()
     {
         var mockRepo = new Mock<ISelectionRepository>();
         var mockDriverRepo = new Mock<IDriverRepository>();
+        var mockRaceRepo = new Mock<IRaceRepository>();
         var mockDateTimeProvider = new Mock<IDateTimeProvider>();
         var store = new Dictionary<string, Selection>(StringComparer.OrdinalIgnoreCase);
 
@@ -188,7 +225,11 @@ public class SelectionsControllerTests
             new Driver { DriverId = "verstappen", FullName = "Max Verstappen" }
         });
 
-        return new SelectionService(mockRepo.Object, mockDriverRepo.Object, mockDateTimeProvider.Object);
+        mockRaceRepo
+            .Setup(repo => repo.GetRaceAsync(It.IsAny<string>()))
+            .ReturnsAsync((string raceId) => new Race { Id = raceId });
+
+        return new SelectionService(mockRepo.Object, mockDriverRepo.Object, mockRaceRepo.Object, mockDateTimeProvider.Object);
     }
 
     private static SelectionsController CreateController(

@@ -10,6 +10,7 @@ public class SelectionServiceTests
 {
     private readonly Mock<ISelectionRepository> _selectionRepositoryMock = new();
     private readonly Mock<IDriverRepository> _driverRepositoryMock = new();
+    private readonly Mock<IRaceRepository> _raceRepositoryMock = new();
     private readonly Mock<IDateTimeProvider> _dateTimeProviderMock = new();
 
     [Fact]
@@ -33,6 +34,31 @@ public class SelectionServiceTests
 
         await Assert.ThrowsAsync<SelectionValidationException>(() =>
             service.UpsertSelectionAsync("2025-24-yas_marina", "user@example.com", submission));
+    }
+
+    [Fact]
+    public async Task UpsertSelectionAsync_ShouldThrowSelectionRaceNotFoundException_WhenRaceDoesNotExist()
+    {
+        var service = CreateServiceAt(new DateTime(2025, 12, 7, 0, 0, 0, DateTimeKind.Utc));
+        _raceRepositoryMock
+            .Setup(repo => repo.GetRaceAsync("no-such-race"))
+            .ReturnsAsync((Race?)null);
+
+        var submission = new SelectionSubmissionDto
+        {
+            BetType = BetType.Regular,
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
+        };
+
+        await Assert.ThrowsAsync<SelectionRaceNotFoundException>(() =>
+            service.UpsertSelectionAsync("no-such-race", "user@example.com", submission));
     }
 
     [Fact]
@@ -317,7 +343,14 @@ public class SelectionServiceTests
     private SelectionService CreateServiceAt(DateTime utcNow)
     {
         _dateTimeProviderMock.Setup(clock => clock.UtcNow).Returns(utcNow);
+        _raceRepositoryMock
+            .Setup(repo => repo.GetRaceAsync(It.IsAny<string>()))
+            .ReturnsAsync((string raceId) => new Race { Id = raceId });
 
-        return new SelectionService(_selectionRepositoryMock.Object, _driverRepositoryMock.Object, _dateTimeProviderMock.Object);
+        return new SelectionService(
+            _selectionRepositoryMock.Object,
+            _driverRepositoryMock.Object,
+            _raceRepositoryMock.Object,
+            _dateTimeProviderMock.Object);
     }
 }
