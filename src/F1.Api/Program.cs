@@ -1,11 +1,13 @@
 using F1.Api.Middleware;
+using F1.Api.Infrastructure;
 using Serilog;
 using Serilog.Formatting.Compact;
 using F1.Api.Services;
 using F1.Core.Interfaces;
+using F1.Infrastructure.Data;
 using F1.Infrastructure.Repositories;
 using F1.Services;
-using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,16 +65,20 @@ builder.Services
     .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "CloudflareAccess:Audience must be configured.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<ICloudflareJwtValidator, CloudflareJwtValidator>();
-
-builder.Services.AddSingleton((provider) =>
+var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres");
+if (string.IsNullOrWhiteSpace(postgresConnectionString))
 {
-    var configuration = provider.GetRequiredService<IConfiguration>();
-    var connectionString = configuration["CosmosDb:ConnectionString"];
-    return new CosmosClient(connectionString);
+    throw new InvalidOperationException("ConnectionStrings:Postgres must be configured.");
+}
+
+builder.Services.AddDbContext<F1DbContext>(options =>
+{
+    options.UseNpgsql(postgresConnectionString);
 });
-builder.Services.AddScoped<IDriverRepository, CosmosDriverRepository>();
-builder.Services.AddScoped<IRaceMetadataRepository, CosmosRaceMetadataRepository>();
-builder.Services.AddScoped<ISelectionRepository, CosmosSelectionRepository>();
+builder.Services.AddScoped<IDriverRepository, EfDriverRepository>();
+builder.Services.AddScoped<IRaceMetadataRepository, EfRaceMetadataRepository>();
+builder.Services.AddScoped<ISelectionRepository, EfSelectionRepository>();
+builder.Services.AddScoped<IRaceRepository, EfRaceRepository>();
 
 builder.Services.AddCors(options =>
 {
@@ -99,6 +105,8 @@ builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+await DatabaseStartupInitializer.InitializeAsync(app.Services, app.Configuration);
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
 {

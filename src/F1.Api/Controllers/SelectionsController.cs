@@ -86,6 +86,10 @@ public class SelectionsController : ControllerBase
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
+        catch (SelectionRaceNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
     private string? ResolveUserId()

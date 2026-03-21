@@ -2,8 +2,6 @@ using F1.Core.Dtos;
 using F1.Core.Interfaces;
 using F1.Core.Models;
 using F1.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Moq;
 
 namespace F1.Api.Tests;
@@ -12,6 +10,7 @@ public class SelectionServiceTests
 {
     private readonly Mock<ISelectionRepository> _selectionRepositoryMock = new();
     private readonly Mock<IDriverRepository> _driverRepositoryMock = new();
+    private readonly Mock<IRaceRepository> _raceRepositoryMock = new();
     private readonly Mock<IDateTimeProvider> _dateTimeProviderMock = new();
 
     [Fact]
@@ -35,6 +34,31 @@ public class SelectionServiceTests
 
         await Assert.ThrowsAsync<SelectionValidationException>(() =>
             service.UpsertSelectionAsync("2025-24-yas_marina", "user@example.com", submission));
+    }
+
+    [Fact]
+    public async Task UpsertSelectionAsync_ShouldThrowSelectionRaceNotFoundException_WhenRaceDoesNotExist()
+    {
+        var service = CreateServiceAt(new DateTime(2025, 12, 7, 0, 0, 0, DateTimeKind.Utc));
+        _raceRepositoryMock
+            .Setup(repo => repo.GetRaceAsync("no-such-race"))
+            .ReturnsAsync((Race?)null);
+
+        var submission = new SelectionSubmissionDto
+        {
+            BetType = BetType.Regular,
+            OrderedSelections = new List<SelectionPosition>
+            {
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" }
+            }
+        };
+
+        await Assert.ThrowsAsync<SelectionRaceNotFoundException>(() =>
+            service.UpsertSelectionAsync("no-such-race", "user@example.com", submission));
     }
 
     [Fact]
@@ -316,23 +340,17 @@ public class SelectionServiceTests
         Assert.Equal("norris", result.OrderedSelections[0].DriverId);
     }
 
-    private SelectionService CreateServiceAt(DateTime utcNow,
-        bool mockCurrentSelections = false,
-        string environmentName = "Production")
+    private SelectionService CreateServiceAt(DateTime utcNow)
     {
-        
         _dateTimeProviderMock.Setup(clock => clock.UtcNow).Returns(utcNow);
-        
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "DevSettings:MockCurrentSelections", mockCurrentSelections.ToString() }
-            })
-            .Build();
+        _raceRepositoryMock
+            .Setup(repo => repo.GetRaceAsync(It.IsAny<string>()))
+            .ReturnsAsync((string raceId) => new Race { Id = raceId });
 
-        var hostEnvironment = new Mock<IHostEnvironment>();
-        hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(environmentName);
-
-        return new SelectionService(_selectionRepositoryMock.Object, _driverRepositoryMock.Object, _dateTimeProviderMock.Object, configuration, hostEnvironment.Object);
+        return new SelectionService(
+            _selectionRepositoryMock.Object,
+            _driverRepositoryMock.Object,
+            _raceRepositoryMock.Object,
+            _dateTimeProviderMock.Object);
     }
 }

@@ -28,12 +28,22 @@ namespace F1.Services
         {
             if (mockDateUtc.HasValue)
             {
-                _cache.Set(CacheKey, mockDateUtc.Value, TimeSpan.FromHours(12));
+                _cache.Set(CacheKey, NormalizeToUtc(mockDateUtc.Value), TimeSpan.FromHours(12));
             }
             else
             {
                 _cache.Remove(CacheKey);
             }
+        }
+
+        private static DateTime NormalizeToUtc(DateTime value)
+        {
+            return value.Kind switch
+            {
+                DateTimeKind.Utc => value,
+                DateTimeKind.Local => value.ToUniversalTime(),
+                _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+            };
         }
     }
 }

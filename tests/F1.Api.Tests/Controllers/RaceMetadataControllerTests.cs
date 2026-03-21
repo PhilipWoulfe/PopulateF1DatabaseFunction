@@ -4,8 +4,6 @@ using F1.Core.Interfaces;
 using F1.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Moq;
 using System.Security.Claims;
 
@@ -46,20 +44,7 @@ public class RaceMetadataControllerTests
 
     private static RaceMetadataController CreateController(Mock<IRaceMetadataService> serviceMock)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "DevSettings:MockRaceMetadata", "false" }
-            })
-            .Build();
-
-        var hostEnvironment = new Mock<IHostEnvironment>();
-        hostEnvironment.SetupGet(env => env.EnvironmentName).Returns(Environments.Production);
-
-        var dateTimeProvider = new Mock<IDateTimeProvider>();
-        dateTimeProvider.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
-
-        return new RaceMetadataController(serviceMock.Object, configuration, hostEnvironment.Object, dateTimeProvider.Object);
+        return new RaceMetadataController(serviceMock.Object);
     }
 
     private static HttpContext BuildAdminContext()

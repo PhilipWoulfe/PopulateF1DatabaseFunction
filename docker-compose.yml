@@ -1,11 +1,32 @@
 services:
+  postgres:
+    image: postgres:16
+    container_name: f1-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-f1competition}
+      - POSTGRES_USER=${POSTGRES_USER:-f1}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-f1}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-f1} -d ${POSTGRES_DB:-f1competition}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   f1-api:
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost:5000,http://localhost:5001,http://localhost:5200}
       - LOG_FILE_PATH=/var/log/f1api
       - ASPNETCORE_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}
       # Map .env variables to ASP.NET Core configuration format
-      - CosmosDb__ConnectionString=${COSMOSDB_CONNECTIONSTRING}
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=${POSTGRES_DB:-f1competition};Username=${POSTGRES_USER:-f1};Password=${POSTGRES_PASSWORD:-f1}
+      - Database__AutoMigrate=${DB_AUTO_MIGRATE:-true}
       - CloudflareAccess__Audience=${CLOUDFLARE_AUDIENCE:-CloudflareAccessAudienceNotSet}
       - CloudflareAccess__Issuer=https://f1-team.cloudflareaccess.com
       - CloudflareAccess__AdminGroupClaimType=${ADMIN_GROUP_CLAIM_TYPE:-groups}
@@ -18,8 +39,6 @@ services:
       - DevSettings__MockEmail=${DEV_MOCK_EMAIL:-dev-user@example.com}
       - DevSettings__MockGroups=${DEV_MOCK_GROUPS:-F1 Admins,F1 Users}
       - DevSettings__EnableDebugEndpoints=${DEV_ENABLE_DEBUG_ENDPOINTS:-false}
-      - DevSettings__MockCurrentSelections=${DEV_MOCK_CURRENT_SELECTIONS:-false}
-      - DevSettings__MockRaceMetadata=${DEV_MOCK_RACE_METADATA:-false}
     volumes:
       - ${HOST_LOG_PATH:-/tmp/f1api-logs}:/var/log/f1api
     image: ghcr.io/philipwoulfe/f1competition:${TAG:-test}
@@ -68,3 +87,6 @@ services:
         - WATCHTOWER_CLEANUP=true
         - DOCKER_CONFIG=/
       restart: unless-stopped
+
+volumes:
+  postgres-data:

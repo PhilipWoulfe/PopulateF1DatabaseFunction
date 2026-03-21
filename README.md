@@ -61,7 +61,7 @@ The solution uses **Cloudflare Tunnels** to securely expose the services without
 
 - **Azure Functions**: Timer-triggered function (`UpdateDatabase`) to keep data synchronized.
 - **ASP.NET Core API**: A containerized Web API for data access.
-- **Persistence**: High-performance NoSQL storage via **Cosmos DB**.
+- **Persistence**: API runtime persistence via **Postgres** (with Cosmos still used by the Populate function until its migration story).
 - **Containerized**: Full Docker support for reproducible environments across Proxmox LXCs.
 
 ---
@@ -108,8 +108,24 @@ The default values in `.env.example` are configured for a standard local setup.
 
 Required API values in `.env`:
 
-- `COSMOSDB_CONNECTIONSTRING`: mapped to `CosmosDb__ConnectionString` for `f1-api`.
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: used to build `ConnectionStrings__Postgres` for `f1-api`.
 - `CLOUDFLARE_AUDIENCE`: mapped to `CloudflareAccess__Audience` for `f1-api`.
+
+For non-Docker local API runs (`dotnet run`), configure `ConnectionStrings:Postgres` via environment variable or user-secrets instead of committing credentials in appsettings files:
+
+```bash
+# Option A: environment variable
+export ConnectionStrings__Postgres='Host=localhost;Port=5432;Database=f1competition;Username=<user>;Password=<password>'
+
+# Option B: user secrets (from src/F1.Api)
+dotnet user-secrets set "ConnectionStrings:Postgres" "Host=localhost;Port=5432;Database=f1competition;Username=<user>;Password=<password>"
+```
+
+Note: `src/F1.Api/appsettings.json` and `src/F1.Api/appsettings.Development.json` intentionally keep `ConnectionStrings:Postgres` empty so missing configuration fails fast with a clear startup error.
+
+Optional Postgres bootstrap value in `.env`:
+
+- `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations and seeds baseline race/driver/metadata rows on startup.
 
 Optional API values in `.env`:
 
@@ -122,8 +138,6 @@ Optional development toggle in `.env`:
 - `DEV_MOCK_EMAIL`: mapped to `DevSettings__MockEmail` for `f1-api`. Sets the mock user identity used when simulating Cloudflare locally.
 - `DEV_MOCK_GROUPS`: mapped to `DevSettings__MockGroups` for `f1-api`. Sets the mock group memberships used for local Admin/non-Admin testing.
 - `DEV_ENABLE_DEBUG_ENDPOINTS`: mapped to `DevSettings__EnableDebugEndpoints` for `f1-api`. When `true`, enables the test-only `/api/users/debug/me` diagnostics endpoint in allowed environments.
-- `DEV_MOCK_CURRENT_SELECTIONS`: mapped to `DevSettings__MockCurrentSelections` for `f1-api`. When `true` in Development, selection GET/PUT endpoints use an in-memory mock store so the UI can be validated without Cosmos data.
-- `DEV_MOCK_RACE_METADATA`: mapped to `DevSettings__MockRaceMetadata` for `f1-api`. When `true` in Development, race metadata GET/PUT endpoints use an in-memory mock store so admin and player question flows can be tested without Cosmos data.
 
 Notes:
 
@@ -405,7 +419,7 @@ Once running, the services will be available at:
 
 ## ⚠️ Troubleshooting
 ### .env Changes Not Applying
-Symptom: You updated `.env` (for example `CLOUDFLARE_AUDIENCE`, `COSMOSDB_CONNECTIONSTRING`, or `TAG`) but the app still uses the old value.
+Symptom: You updated `.env` (for example `CLOUDFLARE_AUDIENCE`, Postgres settings, or `TAG`) but the app still uses the old value.
 Cause: Docker Compose only reads .env when creating containers. Watchtower updates the image but reuses the existing container configuration. 
 Fix: Manually recreate the container to apply changes: 
 bash +docker-compose up -d
