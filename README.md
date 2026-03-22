@@ -172,6 +172,7 @@ Notes:
 - `/api/users/debug/me` returns sanitized post-auth claims, groups, and role resolution data only when `DEV_ENABLE_DEBUG_ENDPOINTS=true` and the API is running in `Development` or `Test`.
 - `TAG` applies to API, Web, and Data Sync worker images. Use `TAG=test` for the test host, `TAG=stable` for production, and `TAG=sha-<shortsha>` for rollback or pinning a specific build.
 - Run `./scripts/deploy-preflight.sh` before VM-targeted compose deployment to validate required env keys, writable log path, and minimum free disk.
+- Run `./scripts/deploy-smoke-check.sh` after deployment to validate API health, web reachability, and expected worker state.
 - Container health checks are available on API `GET /health` and web root `/` for deploy validation.
 
 #### B. Data Sync Worker (`src/F1.DataSyncWorker/appsettings*.json`)

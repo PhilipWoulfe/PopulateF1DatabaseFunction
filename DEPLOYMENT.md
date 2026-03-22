@@ -265,7 +265,7 @@ cd /opt/f1competition
 ./scripts/deploy-preflight.sh .env
 docker compose --env-file .env pull
 docker compose --env-file .env up -d
-docker compose ps
+./scripts/deploy-smoke-check.sh .env
 docker compose logs --tail=100 f1-api
 docker compose logs --tail=100 f1-web
 docker compose logs --tail=100 f1-data-sync-worker
@@ -296,14 +296,13 @@ Minimum checks after deploy:
 Example:
 
 ```bash
-docker compose ps
-curl -fsS http://localhost:5000/health
-curl -I http://localhost:5001/
+./scripts/deploy-smoke-check.sh .env
 ```
 
 Container-level health checks:
 1. `f1-api` uses Docker `HEALTHCHECK` against `http://127.0.0.1:8080/health`.
 2. `f1-web` uses Docker `HEALTHCHECK` against `http://127.0.0.1/`.
+3. `scripts/deploy-smoke-check.sh` verifies compose service state, API health, web reachability, and that the worker is either running or has exited cleanly.
 
 ## Rollback Procedure
 
@@ -322,7 +321,7 @@ sed -i 's/^TAG=.*/TAG=sha-abcdef1/' .env
 ./scripts/deploy-preflight.sh .env
 docker compose --env-file .env pull
 docker compose --env-file .env up -d
-docker compose ps
+./scripts/deploy-smoke-check.sh .env
 ```
 
 ## Operational Checks
@@ -341,3 +340,4 @@ After cutover to VM, verify:
 2. Added VM bootstrap checklist.
 3. Added secrets and env inventory.
 4. Added current manual deploy procedure and planned automated deploy target.
+5. Added a reusable deploy smoke-check script and documented post-deploy verification.
