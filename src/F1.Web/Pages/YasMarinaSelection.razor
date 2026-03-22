@@ -26,7 +26,11 @@ else
     <EditForm Model="formModel" OnValidSubmit="SaveSelectionAsync">
         <DriverSelectionList Drivers="@drivers" SelectedDriverIds="@formModel.SelectedDriverIds" IsReadOnly="@isReadOnly" />
 
-        <BetStrategySelector @bind-Value="formModel.SelectedBetType" IsReadOnly="@isReadOnly" />
+        <BetStrategySelector
+            Value="@formModel.SelectedBetType"
+            ValueChanged="OnBetTypeChanged"
+            ValueExpression="@(() => formModel.SelectedBetType)"
+            IsReadOnly="@isReadOnly" />
 
         <button id="submit-selection" class="btn btn-primary" type="submit" disabled="@isReadOnly">Save Selection</button>
 
@@ -191,6 +195,12 @@ else
             HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => "You are not authorized to save this selection.",
             _ => exception.Error.Message
         };
+    }
+
+    private Task OnBetTypeChanged(BetType betType)
+    {
+        formModel.SelectedBetType = betType;
+        return Task.CompletedTask;
     }
 
     private void ApplySelectionToForm(Selection selection)

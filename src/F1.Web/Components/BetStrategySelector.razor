@@ -1,5 +1,6 @@
 @using F1.Web.Models
 @using System.Linq.Expressions
+@using Microsoft.AspNetCore.Components
 
 <h4 class="mt-4">Bet Strategy</h4>
 <InputRadioGroup Value="@Value" ValueChanged="@ValueChanged" ValueExpression="@ValueExpression">
@@ -20,6 +21,14 @@
 @code {
     [Parameter] public BetType Value { get; set; }
     [Parameter] public EventCallback<BetType> ValueChanged { get; set; }
-    [Parameter] public Expression<Func<BetType>>? ValueExpression { get; set; }
+    [Parameter, EditorRequired] public Expression<Func<BetType>> ValueExpression { get; set; } = default!;
     [Parameter] public bool IsReadOnly { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (ValueExpression is null)
+        {
+            throw new InvalidOperationException("BetStrategySelector requires a non-null ValueExpression. Use @bind-Value or provide ValueExpression explicitly.");
+        }
+    }
 }

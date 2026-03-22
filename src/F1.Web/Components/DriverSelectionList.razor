@@ -18,8 +18,49 @@
 
 @code {
     [Parameter] public Driver[] Drivers { get; set; } = [];
-    [Parameter] public IList<string> SelectedDriverIds { get; set; } = [];
+    [Parameter] public IList<string> SelectedDriverIds { get; set; } = ["", "", "", "", ""];
     [Parameter] public bool IsReadOnly { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (SelectedDriverIds is null)
+        {
+            SelectedDriverIds = ["", "", "", "", ""];
+            return;
+        }
+
+        if (SelectedDriverIds.Count < 5)
+        {
+            if (SelectedDriverIds is List<string> mutable)
+            {
+                while (mutable.Count < 5)
+                {
+                    mutable.Add(string.Empty);
+                }
+            }
+            else
+            {
+                var normalized = new List<string>(SelectedDriverIds);
+                while (normalized.Count < 5)
+                {
+                    normalized.Add(string.Empty);
+                }
+
+                SelectedDriverIds = normalized;
+            }
+        }
+        else if (SelectedDriverIds.Count > 5)
+        {
+            if (SelectedDriverIds is List<string> mutable)
+            {
+                mutable.RemoveRange(5, mutable.Count - 5);
+            }
+            else
+            {
+                SelectedDriverIds = SelectedDriverIds.Take(5).ToList();
+            }
+        }
+    }
 
     private void OnDriverChanged(int index, string? driverId)
     {
