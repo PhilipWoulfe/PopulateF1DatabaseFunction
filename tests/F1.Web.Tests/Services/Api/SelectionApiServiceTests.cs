@@ -21,6 +21,81 @@ public class SelectionApiServiceTests
     }
 
     [Fact]
+    public async Task SaveMineAsync_WhenSuccess_ReturnsDeserializedSelection()
+    {
+        var expected = new Selection
+        {
+            RaceId = "2025-24-yas_marina",
+            UserId = "user@example.com",
+            BetType = BetType.Regular,
+            IsLocked = false
+        };
+
+        var handler = new QueueHttpMessageHandler();
+        handler.EnqueueResponse(CreateJsonResponse(expected));
+        var service = CreateService(handler);
+
+        var submission = new SelectionSubmission
+        {
+            BetType = BetType.Regular,
+            OrderedSelections = [new SelectionPosition { Position = 1, DriverId = "norris" }],
+            Selections = ["norris"]
+        };
+
+        var result = await service.SaveMineAsync("2025-24-yas_marina", submission);
+
+        Assert.Equal("2025-24-yas_marina", result.RaceId);
+        Assert.Equal("user@example.com", result.UserId);
+        Assert.Equal(BetType.Regular, result.BetType);
+    }
+
+    [Fact]
+    public async Task SaveMineAsync_WhenSuccessBodyIsEmpty_ThrowsApiServiceException()
+    {
+        var handler = new QueueHttpMessageHandler();
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("null", Encoding.UTF8, "application/json")
+        });
+        var service = CreateService(handler);
+
+        var submission = new SelectionSubmission
+        {
+            BetType = BetType.Regular,
+            OrderedSelections = [new SelectionPosition { Position = 1, DriverId = "norris" }],
+            Selections = ["norris"]
+        };
+
+        var ex = await Assert.ThrowsAsync<ApiServiceException>(() => service.SaveMineAsync("2025-24-yas_marina", submission));
+
+        Assert.Equal(HttpStatusCode.OK, ex.Error.StatusCode);
+        Assert.Contains("empty response body", ex.Error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SaveMineAsync_WhenSuccessBodyIsMalformedJson_ThrowsApiServiceException()
+    {
+        var handler = new QueueHttpMessageHandler();
+        handler.EnqueueResponse(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{ broken json", Encoding.UTF8, "application/json")
+        });
+        var service = CreateService(handler);
+
+        var submission = new SelectionSubmission
+        {
+            BetType = BetType.Regular,
+            OrderedSelections = [new SelectionPosition { Position = 1, DriverId = "norris" }],
+            Selections = ["norris"]
+        };
+
+        var ex = await Assert.ThrowsAsync<ApiServiceException>(() => service.SaveMineAsync("2025-24-yas_marina", submission));
+
+        Assert.Equal(HttpStatusCode.OK, ex.Error.StatusCode);
+        Assert.Contains("malformed JSON", ex.Error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SaveMineAsync_WhenApiReturnsJsonError_ThrowsApiServiceException()
     {
         var handler = new QueueHttpMessageHandler();

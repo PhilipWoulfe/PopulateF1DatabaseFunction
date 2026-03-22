@@ -39,16 +39,7 @@ public sealed class SelectionApiService(HttpClient httpClient) : ISelectionApiSe
         ArgumentNullException.ThrowIfNull(submission);
 
         using var response = await httpClient.PutAsJsonAsync($"selections/{raceId}/mine", submission, cancellationToken);
-        
-        if (response.IsSuccessStatusCode)
-        {
-            var saved = await response.Content.ReadFromJsonAsync<Selection>(cancellationToken);
-            return saved ?? throw new InvalidOperationException("Selection save succeeded but the response body was empty.");
-        }
-
-        // For 400/403/404, try to extract API message via ApiResponseParser error handling
-        await ApiResponseParser.EnsureSuccessAsync(response, "Saving race selection", cancellationToken);
-        throw new InvalidOperationException("Unable to save selection.");
+        return await ApiResponseParser.ReadRequiredJsonAsync<Selection>(response, "Saving race selection", cancellationToken);
     }
 }
 
