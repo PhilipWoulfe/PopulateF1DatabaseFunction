@@ -15,6 +15,6 @@ public sealed class RaceMetadataApiService(HttpClient httpClient) : IRaceMetadat
             return null;
         }
 
-        return await ApiResponseParser.ReadJsonOrDefaultAsync<RaceQuestionMetadata?>(response, null, "Loading race metadata", cancellationToken);
+        return await ApiResponseParser.ReadOptionalJsonAsync<RaceQuestionMetadata?>(response, null, "Loading race metadata", cancellationToken);
     }
 }

@@ -49,7 +49,7 @@ public class ApiResponseParserTests
     }
 
     [Fact]
-    public async Task ReadJsonOrDefaultAsync_WhenPayloadIsNull_ReturnsFallback()
+    public async Task ReadOptionalJsonAsync_WhenPayloadIsNull_ReturnsFallback()
     {
         using var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -57,7 +57,7 @@ public class ApiResponseParserTests
         };
 
         var fallback = Array.Empty<Driver>();
-        var result = await ApiResponseParser.ReadJsonOrDefaultAsync(response, fallback, "Loading drivers");
+        var result = await ApiResponseParser.ReadOptionalJsonAsync(response, fallback, "Loading drivers");
 
         Assert.Same(fallback, result);
     }
