@@ -11,14 +11,38 @@ fi
 
 read_env() {
     local key="$1"
-    awk -F= -v search_key="$key" '
-        $0 ~ /^[[:space:]]*#/ { next }
-        $1 == search_key {
-            sub(/^[^=]*=/, "", $0)
-            print $0
-            exit
-        }
-    ' "$ENV_FILE"
+    local line k v
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"
+
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+
+        [[ -z "$line" || "${line:0:1}" == "#" ]] && continue
+        [[ "$line" != *=* ]] && continue
+
+        k="${line%%=*}"
+        v="${line#*=}"
+
+        k="${k%"${k##*[![:space:]]}"}"
+        k="${k#"${k%%[![:space:]]*}"}"
+
+        [[ "$k" != "$key" ]] && continue
+
+        v="${v%"${v##*[![:space:]]}"}"
+        v="${v#"${v%%[![:space:]]*}"}"
+
+        if [[ ${#v} -ge 2 ]]; then
+            if [[ ( "${v:0:1}" == '"' && "${v: -1}" == '"' ) || ( "${v:0:1}" == "'" && "${v: -1}" == "'" ) ]]; then
+                v="${v:1:${#v}-2}"
+            fi
+        fi
+
+        printf '%s\n' "$v"
+        return 0
+    done < "$ENV_FILE"
+
+    return 0
 }
 
 HOST_PORT="$(read_env HOST_PORT)"
