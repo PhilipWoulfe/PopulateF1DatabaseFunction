@@ -7,5 +7,5 @@ public interface ISelectionApiService
     Task<RaceConfig> GetConfigAsync(string raceId, CancellationToken cancellationToken = default);
     Task<Selection?> GetMineAsync(string raceId, CancellationToken cancellationToken = default);
     Task<CurrentSelectionItem[]> GetCurrentAsync(CancellationToken cancellationToken = default);
-    Task SaveMineAsync(string raceId, SelectionSubmission submission, CancellationToken cancellationToken = default);
+    Task<Selection> SaveMineAsync(string raceId, SelectionSubmission submission, CancellationToken cancellationToken = default);
 }
