@@ -197,14 +197,20 @@ public class MockDateServiceTests
         var httpClient = new HttpClient(handlerMock.Object) { BaseAddress = new Uri("http://localhost") };
         var service = new MockDateService(httpClient);
 
-        // Pass an unspecified-kind date
         var unspecified = new DateTime(2025, 12, 7, 10, 0, 0, DateTimeKind.Unspecified);
         await service.SetMockDateAsync(unspecified);
 
-        // The stored value should be treated as UTC
+        // Local state stored as UTC, preserving the original instant (no shift)
         var stored = service.GetMockDate();
         Assert.NotNull(stored);
         Assert.Equal(DateTimeKind.Utc, stored!.Value.Kind);
+        Assert.Equal(unspecified.Ticks, stored.Value.Ticks);
+        Assert.Equal(DateTime.SpecifyKind(unspecified, DateTimeKind.Utc), stored.Value);
+
+        // Outgoing request body should contain mockDateUtc as a UTC value
+        Assert.NotNull(capturedRequest);
+        var body = await capturedRequest!.Content!.ReadAsStringAsync();
+        Assert.Contains("2025-12-07T10:00:00", body);
     }
 
     [Fact]
