@@ -75,7 +75,7 @@ services:
   # watchtower shouldn't be deployed to PROD as it will auto-pull whatever tag the running test containers follow
   watchtower:
     profiles: ["cloud"]  # It won't start unless you specifically ask for it
-    image: nickfedor/watchtower:latest 
+    image: nickfedor/watchtower:latest
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
