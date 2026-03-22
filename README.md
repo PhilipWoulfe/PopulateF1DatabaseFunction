@@ -129,6 +129,7 @@ Note: `src/F1.Api/appsettings.json` and `src/F1.Api/appsettings.Development.json
 Optional Postgres bootstrap value in `.env`:
 
 - `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations on startup. Baseline competition/driver/race ingestion is handled by `f1-data-sync-worker`.
+  - Default in `.env.example`: `true`.
 
 Optional worker values in `.env`:
 
@@ -136,6 +137,7 @@ These `DATA_SYNC_*` values are consumed by `docker-compose.yml` and mapped to `D
 
 - `DATA_SYNC_INTERVAL_MINUTES`: mapped to `DataSyncWorker__IntervalMinutes` for `f1-data-sync-worker`. `0` means run once and exit.
 - `DATA_SYNC_AUTO_MIGRATE`: mapped to `DataSyncWorker__AutoMigrate` for `f1-data-sync-worker`.
+  - Default in `.env.example`: `false` to keep a single migration owner by default (the API via `DB_AUTO_MIGRATE=true`). Set to `true` only if you intentionally want the worker to own migrations.
 - `DATA_SYNC_HTTP_RETRY_COUNT`: mapped to `DataSyncWorker__HttpRetryCount` for retry attempts against Jolpica.
 - `DATA_SYNC_HTTP_RETRY_DELAY_MS`: mapped to `DataSyncWorker__HttpRetryDelayMs` for retry backoff delay.
 - `DATA_SYNC_DEADLINE_MINUTES_BEFORE_START`: mapped to `DataSyncWorker__DeadlineMinutesBeforeStart`; default placeholder policy is `30`.

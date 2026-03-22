@@ -24,7 +24,7 @@ services:
       - DOTNET_ENVIRONMENT=${BLAZOR_ENVIRONMENT:-Development}
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=${POSTGRES_DB:-f1competition};Username=${POSTGRES_USER:-f1};Password=${POSTGRES_PASSWORD:-f1}
       - DataSyncWorker__IntervalMinutes=${DATA_SYNC_INTERVAL_MINUTES:-60}
-      - DataSyncWorker__AutoMigrate=${DATA_SYNC_AUTO_MIGRATE:-true}
+      - DataSyncWorker__AutoMigrate=${DATA_SYNC_AUTO_MIGRATE:-false}
       - DataSyncWorker__HttpRetryCount=${DATA_SYNC_HTTP_RETRY_COUNT:-3}
       - DataSyncWorker__HttpRetryDelayMs=${DATA_SYNC_HTTP_RETRY_DELAY_MS:-750}
       - DataSyncWorker__DeadlineMinutesBeforeStart=${DATA_SYNC_DEADLINE_MINUTES_BEFORE_START:-30}
@@ -35,7 +35,7 @@ services:
       dockerfile: ./src/F1.DataSyncWorker/Dockerfile
     image: ghcr.io/philipwoulfe/f1competition-data-sync:${TAG:-test}
     container_name: f1-data-sync-worker
-    restart: unless-stopped
+    restart: on-failure
 
   f1-api:
     depends_on:

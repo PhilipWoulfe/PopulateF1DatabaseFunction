@@ -78,6 +78,10 @@ public sealed class JolpicaClient : IJolpicaClient
             {
                 return await action(cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 if (attempt >= attempts)
