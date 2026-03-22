@@ -132,6 +132,8 @@ Optional Postgres bootstrap value in `.env`:
 
 Optional worker values in `.env`:
 
+These `DATA_SYNC_*` values are consumed by `docker-compose.yml` and mapped to `DataSyncWorker__*` environment variables for the `f1-data-sync-worker` container.
+
 - `DATA_SYNC_INTERVAL_MINUTES`: mapped to `DataSyncWorker__IntervalMinutes` for `f1-data-sync-worker`. `0` means run once and exit.
 - `DATA_SYNC_AUTO_MIGRATE`: mapped to `DataSyncWorker__AutoMigrate` for `f1-data-sync-worker`.
 - `DATA_SYNC_HTTP_RETRY_COUNT`: mapped to `DataSyncWorker__HttpRetryCount` for retry attempts against Jolpica.
@@ -174,6 +176,8 @@ dotnet run --project src/F1.DataSyncWorker/F1.DataSyncWorker.csproj
 ```
 
 Set `DataSyncWorker__IntervalMinutes=0` for a one-shot run or any positive value for scheduled mode.
+
+When running the worker directly (outside Docker Compose), set `DataSyncWorker__*` environment variables directly rather than `DATA_SYNC_*`.
 
 For Docker Compose runtime, `f1-data-sync-worker` runs automatically and reads values from `.env`.
 

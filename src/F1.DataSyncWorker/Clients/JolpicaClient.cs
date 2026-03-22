@@ -1,22 +1,30 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using F1.DataSyncWorker.Models;
+using F1.DataSyncWorker.Options;
+using Microsoft.Extensions.Options;
 
 namespace F1.DataSyncWorker.Clients;
 
 public sealed class JolpicaClient : IJolpicaClient
 {
+    private const string JolpicaClientName = "Jolpica";
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IOptions<DataSyncOptions> _options;
     private readonly ILogger<JolpicaClient> _logger;
 
-    public JolpicaClient(HttpClient httpClient, ILogger<JolpicaClient> logger)
+    public JolpicaClient(
+        IHttpClientFactory httpClientFactory,
+        IOptions<DataSyncOptions> options,
+        ILogger<JolpicaClient> logger)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
+        _options = options;
         _logger = logger;
     }
 
@@ -25,7 +33,8 @@ public sealed class JolpicaClient : IJolpicaClient
         return WithRetryAsync(
             async token =>
             {
-                using var response = await _httpClient.GetAsync($"{season}/drivers.json", token);
+                using var httpClient = CreateClient();
+                using var response = await httpClient.GetAsync($"{season}/drivers.json", token);
                 response.EnsureSuccessStatusCode();
                 var payload = await response.Content.ReadFromJsonAsync<JolpicaDriversEnvelope>(JsonOptions, token);
                 return (IReadOnlyList<JolpicaDriverDto>?)payload?.Metadata?.DriverTable?.Drivers ?? [];
@@ -41,7 +50,8 @@ public sealed class JolpicaClient : IJolpicaClient
         return WithRetryAsync(
             async token =>
             {
-                using var response = await _httpClient.GetAsync($"{season}.json", token);
+                using var httpClient = CreateClient();
+                using var response = await httpClient.GetAsync($"{season}.json", token);
                 response.EnsureSuccessStatusCode();
                 var payload = await response.Content.ReadFromJsonAsync<JolpicaRacesEnvelope>(JsonOptions, token);
                 return (IReadOnlyList<JolpicaRaceDto>?)payload?.Metadata?.RaceTable?.Races ?? [];
@@ -68,13 +78,25 @@ public sealed class JolpicaClient : IJolpicaClient
             {
                 return await action(cancellationToken);
             }
-            catch (Exception ex) when (attempt < attempts)
+            catch (Exception ex)
             {
+                if (attempt >= attempts)
+                {
+                    throw;
+                }
+
                 _logger.LogWarning(ex, "Jolpica request failed for {Operation} on attempt {Attempt}/{MaxAttempts}. Retrying.", operation, attempt, attempts);
                 await Task.Delay(delay, cancellationToken);
             }
         }
 
-        return await action(cancellationToken);
+        throw new InvalidOperationException("Retry loop exited unexpectedly.");
+    }
+
+    private HttpClient CreateClient()
+    {
+        var client = _httpClientFactory.CreateClient(JolpicaClientName);
+        client.BaseAddress = new Uri(_options.Value.JolpicaBaseUrl, UriKind.Absolute);
+        return client;
     }
 }

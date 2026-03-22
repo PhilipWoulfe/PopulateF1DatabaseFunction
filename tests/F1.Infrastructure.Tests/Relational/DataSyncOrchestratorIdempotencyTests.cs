@@ -59,7 +59,7 @@ public class DataSyncOrchestratorIdempotencyTests
         var orchestrator = new DataSyncOrchestrator(
             NullLogger<DataSyncOrchestrator>.Instance,
             dbFactory,
-            new StubJolpicaClient(),
+            new StubJolpicaClient(CreateDefaultRaces(2026)),
             options);
 
         await orchestrator.RunOnceAsync(CancellationToken.None);
@@ -87,6 +87,147 @@ public class DataSyncOrchestratorIdempotencyTests
         Assert.Equal(race.StartTimeUtc.AddMinutes(-30), race.FinalDeadlineUtc);
 
         Assert.Equal(competitions[0].Id, race.CompetitionId);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_WhenRaceTimeMissing_SkipsRaceToAvoidIncorrectDeadlines()
+    {
+        await using var setupContext = CreateContext();
+        await setupContext.Database.EnsureDeletedAsync();
+        await setupContext.Database.EnsureCreatedAsync();
+
+        var options = CreateDefaultOptions();
+        var missingTimeRace = new JolpicaRaceDto
+        {
+            Season = "2026",
+            Round = "1",
+            RaceName = "Bahrain Grand Prix",
+            Date = "2026-03-08",
+            Time = string.Empty,
+            Circuit = new JolpicaCircuitDto { CircuitName = "Bahrain International Circuit" }
+        };
+
+        var orchestrator = new DataSyncOrchestrator(
+            NullLogger<DataSyncOrchestrator>.Instance,
+            new TestDbContextFactory(_fixture.ConnectionString),
+            new StubJolpicaClient([missingTimeRace]),
+            options);
+
+        await orchestrator.RunOnceAsync(CancellationToken.None);
+
+        await using var verificationContext = CreateContext();
+        var races = await verificationContext.Races.AsNoTracking().ToListAsync();
+        Assert.Empty(races);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_WhenGeneratedRaceIdWouldExceedSchemaLimit_TruncatesWithStableHashSuffix()
+    {
+        await using var setupContext = CreateContext();
+        await setupContext.Database.EnsureDeletedAsync();
+        await setupContext.Database.EnsureCreatedAsync();
+
+        var options = Options.Create(new DataSyncOptions
+        {
+            AutoMigrate = false,
+            IntervalMinutes = 0,
+            DeadlineMinutesBeforeStart = 30,
+            HttpRetryCount = 0,
+            HttpRetryDelayMs = 250,
+            Competitions =
+            [
+                new CompetitionSeedDefinition
+                {
+                    Key = "extremely-long-competition-key-for-regression-testing-id-length-constraints-2026-main",
+                    Name = "Main 2026",
+                    Year = 2026,
+                    Description = "Main 2026 season competition"
+                }
+            ],
+            Seasons =
+            [
+                new SeasonSeedDefinition
+                {
+                    Season = 2026,
+                    CompetitionKeys = ["extremely-long-competition-key-for-regression-testing-id-length-constraints-2026-main"]
+                }
+            ]
+        });
+
+        var longRaceName = new string('a', 180) + " Grand Prix";
+        var races = new[]
+        {
+            new JolpicaRaceDto
+            {
+                Season = "2026",
+                Round = "1",
+                RaceName = longRaceName,
+                Date = "2026-03-08",
+                Time = "15:00:00Z",
+                Circuit = new JolpicaCircuitDto { CircuitName = "Bahrain International Circuit" }
+            }
+        };
+
+        var orchestrator = new DataSyncOrchestrator(
+            NullLogger<DataSyncOrchestrator>.Instance,
+            new TestDbContextFactory(_fixture.ConnectionString),
+            new StubJolpicaClient(races),
+            options);
+
+        await orchestrator.RunOnceAsync(CancellationToken.None);
+
+        await using var verificationContext = CreateContext();
+        var race = await verificationContext.Races.AsNoTracking().SingleAsync();
+        Assert.True(race.Id.Length <= 128);
+    }
+
+    private static IOptions<DataSyncOptions> CreateDefaultOptions()
+    {
+        return Options.Create(new DataSyncOptions
+        {
+            AutoMigrate = false,
+            IntervalMinutes = 0,
+            DeadlineMinutesBeforeStart = 30,
+            HttpRetryCount = 0,
+            HttpRetryDelayMs = 250,
+            Competitions =
+            [
+                new CompetitionSeedDefinition
+                {
+                    Key = "main-2026",
+                    Name = "Main 2026",
+                    Year = 2026,
+                    Description = "Main 2026 season competition"
+                }
+            ],
+            Seasons =
+            [
+                new SeasonSeedDefinition
+                {
+                    Season = 2026,
+                    CompetitionKeys = ["main-2026"]
+                }
+            ]
+        });
+    }
+
+    private static IReadOnlyList<JolpicaRaceDto> CreateDefaultRaces(int season)
+    {
+        return
+        [
+            new JolpicaRaceDto
+            {
+                Season = season.ToString(),
+                Round = "1",
+                RaceName = "Bahrain Grand Prix",
+                Date = "2026-03-08",
+                Time = "15:00:00Z",
+                Circuit = new JolpicaCircuitDto
+                {
+                    CircuitName = "Bahrain International Circuit"
+                }
+            }
+        ];
     }
 
     private F1DbContext CreateContext()
@@ -122,6 +263,13 @@ public class DataSyncOrchestratorIdempotencyTests
 
     private sealed class StubJolpicaClient : IJolpicaClient
     {
+        private readonly IReadOnlyList<JolpicaRaceDto> _races;
+
+        public StubJolpicaClient(IReadOnlyList<JolpicaRaceDto> races)
+        {
+            _races = races;
+        }
+
         public Task<IReadOnlyList<JolpicaDriverDto>> GetDriversAsync(int season, int retryCount, int retryDelayMs, CancellationToken cancellationToken)
         {
             IReadOnlyList<JolpicaDriverDto> drivers =
@@ -151,23 +299,7 @@ public class DataSyncOrchestratorIdempotencyTests
 
         public Task<IReadOnlyList<JolpicaRaceDto>> GetRacesAsync(int season, int retryCount, int retryDelayMs, CancellationToken cancellationToken)
         {
-            IReadOnlyList<JolpicaRaceDto> races =
-            [
-                new JolpicaRaceDto
-                {
-                    Season = season.ToString(),
-                    Round = "1",
-                    RaceName = "Bahrain Grand Prix",
-                    Date = "2026-03-08",
-                    Time = "15:00:00Z",
-                    Circuit = new JolpicaCircuitDto
-                    {
-                        CircuitName = "Bahrain International Circuit"
-                    }
-                }
-            ];
-
-            return Task.FromResult(races);
+            return Task.FromResult(_races);
         }
     }
 }

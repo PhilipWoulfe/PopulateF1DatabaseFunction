@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using F1.Core.Models;
 using F1.Infrastructure.Data;
@@ -12,10 +13,12 @@ namespace F1.DataSyncWorker.Services;
 
 public sealed class DataSyncOrchestrator : IDataSyncOrchestrator
 {
+    private const int MaxRaceIdLength = 128;
     private readonly ILogger<DataSyncOrchestrator> _logger;
     private readonly IDbContextFactory<F1DbContext> _dbContextFactory;
     private readonly IJolpicaClient _jolpicaClient;
     private readonly DataSyncOptions _options;
+    private int _migrationsApplied;
 
     public DataSyncOrchestrator(
         ILogger<DataSyncOrchestrator> logger,
@@ -38,7 +41,7 @@ public sealed class DataSyncOrchestrator : IDataSyncOrchestrator
 
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        if (_options.AutoMigrate)
+        if (_options.AutoMigrate && Interlocked.CompareExchange(ref _migrationsApplied, 1, 0) == 0)
         {
             _logger.LogInformation("Applying EF migrations before data sync.");
             await dbContext.Database.MigrateAsync(cancellationToken);
@@ -64,7 +67,7 @@ public sealed class DataSyncOrchestrator : IDataSyncOrchestrator
     {
         var inserted = 0;
         var updated = 0;
-        var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var entitiesByKey = new Dictionary<string, Competition>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var definition in _options.Competitions)
         {
@@ -99,9 +102,15 @@ public sealed class DataSyncOrchestrator : IDataSyncOrchestrator
                 }
             }
 
-            await dbContext.SaveChangesAsync(cancellationToken);
-            map[definition.Key] = existing.Id;
+            entitiesByKey[definition.Key] = existing;
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var map = entitiesByKey.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.Id,
+            StringComparer.OrdinalIgnoreCase);
 
         return new CompetitionMapResult(map, inserted, updated);
     }
@@ -301,7 +310,7 @@ public sealed class DataSyncOrchestrator : IDataSyncOrchestrator
 
         mappedRace = new Race
         {
-            Id = $"{competitionSlug}-{season}-{round}-{raceSlug}",
+            Id = BuildRaceId(competitionSlug, season, round, raceSlug),
             CompetitionId = competitionId,
             Season = season,
             Round = round,
@@ -346,14 +355,12 @@ public sealed class DataSyncOrchestrator : IDataSyncOrchestrator
     private static bool TryParseRaceStartUtc(string date, string? time, out DateTime startUtc)
     {
         startUtc = default;
-        if (string.IsNullOrWhiteSpace(date))
+        if (string.IsNullOrWhiteSpace(date) || string.IsNullOrWhiteSpace(time))
         {
             return false;
         }
 
-        var timestamp = string.IsNullOrWhiteSpace(time)
-            ? $"{date}T00:00:00Z"
-            : $"{date}T{time}";
+        var timestamp = $"{date}T{time}";
 
         if (!DateTimeOffset.TryParse(timestamp, out var dto))
         {
@@ -385,6 +392,26 @@ public sealed class DataSyncOrchestrator : IDataSyncOrchestrator
         }
 
         return builder.ToString().Trim('-');
+    }
+
+    private static string BuildRaceId(string competitionSlug, int season, int round, string raceSlug)
+    {
+        var rawId = $"{competitionSlug}-{season}-{round}-{raceSlug}";
+        if (rawId.Length <= MaxRaceIdLength)
+        {
+            return rawId;
+        }
+
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawId))).ToLowerInvariant();
+        var hashSuffix = hash[..12];
+        var headLength = Math.Max(1, MaxRaceIdLength - hashSuffix.Length - 1);
+        var truncatedHead = rawId[..headLength].TrimEnd('-');
+        if (string.IsNullOrWhiteSpace(truncatedHead))
+        {
+            truncatedHead = rawId[..headLength];
+        }
+
+        return $"{truncatedHead}-{hashSuffix}";
     }
 
     private static void ValidateOptions(DataSyncOptions options)

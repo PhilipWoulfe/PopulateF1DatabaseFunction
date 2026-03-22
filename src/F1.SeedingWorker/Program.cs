@@ -1,15 +1,15 @@
 using F1.Infrastructure.Data;
-using F1.DataSyncWorker;
-using F1.DataSyncWorker.Clients;
-using F1.DataSyncWorker.Options;
-using F1.DataSyncWorker.Services;
+using F1.SeedingWorker;
+using F1.SeedingWorker.Clients;
+using F1.SeedingWorker.Options;
+using F1.SeedingWorker.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services
-	.AddOptions<DataSyncOptions>()
-	.Bind(builder.Configuration.GetSection(DataSyncOptions.SectionName))
+	.AddOptions<SeedOptions>()
+	.Bind(builder.Configuration.GetSection(SeedOptions.SectionName))
 	.ValidateDataAnnotations()
 	.ValidateOnStart();
 
@@ -22,14 +22,13 @@ if (string.IsNullOrWhiteSpace(postgresConnectionString))
 builder.Services.AddDbContextFactory<F1DbContext>(options => options.UseNpgsql(postgresConnectionString));
 
 builder.Services
-	.AddHttpClient("Jolpica", (sp, client) =>
+	.AddHttpClient<IJolpicaClient, JolpicaClient>((sp, client) =>
 	{
-		var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DataSyncOptions>>().Value;
-		client.BaseAddress = new Uri(options.JolpicaBaseUrl, UriKind.Absolute);
+		var seedOptions = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SeedOptions>>().Value;
+		client.BaseAddress = new Uri(seedOptions.JolpicaBaseUrl, UriKind.Absolute);
 	});
 
-builder.Services.AddSingleton<IJolpicaClient, JolpicaClient>();
-builder.Services.AddSingleton<IDataSyncOrchestrator, DataSyncOrchestrator>();
+builder.Services.AddSingleton<ISeedOrchestrator, SeedOrchestrator>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
