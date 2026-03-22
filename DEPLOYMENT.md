@@ -288,7 +288,7 @@ Target flow:
 
 Minimum checks after deploy:
 1. `docker compose ps`
-2. API responds on `/swagger` or another health-capable route
+2. API responds on `/health`
 3. Web root responds
 4. Worker is either healthy/running or exited cleanly in one-shot mode
 5. Postgres is healthy
@@ -297,9 +297,13 @@ Example:
 
 ```bash
 docker compose ps
-curl -I http://localhost:5000/swagger/index.html
+curl -fsS http://localhost:5000/health
 curl -I http://localhost:5001/
 ```
+
+Container-level health checks:
+1. `f1-api` uses Docker `HEALTHCHECK` against `http://127.0.0.1:8080/health`.
+2. `f1-web` uses Docker `HEALTHCHECK` against `http://127.0.0.1/`.
 
 ## Rollback Procedure
 
