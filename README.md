@@ -16,8 +16,10 @@ The **F1 Competition Platform** is a modular solution designed to aggregate Form
 
 It consists of two main components:
 
-1.  **PopulateF1Database (Azure Functions)**: A background worker that interacts with the Jolpica API to fetch race data and populate a Cosmos DB database on a scheduled basis.
+1.  **F1.DataSyncWorker (.NET Worker)**: A scheduled worker that fetches baseline data from Jolpica and seeds the live Postgres model (competitions, drivers, and races).
 2.  **F1.Api (ASP.NET Core)**: A RESTful API that serves the aggregated data to clients.
+
+Legacy note: `PopulateF1Database` (Azure Functions/Cosmos path) is kept only for transition support and is no longer the canonical baseline data path.
 
 The solution is built using **.NET 8** and follows **Clean Architecture** principles, leveraging dependency injection, configuration management, and containerization.
 
@@ -59,9 +61,9 @@ The solution uses **Cloudflare Tunnels** to securely expose the services without
 
 ## 🚀 Features
 
-- **Azure Functions**: Timer-triggered function (`UpdateDatabase`) to keep data synchronized.
+- **Scheduled Data Sync Worker**: `F1.DataSyncWorker` ingests and upserts baseline competition, driver, and race data from Jolpica into Postgres.
 - **ASP.NET Core API**: A containerized Web API for data access.
-- **Persistence**: API runtime persistence via **Postgres** (with Cosmos still used by the Populate function until its migration story).
+- **Persistence**: API runtime persistence via **Postgres**.
 - **Containerized**: Full Docker support for reproducible environments across Proxmox LXCs.
 
 ---
@@ -75,8 +77,9 @@ The solution uses **Cloudflare Tunnels** to securely expose the services without
 │   ├── F1.Api            # ASP.NET Core Web API (Entry Point)
 │   ├── F1.Core           # Domain Entities & Interfaces
 │   ├── F1.Infrastructure # Database & External Integrations
+│   ├── F1.DataSyncWorker  # Scheduled Postgres baseline seed worker
 │   ├── F1.Services       # Business Logic
-│   └── PopulateF1...     # Azure Function Ingestion Apps
+│   └── PopulateF1...     # Legacy Azure Function ingestion apps (deprecated path)
 ├── tests/
 │   └── F1.Api.Tests      # XUnit Test Suite
 │   └── F1.Web.Tests      # XUnit Test Suite
@@ -95,7 +98,7 @@ The solution uses **Cloudflare Tunnels** to securely expose the services without
   ```
 
 ### 2. Configuration
-The solution uses two primary methods for configuration: a `.env` file for Docker Compose and `local.settings.json` for the Azure Functions.
+The solution uses `.env` for Docker Compose plus appsettings/environment variables for API and worker runtime settings.
 
 #### A. Docker Environment (`.env`)
 Create a `.env` file in the root of the project. This file controls ports, URLs, and environment settings for the local Docker containers.
@@ -125,7 +128,21 @@ Note: `src/F1.Api/appsettings.json` and `src/F1.Api/appsettings.Development.json
 
 Optional Postgres bootstrap value in `.env`:
 
-- `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations and seeds baseline race/driver/metadata rows on startup.
+- `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations on startup. Baseline competition/driver/race ingestion is handled by `f1-data-sync-worker`.
+  - Default in `.env.example`: `true`.
+
+Optional worker values in `.env`:
+
+These `DATA_SYNC_*` values are consumed by `docker-compose.yml` and mapped to `DataSyncWorker__*` environment variables for the `f1-data-sync-worker` container.
+
+- `DATA_SYNC_INTERVAL_MINUTES`: mapped to `DataSyncWorker__IntervalMinutes` for `f1-data-sync-worker`. `0` means run once and exit.
+- `DATA_SYNC_AUTO_MIGRATE`: mapped to `DataSyncWorker__AutoMigrate` for `f1-data-sync-worker`.
+  - Default in `.env.example`: `false` to keep a single migration owner by default (the API via `DB_AUTO_MIGRATE=true`). Set to `true` only if you intentionally want the worker to own migrations.
+- `DATA_SYNC_HTTP_RETRY_COUNT`: mapped to `DataSyncWorker__HttpRetryCount` for retry attempts against Jolpica.
+- `DATA_SYNC_HTTP_RETRY_DELAY_MS`: mapped to `DataSyncWorker__HttpRetryDelayMs` for retry backoff delay.
+- `DATA_SYNC_DEADLINE_MINUTES_BEFORE_START`: mapped to `DataSyncWorker__DeadlineMinutesBeforeStart`; default placeholder policy is `30`.
+- `DATA_SYNC_JOLPICA_BASE_URL`: mapped to `DataSyncWorker__JolpicaBaseUrl`.
+- `DATA_SYNC_CONTINUE_ON_ERROR`: mapped to `DataSyncWorker__ContinueOnError`.
 
 Optional API values in `.env`:
 
@@ -144,10 +161,30 @@ Notes:
 - `CloudflareAccess__Issuer` is currently set in `docker-compose.yml`.
 - `API_BASE_URL` is set to `/api/` directly in `docker-compose.yml` for `f1-web` and is not read from `.env`.
 - `/api/users/debug/me` returns sanitized post-auth claims, groups, and role resolution data only when `DEV_ENABLE_DEBUG_ENDPOINTS=true` and the API is running in `Development` or `Test`.
-- `TAG` applies to both the API and Web images. Use `TAG=test` for the test host, `TAG=stable` for production, and `TAG=sha-<shortsha>` for rollback or pinning a specific build.
+- `TAG` applies to API, Web, and Data Sync worker images. Use `TAG=test` for the test host, `TAG=stable` for production, and `TAG=sha-<shortsha>` for rollback or pinning a specific build.
 
-#### B. Azure Function (`local.settings.json`)
-This file configures the data ingestion service. You will need to update `src/PopulateF1Database/local.settings.json` with your **Cosmos DB connection string** and other specific settings.
+#### B. Data Sync Worker (`src/F1.DataSyncWorker/appsettings*.json`)
+The worker reads `ConnectionStrings:Postgres` and the `DataSyncWorker` section. Default config includes the three baseline competitions for this epic:
+
+- Philip 2025
+- David 2025
+- Main 2026
+
+Run locally:
+
+```bash
+export ConnectionStrings__Postgres='Host=localhost;Port=5432;Database=f1competition;Username=<user>;Password=<password>'
+dotnet run --project src/F1.DataSyncWorker/F1.DataSyncWorker.csproj
+```
+
+Set `DataSyncWorker__IntervalMinutes=0` for a one-shot run or any positive value for scheduled mode.
+
+When running the worker directly (outside Docker Compose), set `DataSyncWorker__*` environment variables directly rather than `DATA_SYNC_*`.
+
+For Docker Compose runtime, `f1-data-sync-worker` runs automatically and reads values from `.env`.
+
+#### C. Azure Function (`local.settings.json`) - Legacy Path
+This file configures the legacy Cosmos ingestion service and is no longer the canonical baseline seed path. It remains for migration fallback only.
 
 ```
 {
