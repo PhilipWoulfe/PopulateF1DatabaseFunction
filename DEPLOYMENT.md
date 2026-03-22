@@ -229,6 +229,63 @@ Recommendation:
 3. Do not store production secrets in repo or handover notes.
 4. `GHCR_READ_TOKEN` should be a package-read token that matches `GHCR_USERNAME`.
 
+Automate GitHub Environment setup (no manual UI entry):
+1. Create vars/secrets files for both environments from:
+   [.github/env/test.vars.env.example](.github/env/test.vars.env.example),
+   [.github/env/test.secrets.env.example](.github/env/test.secrets.env.example),
+   [.github/env/production.vars.env.example](.github/env/production.vars.env.example),
+   [.github/env/production.secrets.env.example](.github/env/production.secrets.env.example).
+2. Populate all files locally with real values.
+3. Sync test:
+
+```bash
+chmod +x scripts/github-sync-environment.sh
+./scripts/github-sync-environment.sh \
+  --repo PhilipWoulfe/F1Competition \
+  --vars-file .github/env/test.vars.env \
+  --secrets-file .github/env/test.secrets.env \
+  --env test
+```
+
+4. Sync production:
+
+```bash
+./scripts/github-sync-environment.sh \
+  --repo PhilipWoulfe/F1Competition \
+  --vars-file .github/env/production.vars.env \
+  --secrets-file .github/env/production.secrets.env \
+  --env production
+```
+
+Dry-run mode:
+
+```bash
+./scripts/github-sync-environment.sh \
+  --repo PhilipWoulfe/F1Competition \
+  --vars-file .github/env/test.vars.env \
+  --secrets-file .github/env/test.secrets.env \
+  --env test \
+  --dry-run
+```
+
+Generate GitHub env files directly from current LXC runtime:
+
+```bash
+chmod +x scripts/generate-github-env-files.sh
+./scripts/generate-github-env-files.sh \
+  --source-env .env \
+  --out-dir .github/env \
+  --test-tag test \
+  --prod-tag stable \
+  --overwrite
+```
+
+This creates:
+1. `.github/env/test.vars.env`
+2. `.github/env/test.secrets.env`
+3. `.github/env/production.vars.env`
+4. `.github/env/production.secrets.env`
+
 ## VM Bring-Up Procedure
 
 1. Provision VM.
@@ -240,6 +297,24 @@ Recommendation:
 7. Run preflight.
 8. Log in to GHCR if needed.
 9. Start stack.
+
+Automated first-time VM bootstrap:
+
+```bash
+chmod +x scripts/bootstrap-vm.sh
+sudo ./scripts/bootstrap-vm.sh \
+  --deploy-user deploy \
+  --deploy-path /opt/f1competition \
+  --log-path /mnt/f1-logs
+```
+
+Optional non-interactive Tailscale join:
+
+```bash
+sudo ./scripts/bootstrap-vm.sh \
+  --tailscale-auth-key tskey-auth-xxxxxxxx \
+  --deploy-user deploy
+```
 
 Example first boot commands:
 
@@ -291,11 +366,13 @@ Automated production flow implemented in PR2:
 7. The workflow uploads `docker-compose.yml`, deploy scripts, and environment file to the VM
 8. The workflow runs preflight, image pull, `docker compose up -d`, and smoke checks
 9. The workflow writes a deployment summary with host, path, tag, and commit SHA
+10. The workflow uploads remote `docker compose ps` artifacts for troubleshooting
 
 Manual rollback flow implemented in PR2:
 1. Run [.github/workflows/rollback-vm.yaml](.github/workflows/rollback-vm.yaml)
 2. Provide the target tag, usually `sha-<shortsha>`
 3. The workflow uploads the same runtime files, overrides `TAG`, and reruns preflight plus smoke checks
+4. The workflow uploads remote `docker compose ps` artifacts for troubleshooting
 
 ## Smoke Checks
 
@@ -355,3 +432,5 @@ After cutover to VM, verify:
 4. Added current manual deploy procedure and planned automated deploy target.
 5. Added a reusable deploy smoke-check script and documented post-deploy verification.
 6. Added production VM deploy and rollback workflow documentation with concrete GitHub secret and variable names.
+7. Added automated GitHub Environment sync and VM bootstrap script instructions.
+8. Added LXC-to-GitHub env file generator workflow for test and production.

@@ -31,6 +31,9 @@ Current runtime is a local **Proxmox Virtualization Environment** using Debian 1
 
 Deployment runbook:
 - See [DEPLOYMENT.md](DEPLOYMENT.md) for the living VM setup, secrets, deploy, and rollback instructions.
+- See [scripts/github-sync-environment.sh](scripts/github-sync-environment.sh) to batch-apply GitHub Environment vars/secrets via CLI.
+- See [scripts/generate-github-env-files.sh](scripts/generate-github-env-files.sh) to generate test/production GitHub env files from current LXC `.env`.
+- See [scripts/bootstrap-vm.sh](scripts/bootstrap-vm.sh) to automate first-time VM bootstrap.
 
 ### **The Pipeline**
 1. **Continuous Integration**: GitHub Actions builds the .NET solution, executes unit tests, and enforces a code coverage gate (80% target).
