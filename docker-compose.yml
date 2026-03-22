@@ -49,7 +49,7 @@ services:
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=${POSTGRES_DB:-f1competition};Username=${POSTGRES_USER:-f1};Password=${POSTGRES_PASSWORD:-f1}
       - Database__AutoMigrate=${DB_AUTO_MIGRATE:-true}
       - CloudflareAccess__Audience=${CLOUDFLARE_AUDIENCE:-CloudflareAccessAudienceNotSet}
-      - CloudflareAccess__Issuer=https://f1-team.cloudflareaccess.com
+      - CloudflareAccess__Issuer=${CLOUDFLARE_ISSUER:-https://f1-team.cloudflareaccess.com}
       - CloudflareAccess__AdminGroupClaimType=${ADMIN_GROUP_CLAIM_TYPE:-groups}
       - CloudflareAccess__AdminGroups=${ADMIN_GROUPS:-F1 Admins}
       - CloudflareAccess__AdminEmails=${ADMIN_EMAILS:-}
