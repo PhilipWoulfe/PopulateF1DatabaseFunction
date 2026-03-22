@@ -38,7 +38,7 @@ Deployment runbook:
 ### **The Pipeline**
 1. **Continuous Integration**: GitHub Actions builds the .NET solution, executes unit tests, and enforces a code coverage gate (80% target).
 2. **Registry**: Successful builds on `main` are packaged into Docker images and pushed to **GitHub Container Registry (GHCR)**.
-3. **Automated Staging (`f1-test`)**: The test environment runs **Watchtower**, which automatically pulls and restarts the containers whenever the moving `:test` image aliases are updated.
+3. **Automated Staging (`f1-test`)**: GitHub Actions deploys the moving `:test` aliases to the test host using the same preflight and smoke-check flow as production.
 4. **Production Gate (`f1-prod`)**: Deployment to production requires **Manual Approval** via GitHub Environments, ensuring a stable "human-in-the-loop" verification before live updates.
 
 ### **Image Tag Strategy**
@@ -52,13 +52,14 @@ Rollback process:
 
 | Environment | Host IP (Internal) | Port | Deployment Logic |
 | :--- | :--- | :--- | :--- |
-| **Test** | `192.168.0.50` | `5000` | Automated (Watchtower) |
+| **Test** | `192.168.0.50` | `5000` | Automated (CI deploy workflow) |
 | **Production** | `192.168.0.51` | `5000` | Manual (Gatekeeper) |
 
 ### **Public Access (Cloudflare Tunnel)**
 The solution uses **Cloudflare Tunnels** to securely expose the services without opening ports on the router.
 - **Profile**: `cloud` (Enabled via `COMPOSE_PROFILES=cloud` or `--profile cloud`)
 - **Token**: Managed via `TUNNEL_TOKEN` in `.env`.
+- **Profiles by environment**: Test and production should both use `COMPOSE_PROFILES=cloud`.
 - **Domains**:
   - Test: `https://f1-test.philipwoulfe.com`
   - API: `https://f1-api-test.philipwoulfe.com`

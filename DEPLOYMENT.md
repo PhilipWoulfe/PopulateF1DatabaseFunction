@@ -191,7 +191,7 @@ Cloudflare / auth:
 9. `CLOUDFLARE_TEST_SERVICE_TOKEN_EMAIL_DOMAIN`
 
 Optional cloud profile:
-1. `COMPOSE_PROFILES=cloud`
+1. `COMPOSE_PROFILES=cloud` for test and production
 2. `TUNNEL_TOKEN`
 
 ## GitHub Secrets and Variables
