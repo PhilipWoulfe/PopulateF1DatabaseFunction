@@ -1,9 +1,11 @@
 @page "/yas-marina-selection"
 @using F1.Web.Models
+@using F1.Web.Services.Api
 @using System.Net
-@using System.Net.Http.Json
 @implements IAsyncDisposable
-@inject HttpClient Http
+@inject IDriversApiService DriversService
+@inject ISelectionApiService SelectionService
+@inject IRaceMetadataApiService RaceMetadataService
 @inject F1.Web.Services.ITimeProvider TimeProvider
 @inject F1.Web.Services.IMockDateService MockDateService
 
@@ -135,9 +137,9 @@ else
 
         try
         {
-            drivers = await Http.GetFromJsonAsync<Driver[]>("drivers") ?? System.Array.Empty<Driver>();
-            raceConfig = await Http.GetFromJsonAsync<RaceConfig>($"selections/{RaceId}/config");
-            raceMetadata = await LoadPublishedRaceMetadataAsync();
+            drivers = await DriversService.GetAllAsync();
+            raceConfig = await SelectionService.GetConfigAsync(RaceId);
+            raceMetadata = await RaceMetadataService.GetPublishedAsync(RaceId);
             await LoadExistingSelectionAsync();
             await LoadCurrentSelectionsAsync();
 
@@ -146,63 +148,30 @@ else
                 isReadOnly = true;
             }
         }
+        catch (ApiServiceException ex)
+        {
+            errorMessage = $"Error loading data: {ex.Error.Message}";
+        }
         catch (Exception ex)
         {
             errorMessage = $"Error loading data: {ex.Message}";
         }
     }
 
-    private async Task<RaceQuestionMetadata?> LoadPublishedRaceMetadataAsync()
-    {
-        var response = await Http.GetAsync($"races/{RaceId}/metadata");
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            return null;
-        }
-
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<RaceQuestionMetadata>();
-    }
-
     private async Task LoadExistingSelectionAsync()
     {
-        var response = await Http.GetAsync($"selections/{RaceId}/mine");
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            return;
-        }
-
-        response.EnsureSuccessStatusCode();
-
-        var existing = await response.Content.ReadFromJsonAsync<Selection>();
+        var existing = await SelectionService.GetMineAsync(RaceId);
         if (existing is null)
         {
             return;
         }
 
-        formModel.SelectedBetType = existing.BetType;
-        var selections = (existing.OrderedSelections ?? [])
-            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
-            .OrderBy(item => item.Position)
-            .Select(item => item.DriverId)
-            .ToList();
-
-        if (selections.Count == 0)
-        {
-            selections = existing.Selections ?? [];
-        }
-
-        for (var i = 0; i < formModel.SelectedDriverIds.Count; i++)
-        {
-            formModel.SelectedDriverIds[i] = i < selections.Count ? selections[i] : "";
-        }
-
-        isReadOnly = existing.IsLocked;
+        ApplySelectionToForm(existing);
     }
 
     private async Task LoadCurrentSelectionsAsync()
     {
-        var snapshot = await Http.GetFromJsonAsync<CurrentSelectionItem[]>("selections/current") ?? [];
+        var snapshot = await SelectionService.GetCurrentAsync();
 
         if (snapshot.Length == 0)
         {
@@ -249,69 +218,51 @@ else
 
         try
         {
-            var response = await Http.PutAsJsonAsync($"selections/{RaceId}/mine", submission);
-            if (response.IsSuccessStatusCode)
-            {
-                successMessage = "Selection saved successfully.";
-                await LoadExistingSelectionAsync();
-                await LoadCurrentSelectionsAsync();
-                return;
-            }
-
-            // Handle common status codes explicitly first.
-            if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
-            {
-                errorMessage = "You are not authorized to save this selection.";
-                return;
-            }
-
-            var fallbackMessage = "Unable to save selection.";
-            errorMessage = fallbackMessage;
-
-            try
-            {
-                var content = response.Content;
-                if (content is null)
-                {
-                    return;
-                }
-
-                var mediaType = content.Headers?.ContentType?.MediaType;
-                if (string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase))
-                {
-                    var apiError = await content.ReadFromJsonAsync<ApiErrorResponse>();
-                    if (!string.IsNullOrWhiteSpace(apiError?.Message))
-                    {
-                        errorMessage = apiError.Message;
-                    }
-                    return;
-                }
-
-                // Fallback: try to read a plain-text body and use it if available.
-                var text = await content.ReadAsStringAsync();
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    errorMessage = text;
-                }
-            }
-            catch (Exception)
-            {
-                // Swallow any parsing errors and fall back to the default message.
-                errorMessage = fallbackMessage;
-            }
+            var saved = await SelectionService.SaveMineAsync(RaceId, submission);
+            successMessage = "Selection saved successfully.";
+            ApplySelectionToForm(saved);
+            await LoadCurrentSelectionsAsync();
         }
-        catch (HttpRequestException)
+        catch (ApiServiceException ex)
         {
-            errorMessage = "Unable to save selection.";
-        }
-        catch (TaskCanceledException)
-        {
-            errorMessage = "Unable to save selection.";
+            errorMessage = GetSaveErrorMessage(ex);
         }
         catch (Exception)
         {
             errorMessage = "Unable to save selection.";
         }
+    }
+
+    private static string GetSaveErrorMessage(ApiServiceException exception)
+    {
+        return exception.Error.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => "You are not authorized to save this selection.",
+            _ => exception.Error.Message
+        };
+    }
+
+    private void ApplySelectionToForm(Selection selection)
+    {
+        formModel.SelectedBetType = selection.BetType;
+
+        var selections = (selection.OrderedSelections ?? [])
+            .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
+            .OrderBy(item => item.Position)
+            .Select(item => item.DriverId)
+            .ToList();
+
+        if (selections.Count == 0)
+        {
+            selections = selection.Selections ?? [];
+        }
+
+        for (var i = 0; i < formModel.SelectedDriverIds.Count; i++)
+        {
+            formModel.SelectedDriverIds[i] = i < selections.Count ? selections[i] : "";
+        }
+
+        isReadOnly = selection.IsLocked;
     }
 
     private void OnDriverChanged(int index, string? driverId)
@@ -369,8 +320,4 @@ else
         }
     }
 
-    private class ApiErrorResponse
-    {
-        public string? Message { get; set; }
-    }
 }
