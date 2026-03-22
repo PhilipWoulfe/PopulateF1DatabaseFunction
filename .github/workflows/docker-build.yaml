@@ -1,4 +1,4 @@
-name: Build and Push F1 API
+name: Build and Push F1 Platform
 
 on:
   push:
@@ -19,6 +19,7 @@ jobs:
       image_name_lower: ${{ steps.image-metadata.outputs.image_name_lower }}
       api_sha_tag: ${{ steps.image-metadata.outputs.api_sha_tag }}
       web_sha_tag: ${{ steps.image-metadata.outputs.web_sha_tag }}
+      data_sync_sha_tag: ${{ steps.image-metadata.outputs.data_sync_sha_tag }}
     permissions:
       contents: read
       packages: write
@@ -33,6 +34,7 @@ jobs:
           echo "image_name_lower=$IMAGE_NAME_LOWER" >> "$GITHUB_OUTPUT"
           echo "api_sha_tag=${{ env.REGISTRY }}/$IMAGE_NAME_LOWER:$SHA_TAG" >> "$GITHUB_OUTPUT"
           echo "web_sha_tag=${{ env.REGISTRY }}/$IMAGE_NAME_LOWER-web:$SHA_TAG" >> "$GITHUB_OUTPUT"
+          echo "data_sync_sha_tag=${{ env.REGISTRY }}/$IMAGE_NAME_LOWER-data-sync:$SHA_TAG" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v6
 
@@ -98,6 +100,15 @@ jobs:
           build-args: |
             COMMIT_HASH=${{ github.sha }}
 
+      - name: Build and push Data Sync Worker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/F1.DataSyncWorker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-data-sync:${{ env.SHA_TAG }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
         with:
@@ -126,6 +137,17 @@ jobs:
             COMMIT_HASH=${{ github.sha }}
             CONFIGURATION=Debug
 
+      - name: Build and push Data Sync Worker image (Debug)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/F1.DataSyncWorker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-data-sync:${{ env.SHA_TAG }}-debug
+          build-args: |
+            CONFIGURATION=Debug
+
       - name: Promote SHA images to :test tags
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
@@ -138,6 +160,11 @@ jobs:
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:test \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-web:${{ env.SHA_TAG }}-debug
+
+          # Promote Data Sync Worker image SHA tag to :test
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-data-sync:test \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}-data-sync:${{ env.SHA_TAG }}-debug
 
   run-e2e-test:
     needs: build-and-push
@@ -312,3 +339,9 @@ jobs:
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}-web:stable \
             ${{ needs.build-and-push.outputs.web_sha_tag }}
+
+      - name: Promote Data Sync Worker image to stable
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}-data-sync:stable \
+            ${{ needs.build-and-push.outputs.data_sync_sha_tag }}

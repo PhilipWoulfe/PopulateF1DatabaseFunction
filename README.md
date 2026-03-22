@@ -157,7 +157,7 @@ Notes:
 - `CloudflareAccess__Issuer` is currently set in `docker-compose.yml`.
 - `API_BASE_URL` is set to `/api/` directly in `docker-compose.yml` for `f1-web` and is not read from `.env`.
 - `/api/users/debug/me` returns sanitized post-auth claims, groups, and role resolution data only when `DEV_ENABLE_DEBUG_ENDPOINTS=true` and the API is running in `Development` or `Test`.
-- `TAG` applies to both the API and Web images. Use `TAG=test` for the test host, `TAG=stable` for production, and `TAG=sha-<shortsha>` for rollback or pinning a specific build.
+- `TAG` applies to API, Web, and Data Sync worker images. Use `TAG=test` for the test host, `TAG=stable` for production, and `TAG=sha-<shortsha>` for rollback or pinning a specific build.
 
 #### B. Data Sync Worker (`src/F1.DataSyncWorker/appsettings*.json`)
 The worker reads `ConnectionStrings:Postgres` and the `DataSyncWorker` section. Default config includes the three baseline competitions for this epic:
