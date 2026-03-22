@@ -1,4 +1,5 @@
 @* DateMockWidget.razor: Appears for admin users when date mocking is enabled. Allows setting mock date/time. *@
+@using F1.Web.Services.Api
 
 @if (ShowWidget)
 {
@@ -64,6 +65,10 @@
                 ErrorMessage = null;
                 Nav.NavigateTo(Nav.Uri, forceLoad: true);
             }
+            catch (ApiServiceException ex)
+            {
+                ErrorMessage = ex.Error.Message;
+            }
             catch (Exception)
             {
                 ErrorMessage = "Unable to set mock date right now. Please try again.";
@@ -80,6 +85,10 @@
             LocalMockDate = null;
             ErrorMessage = null;
             Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        }
+        catch (ApiServiceException ex)
+        {
+            ErrorMessage = ex.Error.Message;
         }
         catch (Exception)
         {
