@@ -61,7 +61,7 @@ The solution uses **Cloudflare Tunnels** to securely expose the services without
 
 ## 🚀 Features
 
-- **Scheduled Seeding Worker**: `F1.DataSyncWorker` ingests and upserts baseline competition, driver, and race data from Jolpica into Postgres.
+- **Scheduled Data Sync Worker**: `F1.DataSyncWorker` ingests and upserts baseline competition, driver, and race data from Jolpica into Postgres.
 - **ASP.NET Core API**: A containerized Web API for data access.
 - **Persistence**: API runtime persistence via **Postgres**.
 - **Containerized**: Full Docker support for reproducible environments across Proxmox LXCs.
@@ -128,7 +128,7 @@ Note: `src/F1.Api/appsettings.json` and `src/F1.Api/appsettings.Development.json
 
 Optional Postgres bootstrap value in `.env`:
 
-- `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations and seeds baseline race/driver/metadata rows on startup.
+- `DB_AUTO_MIGRATE`: mapped to `Database__AutoMigrate` for `f1-api`. When `true`, the API applies EF Core migrations on startup. Baseline competition/driver/race ingestion is handled by `f1-data-sync-worker`.
 
 Optional worker values in `.env`:
 
@@ -138,6 +138,7 @@ Optional worker values in `.env`:
 - `DATA_SYNC_HTTP_RETRY_DELAY_MS`: mapped to `DataSyncWorker__HttpRetryDelayMs` for retry backoff delay.
 - `DATA_SYNC_DEADLINE_MINUTES_BEFORE_START`: mapped to `DataSyncWorker__DeadlineMinutesBeforeStart`; default placeholder policy is `30`.
 - `DATA_SYNC_JOLPICA_BASE_URL`: mapped to `DataSyncWorker__JolpicaBaseUrl`.
+- `DATA_SYNC_CONTINUE_ON_ERROR`: mapped to `DataSyncWorker__ContinueOnError`.
 
 Optional API values in `.env`:
 
@@ -158,7 +159,7 @@ Notes:
 - `/api/users/debug/me` returns sanitized post-auth claims, groups, and role resolution data only when `DEV_ENABLE_DEBUG_ENDPOINTS=true` and the API is running in `Development` or `Test`.
 - `TAG` applies to both the API and Web images. Use `TAG=test` for the test host, `TAG=stable` for production, and `TAG=sha-<shortsha>` for rollback or pinning a specific build.
 
-#### B. Seeding Worker (`src/F1.DataSyncWorker/appsettings*.json`)
+#### B. Data Sync Worker (`src/F1.DataSyncWorker/appsettings*.json`)
 The worker reads `ConnectionStrings:Postgres` and the `DataSyncWorker` section. Default config includes the three baseline competitions for this epic:
 
 - Philip 2025
@@ -173,6 +174,8 @@ dotnet run --project src/F1.DataSyncWorker/F1.DataSyncWorker.csproj
 ```
 
 Set `DataSyncWorker__IntervalMinutes=0` for a one-shot run or any positive value for scheduled mode.
+
+For Docker Compose runtime, `f1-data-sync-worker` runs automatically and reads values from `.env`.
 
 #### C. Azure Function (`local.settings.json`) - Legacy Path
 This file configures the legacy Cosmos ingestion service and is no longer the canonical baseline seed path. It remains for migration fallback only.

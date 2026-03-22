@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\F1.Core\F1.Core.csproj" />
+    <ProjectReference Include="..\..\src\F1.DataSyncWorker\F1.DataSyncWorker.csproj" />
     <ProjectReference Include="..\..\src\F1.Infrastructure\F1.Infrastructure.csproj" />
   </ItemGroup>
 

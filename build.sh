@@ -12,6 +12,7 @@ CONFIG="Release"
 
 API_PROJECT="src/F1.Api/F1.Api.csproj"
 WEB_PROJECT="src/F1.Web/F1.Web.csproj"
+DATA_SYNC_PROJECT="src/F1.DataSyncWorker/F1.DataSyncWorker.csproj"
 API_TEST_PROJECT="tests/F1.Api.Tests/F1.Api.Tests.csproj"
 WEB_TEST_PROJECT="tests/F1.Web.Tests/F1.Web.Tests.csproj"
 INFRA_TEST_PROJECT="tests/F1.Infrastructure.Tests/F1.Infrastructure.Tests.csproj"
@@ -20,6 +21,7 @@ FORMAT_INCLUDE_PATHS=(
   "src/F1.Api"
   "src/F1.Core"
   "src/F1.Infrastructure"
+    "src/F1.DataSyncWorker"
   "src/F1.Services"
   "src/F1.Web"
   "tests/F1.Api.Tests"
@@ -54,6 +56,7 @@ run_quality_gate() {
 
     if ! dotnet restore "$API_PROJECT"; then return 1; fi
     if ! dotnet restore "$WEB_PROJECT"; then return 1; fi
+    if ! dotnet restore "$DATA_SYNC_PROJECT"; then return 1; fi
     if ! dotnet restore "$API_TEST_PROJECT"; then return 1; fi
     if ! dotnet restore "$WEB_TEST_PROJECT"; then return 1; fi
     if ! dotnet restore "$INFRA_TEST_PROJECT"; then return 1; fi
@@ -62,6 +65,7 @@ run_quality_gate() {
 
     if ! CI=true dotnet build "$API_PROJECT" --configuration Release --no-restore; then return 1; fi
     if ! CI=true dotnet build "$WEB_PROJECT" --configuration Release --no-restore; then return 1; fi
+    if ! CI=true dotnet build "$DATA_SYNC_PROJECT" --configuration Release --no-restore; then return 1; fi
     if ! CI=true dotnet build "$API_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
     if ! CI=true dotnet build "$WEB_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
     if ! CI=true dotnet build "$INFRA_TEST_PROJECT" --configuration Release --no-restore; then return 1; fi
