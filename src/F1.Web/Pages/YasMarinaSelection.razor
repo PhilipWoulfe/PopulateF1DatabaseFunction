@@ -1,6 +1,7 @@
 @page "/yas-marina-selection"
 @using F1.Web.Models
 @using F1.Web.Services.Api
+@using System.Net
 @implements IAsyncDisposable
 @inject IDriversApiService DriversService
 @inject ISelectionApiService SelectionService
@@ -224,12 +225,21 @@ else
         }
         catch (ApiServiceException ex)
         {
-            errorMessage = ex.Error.Message;
+            errorMessage = GetSaveErrorMessage(ex);
         }
         catch (Exception)
         {
             errorMessage = "Unable to save selection.";
         }
+    }
+
+    private static string GetSaveErrorMessage(ApiServiceException exception)
+    {
+        return exception.Error.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => "You are not authorized to save this selection.",
+            _ => exception.Error.Message
+        };
     }
 
     private void ApplySelectionToForm(Selection selection)

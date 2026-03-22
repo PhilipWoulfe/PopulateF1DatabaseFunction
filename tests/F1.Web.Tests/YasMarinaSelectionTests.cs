@@ -149,16 +149,26 @@ public class YasMarinaSelectionTests : BunitContext
     public void YasMarinaSelection_ShouldSaveSelection_WhenSubmitSucceeds()
     {
         var (_, selectionMock, _) = RegisterDefaultMocks();
+        var savedSelection = new Selection
+        {
+            RaceId = "2025-24-yas_marina",
+            UserId = "user@example.com",
+            BetType = BetType.Regular,
+            IsLocked = false,
+            OrderedSelections =
+            [
+                new SelectionPosition { Position = 1, DriverId = "norris" },
+                new SelectionPosition { Position = 2, DriverId = "leclerc" },
+                new SelectionPosition { Position = 3, DriverId = "hamilton" },
+                new SelectionPosition { Position = 4, DriverId = "piastri" },
+                new SelectionPosition { Position = 5, DriverId = "verstappen" },
+            ],
+            Selections = ["norris", "leclerc", "hamilton", "piastri", "verstappen"]
+        };
 
         selectionMock
             .Setup(s => s.SaveMineAsync(It.IsAny<string>(), It.IsAny<SelectionSubmission>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Selection
-            {
-                RaceId = "2025-24-yas_marina",
-                UserId = "user@example.com",
-                BetType = BetType.Regular,
-                IsLocked = false
-            });
+            .ReturnsAsync(savedSelection);
 
         var cut = Render<YasMarinaSelection>();
         cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll("select").Count));
@@ -172,6 +182,11 @@ public class YasMarinaSelectionTests : BunitContext
         cut.Find("button[type='submit']").Click();
 
         cut.WaitForAssertion(() => Assert.Contains("Selection saved successfully.", cut.Markup));
+        Assert.Equal("norris", cut.FindAll("select")[0].GetAttribute("value"));
+        Assert.Equal("leclerc", cut.FindAll("select")[1].GetAttribute("value"));
+        Assert.Equal("hamilton", cut.FindAll("select")[2].GetAttribute("value"));
+        Assert.Equal("piastri", cut.FindAll("select")[3].GetAttribute("value"));
+        Assert.Equal("verstappen", cut.FindAll("select")[4].GetAttribute("value"));
         selectionMock.Verify(
             s => s.SaveMineAsync("2025-24-yas_marina", It.IsAny<SelectionSubmission>(), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -195,6 +210,25 @@ public class YasMarinaSelectionTests : BunitContext
         cut.Find("button[type='submit']").Click();
 
         cut.WaitForAssertion(() => Assert.Contains("Exactly 5 unique drivers must be selected.", cut.Markup));
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    public void YasMarinaSelection_ShouldShowFriendlyAuthorizationMessage_WhenSaveIsUnauthorized(HttpStatusCode statusCode)
+    {
+        var (_, selectionMock, _) = RegisterDefaultMocks();
+
+        selectionMock
+            .Setup(s => s.SaveMineAsync(It.IsAny<string>(), It.IsAny<SelectionSubmission>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ApiServiceException(new ApiError(statusCode, $"Saving race selection failed with status code {(int)statusCode}.")));
+
+        var cut = Render<YasMarinaSelection>();
+        cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll("select").Count));
+
+        cut.Find("button[type='submit']").Click();
+
+        cut.WaitForAssertion(() => Assert.Contains("You are not authorized to save this selection.", cut.Markup));
     }
 
     [Fact]
