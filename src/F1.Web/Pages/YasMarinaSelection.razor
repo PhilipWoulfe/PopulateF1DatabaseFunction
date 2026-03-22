@@ -11,71 +11,26 @@
 
 <h1>Yas Marina GP 2025 Selection</h1>
 
-@if (!string.IsNullOrWhiteSpace(errorMessage))
-{
-    <div class="alert alert-danger">@errorMessage</div>
-}
-
-@if (!string.IsNullOrWhiteSpace(successMessage))
-{
-    <div class="alert alert-success">@successMessage</div>
-}
-
 @if (drivers is null || raceConfig is null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    @if (raceMetadata is not null)
-    {
-        <div class="alert alert-primary">
-            <h4>Race Questions</h4>
-            <p class="mb-2"><strong>H2H:</strong> @raceMetadata.H2HQuestion</p>
-            <p class="mb-0"><strong>Bonus:</strong> @raceMetadata.BonusQuestion</p>
-        </div>
-    }
-
-    <div class="alert alert-info">
-        <strong>Countdown:</strong> @GetCountdownText()
-    </div>
-
-    <div class="alert alert-warning">
-        Locking for Pre-Qualy gives +50% points but prevents changes after Sunday 13:00 UTC!
-    </div>
+    <SelectionStatusBanners
+        ErrorMessage="@errorMessage"
+        SuccessMessage="@successMessage"
+        RaceMetadata="@raceMetadata"
+        CountdownText="@GetCountdownText()" />
 
     <EditForm Model="formModel" OnValidSubmit="SaveSelectionAsync">
-        <h4>Top 5 Driver Predictions</h4>
-        @for (var i = 0; i < 5; i++)
-        {
-            var rank = i;
-            <div class="mb-2">
-                <label class="form-label">Position @(i + 1)</label>
-                <select id="driver-select-@(i + 1)" class="form-select" value="@formModel.SelectedDriverIds[rank]" @onchange="e => OnDriverChanged(rank, e.Value?.ToString())" disabled="@isReadOnly">
-                    <option value="">-- Select driver --</option>
-                    @foreach (var driver in drivers)
-                    {
-                        <option value="@driver.DriverId">@driver.FullName (@driver.DriverId)</option>
-                    }
-                </select>
-            </div>
-        }
+        <DriverSelectionList Drivers="@drivers" SelectedDriverIds="@formModel.SelectedDriverIds" IsReadOnly="@isReadOnly" />
 
-        <h4 class="mt-4">Bet Strategy</h4>
-        <InputRadioGroup @bind-Value="formModel.SelectedBetType">
-            <div class="form-check">
-                <InputRadio id="strategy-regular" class="form-check-input" Value="BetType.Regular" disabled="@isReadOnly" />
-                <label class="form-check-label" for="strategy-regular">Regular</label>
-            </div>
-            <div class="form-check">
-                <InputRadio id="strategy-prequaly" class="form-check-input" Value="BetType.PreQualy" disabled="@isReadOnly" />
-                <label class="form-check-label" for="strategy-prequaly">Pre-Qualy</label>
-            </div>
-            <div class="form-check mb-3">
-                <InputRadio id="strategy-allornothing" class="form-check-input" Value="BetType.AllOrNothing" disabled="@isReadOnly" />
-                <label class="form-check-label" for="strategy-allornothing">All-or-Nothing</label>
-            </div>
-        </InputRadioGroup>
+        <BetStrategySelector
+            Value="@formModel.SelectedBetType"
+            ValueChanged="OnBetTypeChanged"
+            ValueExpression="@(() => formModel.SelectedBetType)"
+            IsReadOnly="@isReadOnly" />
 
         <button id="submit-selection" class="btn btn-primary" type="submit" disabled="@isReadOnly">Save Selection</button>
 
@@ -242,6 +197,12 @@ else
         };
     }
 
+    private Task OnBetTypeChanged(BetType betType)
+    {
+        formModel.SelectedBetType = betType;
+        return Task.CompletedTask;
+    }
+
     private void ApplySelectionToForm(Selection selection)
     {
         formModel.SelectedBetType = selection.BetType;
@@ -263,11 +224,6 @@ else
         }
 
         isReadOnly = selection.IsLocked;
-    }
-
-    private void OnDriverChanged(int index, string? driverId)
-    {
-        formModel.SelectedDriverIds[index] = driverId ?? string.Empty;
     }
 
     private string GetCountdownText()

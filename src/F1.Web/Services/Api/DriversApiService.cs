@@ -14,6 +14,6 @@ public sealed class DriversApiService(HttpClient httpClient) : IDriversApiServic
             return Array.Empty<Driver>();
         }
 
-        return await ApiResponseParser.ReadJsonOrDefaultAsync(response, Array.Empty<Driver>(), "Loading drivers", cancellationToken);
+        return await ApiResponseParser.ReadOptionalJsonAsync(response, Array.Empty<Driver>(), "Loading drivers", cancellationToken);
     }
 }

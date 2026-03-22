@@ -6,6 +6,9 @@ namespace F1.Web.Services.Api;
 
 public static class ApiResponseParser
 {
+    /// <summary>
+    /// Validates the HTTP status code and throws an <see cref="ApiServiceException"/> populated from the response body on failure.
+    /// </summary>
     public static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(response);
@@ -18,6 +21,9 @@ public static class ApiResponseParser
         throw await CreateErrorAsync(response, operation, cancellationToken);
     }
 
+    /// <summary>
+    /// Reads a successful JSON response where a payload is required. Null, malformed JSON, and unsupported content types throw <see cref="ApiServiceException"/>.
+    /// </summary>
     public static async Task<T> ReadRequiredJsonAsync<T>(HttpResponseMessage response, string operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(response);
@@ -49,7 +55,11 @@ public static class ApiResponseParser
         }
     }
 
-    public static async Task<T> ReadJsonOrDefaultAsync<T>(HttpResponseMessage response, T fallbackValue, string operation, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Reads a successful JSON response where a null payload is allowed and should be replaced with <paramref name="fallbackValue"/>.
+    /// Non-success status codes, malformed JSON, and unsupported content types still throw <see cref="ApiServiceException"/>.
+    /// </summary>
+    public static async Task<T> ReadOptionalJsonAsync<T>(HttpResponseMessage response, T fallbackValue, string operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(response);
 
