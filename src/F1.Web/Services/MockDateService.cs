@@ -2,6 +2,7 @@ using System;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using F1.Web.Services.Api;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -77,7 +78,7 @@ namespace F1.Web.Services
                 : (DateTime?)null;
 
             using var response = await _httpClient.PostAsJsonAsync("admin/mock-date", new { mockDateUtc = normalizedUtc });
-            response.EnsureSuccessStatusCode();
+            await ApiResponseParser.EnsureSuccessAsync(response, "Setting mock date");
             _mockDateUtc = normalizedUtc;
         }
         
