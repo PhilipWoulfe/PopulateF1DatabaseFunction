@@ -79,7 +79,7 @@ public class RaceMetadataApiServiceTests
     }
 
     [Fact]
-    public async Task GetPublishedAsync_WhenResponseIsServerError_ThrowsHttpRequestException()
+    public async Task GetPublishedAsync_WhenResponseIsServerError_ThrowsApiServiceException()
     {
         // Arrange
         var response = new HttpResponseMessage
@@ -101,7 +101,8 @@ public class RaceMetadataApiServiceTests
         var service = new RaceMetadataApiService(httpClient);
 
         // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(() => service.GetPublishedAsync("2025-24-yas_marina"));
+        var ex = await Assert.ThrowsAsync<ApiServiceException>(() => service.GetPublishedAsync("2025-24-yas_marina"));
+        Assert.Equal(HttpStatusCode.InternalServerError, ex.Error.StatusCode);
     }
 
     [Fact]

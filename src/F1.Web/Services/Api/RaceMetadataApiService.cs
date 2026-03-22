@@ -1,6 +1,5 @@
 using F1.Web.Models;
 using System.Net;
-using System.Net.Http.Json;
 
 namespace F1.Web.Services.Api;
 
@@ -16,7 +15,6 @@ public sealed class RaceMetadataApiService(HttpClient httpClient) : IRaceMetadat
             return null;
         }
 
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<RaceQuestionMetadata>(cancellationToken);
+        return await ApiResponseParser.ReadJsonOrDefaultAsync<RaceQuestionMetadata?>(response, null, "Loading race metadata", cancellationToken);
     }
 }

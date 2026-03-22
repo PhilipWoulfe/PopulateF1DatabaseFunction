@@ -137,7 +137,7 @@ public class DriversApiServiceTests
     }
 
     [Fact]
-    public async Task GetAllAsync_WhenResponseIsServerError_ThrowsHttpRequestException()
+    public async Task GetAllAsync_WhenResponseIsServerError_ThrowsApiServiceException()
     {
         // Arrange
         var response = new HttpResponseMessage
@@ -159,6 +159,7 @@ public class DriversApiServiceTests
         var service = new DriversApiService(httpClient);
 
         // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(() => service.GetAllAsync());
+        var ex = await Assert.ThrowsAsync<ApiServiceException>(() => service.GetAllAsync());
+        Assert.Equal(HttpStatusCode.InternalServerError, ex.Error.StatusCode);
     }
 }
