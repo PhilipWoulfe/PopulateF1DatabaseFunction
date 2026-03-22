@@ -42,14 +42,14 @@ else
         Locking for Pre-Qualy gives +50% points but prevents changes after Sunday 13:00 UTC!
     </div>
 
-    <EditForm Model="this" OnValidSubmit="SaveSelectionAsync">
+    <EditForm Model="formModel" OnValidSubmit="SaveSelectionAsync">
         <h4>Top 5 Driver Predictions</h4>
         @for (var i = 0; i < 5; i++)
         {
             var rank = i;
             <div class="mb-2">
                 <label class="form-label">Position @(i + 1)</label>
-                <select id="driver-select-@(i + 1)" class="form-select" value="@selectedDriverIds[rank]" @onchange="e => OnDriverChanged(rank, e.Value?.ToString())" disabled="@isReadOnly">
+                <select id="driver-select-@(i + 1)" class="form-select" value="@formModel.SelectedDriverIds[rank]" @onchange="e => OnDriverChanged(rank, e.Value?.ToString())" disabled="@isReadOnly">
                     <option value="">-- Select driver --</option>
                     @foreach (var driver in drivers)
                     {
@@ -60,7 +60,7 @@ else
         }
 
         <h4 class="mt-4">Bet Strategy</h4>
-        <InputRadioGroup @bind-Value="selectedBetType">
+        <InputRadioGroup @bind-Value="formModel.SelectedBetType">
             <div class="form-check">
                 <InputRadio id="strategy-regular" class="form-check-input" Value="BetType.Regular" disabled="@isReadOnly" />
                 <label class="form-check-label" for="strategy-regular">Regular</label>
@@ -90,8 +90,7 @@ else
     private Driver[]? drivers;
     private RaceConfig? raceConfig;
     private RaceQuestionMetadata? raceMetadata;
-    private readonly List<string> selectedDriverIds = ["", "", "", "", ""];
-    private BetType selectedBetType = BetType.Regular;
+    private readonly YasMarinaSelectionFormModel formModel = new();
     private string? errorMessage;
     private string? successMessage;
     private bool isReadOnly;
@@ -181,7 +180,7 @@ else
             return;
         }
 
-        selectedBetType = existing.BetType;
+        formModel.SelectedBetType = existing.BetType;
         var selections = (existing.OrderedSelections ?? [])
             .Where(item => !string.IsNullOrWhiteSpace(item.DriverId))
             .OrderBy(item => item.Position)
@@ -193,9 +192,9 @@ else
             selections = existing.Selections ?? [];
         }
 
-        for (var i = 0; i < selectedDriverIds.Count; i++)
+        for (var i = 0; i < formModel.SelectedDriverIds.Count; i++)
         {
-            selectedDriverIds[i] = i < selections.Count ? selections[i] : "";
+            formModel.SelectedDriverIds[i] = i < selections.Count ? selections[i] : "";
         }
 
         isReadOnly = existing.IsLocked;
@@ -216,12 +215,12 @@ else
             .ThenBy(row => row.Timestamp)
             .Select(row => row.DriverId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(selectedDriverIds.Count)
+            .Take(formModel.SelectedDriverIds.Count)
             .ToList();
 
-        for (var i = 0; i < selectedDriverIds.Count; i++)
+        for (var i = 0; i < formModel.SelectedDriverIds.Count; i++)
         {
-            selectedDriverIds[i] = i < rankedDrivers.Count ? rankedDrivers[i] : string.Empty;
+            formModel.SelectedDriverIds[i] = i < rankedDrivers.Count ? rankedDrivers[i] : string.Empty;
         }
 
         var selectionType = snapshot
@@ -230,7 +229,7 @@ else
 
         if (Enum.TryParse<BetType>(selectionType, ignoreCase: true, out var mappedBetType))
         {
-            selectedBetType = mappedBetType;
+            formModel.SelectedBetType = mappedBetType;
         }
     }
 
@@ -241,11 +240,11 @@ else
 
         var submission = new SelectionSubmission
         {
-            BetType = selectedBetType,
-            OrderedSelections = selectedDriverIds
+            BetType = formModel.SelectedBetType,
+            OrderedSelections = formModel.SelectedDriverIds
                 .Select((driverId, index) => new SelectionPosition { Position = index + 1, DriverId = driverId })
                 .ToList(),
-            Selections = selectedDriverIds.ToList()
+            Selections = formModel.SelectedDriverIds.ToList()
         };
 
         try
@@ -317,7 +316,7 @@ else
 
     private void OnDriverChanged(int index, string? driverId)
     {
-        selectedDriverIds[index] = driverId ?? string.Empty;
+        formModel.SelectedDriverIds[index] = driverId ?? string.Empty;
     }
 
     private string GetCountdownText()
