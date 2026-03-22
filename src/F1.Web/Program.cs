@@ -1,4 +1,5 @@
 using F1.Web;
+using F1.Web.Services.Api;
 using F1.Web.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -44,6 +45,11 @@ builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().Cre
 
 // 3. Register UserSession as SCOPED
 builder.Services.AddScoped<IUserSession, UserSession>();
+
+// 4. Register typed API services.
+builder.Services.AddScoped<IDriversApiService, DriversApiService>();
+builder.Services.AddScoped<IRaceMetadataApiService, RaceMetadataApiService>();
+builder.Services.AddScoped<ISelectionApiService, SelectionApiService>();
 
 // --- Auth Services ---
 builder.Services.AddAuthorizationCore();
