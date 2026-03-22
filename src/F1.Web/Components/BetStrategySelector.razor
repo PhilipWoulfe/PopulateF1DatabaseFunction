@@ -1,0 +1,25 @@
+@using F1.Web.Models
+@using System.Linq.Expressions
+
+<h4 class="mt-4">Bet Strategy</h4>
+<InputRadioGroup Value="@Value" ValueChanged="@ValueChanged" ValueExpression="@ValueExpression">
+    <div class="form-check">
+        <InputRadio id="strategy-regular" class="form-check-input" Value="BetType.Regular" disabled="@IsReadOnly" />
+        <label class="form-check-label" for="strategy-regular">Regular</label>
+    </div>
+    <div class="form-check">
+        <InputRadio id="strategy-prequaly" class="form-check-input" Value="BetType.PreQualy" disabled="@IsReadOnly" />
+        <label class="form-check-label" for="strategy-prequaly">Pre-Qualy</label>
+    </div>
+    <div class="form-check mb-3">
+        <InputRadio id="strategy-allornothing" class="form-check-input" Value="BetType.AllOrNothing" disabled="@IsReadOnly" />
+        <label class="form-check-label" for="strategy-allornothing">All-or-Nothing</label>
+    </div>
+</InputRadioGroup>
+
+@code {
+    [Parameter] public BetType Value { get; set; }
+    [Parameter] public EventCallback<BetType> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<BetType>>? ValueExpression { get; set; }
+    [Parameter] public bool IsReadOnly { get; set; }
+}

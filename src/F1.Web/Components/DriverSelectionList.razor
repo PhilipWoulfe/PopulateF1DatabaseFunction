@@ -1,0 +1,33 @@
+@using F1.Web.Models
+
+<h4>Top 5 Driver Predictions</h4>
+@for (var i = 0; i < 5; i++)
+{
+    var rank = i;
+    <div class="mb-2">
+        <label class="form-label">Position @(i + 1)</label>
+        <select id="driver-select-@(i + 1)" class="form-select" value="@SelectedDriverIds[rank]" @onchange="e => OnDriverChanged(rank, e.Value?.ToString())" disabled="@IsReadOnly">
+            <option value="">-- Select driver --</option>
+            @foreach (var driver in Drivers)
+            {
+                <option value="@driver.DriverId">@driver.FullName (@driver.DriverId)</option>
+            }
+        </select>
+    </div>
+}
+
+@code {
+    [Parameter] public Driver[] Drivers { get; set; } = [];
+    [Parameter] public IList<string> SelectedDriverIds { get; set; } = [];
+    [Parameter] public bool IsReadOnly { get; set; }
+
+    private void OnDriverChanged(int index, string? driverId)
+    {
+        if (index < 0 || index >= SelectedDriverIds.Count)
+        {
+            return;
+        }
+
+        SelectedDriverIds[index] = driverId ?? string.Empty;
+    }
+}

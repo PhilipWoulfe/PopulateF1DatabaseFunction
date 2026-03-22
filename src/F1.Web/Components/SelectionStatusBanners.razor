@@ -1,0 +1,38 @@
+@using F1.Web.Models
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <div class="alert alert-success">@SuccessMessage</div>
+}
+
+@if (RaceMetadata is not null)
+{
+    <div class="alert alert-primary">
+        <h4>Race Questions</h4>
+        <p class="mb-2"><strong>H2H:</strong> @RaceMetadata.H2HQuestion</p>
+        <p class="mb-0"><strong>Bonus:</strong> @RaceMetadata.BonusQuestion</p>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(CountdownText))
+{
+    <div class="alert alert-info">
+        <strong>Countdown:</strong> @CountdownText
+    </div>
+}
+
+<div class="alert alert-warning">
+    Locking for Pre-Qualy gives +50% points but prevents changes after Sunday 13:00 UTC!
+</div>
+
+@code {
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? SuccessMessage { get; set; }
+    [Parameter] public RaceQuestionMetadata? RaceMetadata { get; set; }
+    [Parameter] public string? CountdownText { get; set; }
+}
