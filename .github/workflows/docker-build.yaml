@@ -345,3 +345,79 @@ jobs:
           docker buildx imagetools create \
             --tag ${{ env.REGISTRY }}/${{ needs.build-and-push.outputs.image_name_lower }}-data-sync:stable \
             ${{ needs.build-and-push.outputs.data_sync_sha_tag }}
+
+  deploy-prod-vm:
+    needs:
+      - deploy-prod
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    env:
+      VM_TAILSCALE_HOST: ${{ vars.VM_TAILSCALE_HOST }}
+      VM_DEPLOY_USER: ${{ vars.VM_DEPLOY_USER }}
+      VM_DEPLOY_PATH: ${{ vars.VM_DEPLOY_PATH != '' && vars.VM_DEPLOY_PATH || '/opt/f1competition' }}
+      GHCR_USERNAME: ${{ vars.GHCR_USERNAME }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Connect runner to tailnet
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH access
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s' '${{ secrets.VM_SSH_PRIVATE_KEY }}' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$VM_TAILSCALE_HOST" >> ~/.ssh/known_hosts
+
+      - name: Prepare deployment files
+        run: |
+          set -euo pipefail
+          printf '%s' '${{ secrets.VM_ENV_FILE }}' > deploy.env
+          if grep -q '^TAG=' deploy.env; then
+            sed -i 's/^TAG=.*/TAG=stable/' deploy.env
+          else
+            echo 'TAG=stable' >> deploy.env
+          fi
+
+      - name: Ensure remote deploy directory exists
+        run: |
+          set -euo pipefail
+          ssh "$VM_DEPLOY_USER@$VM_TAILSCALE_HOST" "mkdir -p '$VM_DEPLOY_PATH/scripts'"
+
+      - name: Upload compose and deploy scripts
+        run: |
+          set -euo pipefail
+          scp docker-compose.yml "$VM_DEPLOY_USER@$VM_TAILSCALE_HOST:$VM_DEPLOY_PATH/docker-compose.yml"
+          scp scripts/deploy-preflight.sh "$VM_DEPLOY_USER@$VM_TAILSCALE_HOST:$VM_DEPLOY_PATH/scripts/deploy-preflight.sh"
+          scp scripts/deploy-smoke-check.sh "$VM_DEPLOY_USER@$VM_TAILSCALE_HOST:$VM_DEPLOY_PATH/scripts/deploy-smoke-check.sh"
+          scp deploy.env "$VM_DEPLOY_USER@$VM_TAILSCALE_HOST:$VM_DEPLOY_PATH/.env"
+
+      - name: Log remote host into GHCR
+        run: |
+          set -euo pipefail
+          printf '%s' '${{ secrets.GHCR_READ_TOKEN }}' | ssh "$VM_DEPLOY_USER@$VM_TAILSCALE_HOST" "docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
+
+      - name: Deploy stable tag to VM
+        run: |
+          set -euo pipefail
+          ssh "$VM_DEPLOY_USER@$VM_TAILSCALE_HOST" "cd '$VM_DEPLOY_PATH' && chmod +x scripts/*.sh && ./scripts/deploy-preflight.sh .env && docker compose --env-file .env pull && docker compose --env-file .env up -d && ./scripts/deploy-smoke-check.sh .env"
+
+      - name: Write deploy summary
+        run: |
+          {
+            echo '## VM Deployment';
+            echo '';
+            echo '- Environment: production';
+            echo '- Target host: '"$VM_TAILSCALE_HOST";
+            echo '- Deploy path: '"$VM_DEPLOY_PATH";
+            echo '- Image tag: stable';
+            echo '- Commit SHA: '"$GITHUB_SHA";
+          } >> "$GITHUB_STEP_SUMMARY"

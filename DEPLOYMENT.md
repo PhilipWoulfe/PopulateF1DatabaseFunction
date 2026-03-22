@@ -208,18 +208,26 @@ GitHub Environment `test`:
 Repository secret already referenced elsewhere:
 1. `GC_PAT`
 
-Planned secrets for VM deployment workflow:
-1. `VM_TAILSCALE_HOST` or `VM_TAILSCALE_IP`
+VM deployment workflow configuration:
+
+Production environment variables:
+1. `VM_TAILSCALE_HOST`
 2. `VM_DEPLOY_USER`
+3. `VM_DEPLOY_PATH`
+4. `GHCR_USERNAME`
+
+Production environment secrets:
+1. `TAILSCALE_OAUTH_CLIENT_ID`
+2. `TAILSCALE_OAUTH_SECRET`
 3. `VM_SSH_PRIVATE_KEY`
-4. `VM_ENV_FILE` or split env secrets rendered into `.env`
-5. `GHCR_USERNAME` only if the default GitHub token is insufficient for target-side registry login
-6. `GHCR_PAT` if VM-side image pulls need an explicit package read token
+4. `VM_ENV_FILE`
+5. `GHCR_READ_TOKEN`
 
 Recommendation:
-1. Prefer a generated `.env` from GitHub Secrets over editing `.env` manually on the VM.
-2. Keep `.env.example` as the contract.
+1. `VM_ENV_FILE` should be the full multi-line production `.env` content.
+2. Keep `.env.example` as the contract for required keys.
 3. Do not store production secrets in repo or handover notes.
+4. `GHCR_READ_TOKEN` should be a package-read token that matches `GHCR_USERNAME`.
 
 ## VM Bring-Up Procedure
 
@@ -245,7 +253,7 @@ docker compose --env-file .env up -d
 
 ## Current Manual Deploy Procedure
 
-Use this until the VM deploy workflow exists.
+Use this as the fallback path if the VM deploy workflow fails or is unavailable.
 
 1. Connect to the target over Tailscale.
 2. Update the `.env` values only if intentionally changing configuration.
@@ -273,16 +281,21 @@ docker compose logs --tail=100 f1-data-sync-worker
 
 ## Planned Automated Deploy Procedure
 
-Target flow:
+Automated production flow implemented in PR2:
 1. Push to `main`
 2. GitHub Actions builds and publishes images
-3. Images promoted to `test` and later `stable`
-4. Deploy workflow connects over Tailscale/private SSH
-5. Workflow writes `.env` or updates only the required values
-6. Workflow runs preflight
-7. Workflow runs `docker compose pull && docker compose up -d`
-8. Workflow runs smoke checks
-9. Workflow reports deployed tag and SHA
+3. Images are promoted to `test`
+4. E2E gate runs against test
+5. Production approval promotes images to `stable`
+6. `deploy-prod-vm` in [.github/workflows/docker-build.yaml](.github/workflows/docker-build.yaml) connects over Tailscale/private SSH
+7. The workflow uploads `docker-compose.yml`, deploy scripts, and environment file to the VM
+8. The workflow runs preflight, image pull, `docker compose up -d`, and smoke checks
+9. The workflow writes a deployment summary with host, path, tag, and commit SHA
+
+Manual rollback flow implemented in PR2:
+1. Run [.github/workflows/rollback-vm.yaml](.github/workflows/rollback-vm.yaml)
+2. Provide the target tag, usually `sha-<shortsha>`
+3. The workflow uploads the same runtime files, overrides `TAG`, and reruns preflight plus smoke checks
 
 ## Smoke Checks
 
@@ -341,3 +354,4 @@ After cutover to VM, verify:
 3. Added secrets and env inventory.
 4. Added current manual deploy procedure and planned automated deploy target.
 5. Added a reusable deploy smoke-check script and documented post-deploy verification.
+6. Added production VM deploy and rollback workflow documentation with concrete GitHub secret and variable names.
