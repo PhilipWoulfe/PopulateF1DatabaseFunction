@@ -108,13 +108,42 @@ public class DriversApiServiceTests
     }
 
     [Fact]
-    public async Task GetAllAsync_WhenResponseIsNotFound_ThrowsHttpRequestException()
+    public async Task GetAllAsync_WhenResponseIsNotFound_ReturnsEmptyArray()
     {
         // Arrange
         var response = new HttpResponseMessage
         {
-            StatusCode = HttpStatusCode.NotFound,
-            Content = new StringContent("Not found", System.Text.Encoding.UTF8, "text/plain")
+            StatusCode = HttpStatusCode.NotFound
+        };
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+
+        var httpClient = new HttpClient(handlerMock.Object) { BaseAddress = new Uri("http://localhost") };
+        var service = new DriversApiService(httpClient);
+
+        // Act
+        var result = await service.GetAllAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenResponseIsServerError_ThrowsHttpRequestException()
+    {
+        // Arrange
+        var response = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.InternalServerError,
+            Content = new StringContent("Server error", System.Text.Encoding.UTF8, "text/plain")
         };
 
         var handlerMock = new Mock<HttpMessageHandler>();
