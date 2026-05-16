@@ -20,7 +20,7 @@ Current state:
 - GHCR image build and tag promotion already exist.
 - Cloudflare public ingress exists.
 - Tailscale is the planned private deploy/admin path.
-- VM deployment workflow is not wired yet.
+- VM deployment workflow is wired and awaiting cutover validation.
 
 Target state:
 - App runs only inside a dedicated VM.
@@ -373,6 +373,43 @@ Manual rollback flow implemented in PR2:
 2. Provide the target tag, usually `sha-<shortsha>`
 3. The workflow uploads the same runtime files, overrides `TAG`, and reruns preflight plus smoke checks
 4. The workflow uploads remote `docker compose ps` artifacts for troubleshooting
+
+## PR3 Cutover Readiness Checklist
+
+Complete all items before production approval:
+
+1. GitHub Environment `test` and `production` vars/secrets are synced from local env files.
+2. VM has current runtime files under `/opt/f1competition` and preflight passes.
+3. One `test` deployment completed via CI with successful smoke checks.
+4. One rollback drill completed via [.github/workflows/rollback-vm.yaml](.github/workflows/rollback-vm.yaml) using a known `sha-<shortsha>` tag.
+5. Deployment artifacts were reviewed for both deploy and rollback:
+  - `docker compose ps` output
+  - workflow step summaries
+  - smoke-check output
+6. Cloudflare ingress and Tailscale operator access both verified after deploy.
+7. Operational owner confirms runbook accuracy and rollback confidence.
+
+Evidence to capture in PR3:
+
+1. Link to successful test deploy run.
+2. Link to successful rollback drill run.
+3. Final tested tag values (`test`, `stable`, and at least one rollback `sha-<shortsha>`).
+4. Any deviations from this runbook and the updates made.
+
+## Go-Live Execution Order
+
+Run these steps on cutover day:
+
+1. Merge PR3.
+2. Trigger normal pipeline on `main` and wait for `test` deploy + E2E gate.
+3. Approve production environment gate.
+4. Let `deploy-prod-vm` complete and review the workflow summary.
+5. Validate production with:
+  - `scripts/deploy-smoke-check.sh` output
+  - public web/API reachability
+  - container health status in `docker compose ps`
+6. If validation fails, run [.github/workflows/rollback-vm.yaml](.github/workflows/rollback-vm.yaml) with the known-good `sha-<shortsha>`.
+7. Record final outcome and links in the release notes/PR comment.
 
 ## Smoke Checks
 
